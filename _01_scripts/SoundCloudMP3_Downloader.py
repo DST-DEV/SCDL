@@ -61,11 +61,15 @@ class SoundcloudMP3Downloader:
             
         return
 
-    def download_track(self, track_link):
+    def download_track(self, track_link, iteration=0):
         """Download track from soundcloud provided via the track_link
         
         Parameters: 
         track_link: a web link to the track on soundcloud
+        iteration: when a timeout exception for the DL button occurs, the function
+                   tries again for up to 2 more times (recursive function call).
+                   The current iteration count is provided with the iteration
+                   parameter
         
         Returns:
         The documentation of the downloaded track (title, link and occured 
@@ -73,7 +77,9 @@ class SoundcloudMP3Downloader:
         """
         
         #Add track to tracklist
-        self.tracklist.loc[len(self.tracklist)] = ["", track_link, ""]
+        if track_link not in self.tracklist.link.values:
+            self.tracklist.loc[len(self.tracklist)] = ["", track_link, ""]
+        
         
         #Open Download website
         self.driver.get('https://soundcloudmp3.org/de')
@@ -137,13 +143,19 @@ class SoundcloudMP3Downloader:
 
         #Add Track to tracklist (incl. exceptions/errors)
         except TimeoutException:
-            print ("\nDL-Button: Loading took too much time!")
-            self.add_exception(track_link, "DL-Button loading timeout")
-    
+            #If timeout of the dl-button occured, then try again (for maximum of 3 times)         
+            if iteration <=2:
+                self.download_track(track_link, iteration = iteration+1)
+            else:
+                print ("\nDL-Button: Loading took too much time!")
+                self.add_exception(track_link, "DL-Button loading timeout")
+                self.return_og_window()
+                return self.tracklist.iloc[-1]
         except Exception as e:
             print(f"\nDL-Button: {e}")
             self.add_exception(track_link, "DL-Button exception: " + str(e))
-
+            self.return_og_window()
+            return self.tracklist.iloc[-1]
         else:
             repl_dict = {" : ": " ", " :": " ", ": ": " ", ":": " ", 
                          "/":"", "*":" ", 
@@ -158,8 +170,7 @@ class SoundcloudMP3Downloader:
             self.driver.find_element(By.ID, 'download-btn').click()
             self.return_og_window()
         
-        
-        return self.tracklist.iloc[-1]
+            return self.tracklist.iloc[-1]
     
     def reset(self):
         """Resets the tracklist and returns the webdriver to the initial download page

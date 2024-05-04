@@ -13,9 +13,7 @@ class MP3Renamer:
     def __init__(self, std_dir = None, lib_path = None):
         #set the standard directory for the code to work in (if none is provided
         # by the user, use the downloads folder)
-        self.std_dir = std_dir or Path("C:/Users",
-                                       os.environ.get("USERNAME"),
-                                       "Downloads")
+        self.std_dir = std_dir or Path("C:/Users/davis/00_data/04_Track_Library/00_Organization/00_New_files")
         self.lib_path = lib_path or Path("C:/Users/davis/00_data/04_Track_Library")
         
         self.file_df = pd.DataFrame(columns=["folder", "filename", "new_filename",
@@ -40,7 +38,7 @@ class MP3Renamer:
         
         #Search for all mp3 files in the directory, including subdirectories
         for root, _, files in os.walk(directory):
-            music_files = [f for f in files if f.endswith(".mp3")]
+            music_files = [f for f in files if f.endswith(".mp3") | f.endswith(".wav")]
             if music_files:                       #check if there are files
                self.file_df = pd.concat([self.file_df,
                    pd.DataFrame(dict(folder=[root]*len(music_files),
@@ -69,24 +67,25 @@ class MP3Renamer:
         file_df: updated version of the file_df dataframe
         
         """
-        if file_df == None or file_df.empty:
+        if type(file_df) != pd.core.frame.DataFrame or file_df.empty:
             file_df = self.file_df if not self.file_df.empty else self.read_dir()
         
         for index, row in file_df.loc[file_df.processed == False].iterrows():
-            filename = self.adjust_fname (row["filename"], row["folder"])
+            filename, ext = self.adjust_fname (row["filename"], row["folder"])
             
-            self.file_df.loc[index, "new_filename"] = filename
+            self.file_df.loc[index, "new_filename"] = filename + ext
             
-            file_path = os.path.join(row["folder"], filename)
+            file_path = os.path.join(row["folder"], filename + ext)
             try:
-                audio = MP3(file_path, ID3=EasyID3)
-                
-                name, _ = os.path.splitext(filename)
-                
-                audio['title'] = name.split(" - ")[-1].strip()
-                audio['artist'] = name.split(" - ")[0].strip()
-                
-                audio.save()
+                if ext == ".mp3":
+                    audio = MP3(file_path, ID3=EasyID3)
+                    
+                    name, _ = os.path.splitext(filename)
+                    
+                    audio['title'] = name.split(" - ")[-1].strip()
+                    audio['artist'] = name.split(" - ")[0].strip()
+                    
+                    audio.save()
             except Exception as e:
                 self.file_df.loc[index, "exceptions"] = f"{e.__class__} : {e}"
                 self.file_df.loc[index, "processed"] = False
@@ -150,7 +149,7 @@ class MP3Renamer:
         os.replace(os.path.join(folder_path, filename), 
                   os.path.join(folder_path, new_filename + extension))
         
-        return new_filename
+        return new_filename, extension
     
     def convert_to_alphanumeric(self, input_string):
         """Convert an arbitrary string to its closest alphanumeric representation 

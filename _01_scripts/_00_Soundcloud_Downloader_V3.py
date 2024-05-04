@@ -20,6 +20,11 @@ class Soundclouddownloader:
         self.track_df = track_df
         self.pl_status = {}   #Status of playlists (skipped or number of new tracks for each playlist)
         self.MP3r = MP3Renamer()
+        self.history_file = os.path.join(os.getcwd(), 
+                                  '_01_rsc\\Download_history.txt')
+        #Open the download history (in order to update it later)
+        with open(self.history_file) as f:
+            self.dl_history = json.loads(f.read())
         
         
     def extr_playlists(self, reextract = False):
@@ -40,13 +45,14 @@ class Soundclouddownloader:
                 hist_file = os.path.join(os.getcwd(), 
                                           '_01_rsc\\Download_history.txt')
                 )
-            self.track_df, self.pl_status = ple.extr_all()
+            self.track_df, self.playlists = ple.extr_all()
             self.track_df.insert(len(self.track_df.columns), "downloaded", False)
             
-            return self.track_df, self.pl_status
+            
+            return self.track_df, self.playlists
         else:
             print("\nPlaylists already extracted, continuing with existing playlist info\n")
-            return self.track_df, self.pl_status
+            return self.track_df, self.playlists
         
     def download_tracks(self):
         """Downloads the tracks from the links in the track_df dataframe
@@ -63,6 +69,7 @@ class Soundclouddownloader:
             print ("Error: No tracks found / All tracks are already downloaded")
             return
         
+        #Filter all tracks which are not yet downloaded
         tracks_tbd = self.track_df.loc[
             self.track_df.downloaded == False].reset_index(drop=True)
         
@@ -72,7 +79,7 @@ class Soundclouddownloader:
         
         #Download the songs
         print (f"\nDownloading {len(tracks_tbd)} new tracks from {pl_len} playlists")
-        scdl = SoundcloudMP3Downloader()
+        MP3DL = SoundcloudMP3Downloader()
  
         for index, pl_name in playlists.items():
             
@@ -81,10 +88,12 @@ class Soundclouddownloader:
                                      desc = f"Downloading playlist {pl_name} "
                                             + f"({index+1}/{pl_len}): ",
                                      total = len(curr_tracks)):
-                dl_doc = scdl.download_track(track.link)
+                dl_doc = MP3DL.download_track(track.link)
                 
                 #Update status of track in track_df and add to documentation
-                self.track_df.loc[self.track_df.link==track.link, "downloaded"]= True
+                self.track_df.loc[
+                    (self.track_df.link==track.link) & (self.track_df.playlist==pl_name), 
+                    "downloaded"]= True
                 self.doc.loc[len(self.doc)] = [dl_doc.title,
                                                track.link,
                                                dl_doc.exceptions,
@@ -102,6 +111,7 @@ class Soundclouddownloader:
                     audio['genre'] = pl_name
                     audio.save()
                     
+                    #If no artist is specified in the filename, then add the name of the uploader
                     if " - " not in dl_doc.title:
                         artist = self.doc.loc[
                             self.doc.link == track.link, "uploader"].to_list()[0]
@@ -112,37 +122,35 @@ class Soundclouddownloader:
                                                artist + " - " + dl_doc.title + ".mp3")
                                   )
                         
-                        os.replace(os.path.join(folderpath, 
-                                                dl_doc.title + ".mp3"), 
-                                  os.path.join(folderpath,
-                                               artist + " - " + dl_doc.title + ".wav")
-                                  )
+                        # os.replace(os.path.join(folderpath, 
+                        #                         dl_doc.title + ".wav"), 
+                        #           os.path.join(folderpath,
+                        #                        artist + " - " + dl_doc.title + ".wav")
+                        #           )
                 except Exception as e:
                     # print("\n" + str(e))
                     
                     #Add exception to fhb documentation and self.doc
-                    scdl.add_exception(link = track.link, 
+                    MP3DL.add_exception(link = track.link, 
                                       exception = f"Metadata exception: {e}")
                     
                     if self.doc.loc[self.doc.index[-1], "exceptions"]:           
-                        self.doc.loc[self.doc.index[-1], "exceptions"] += ...
+                        self.doc.loc[self.doc.index[-1], "exceptions"] += \
                         " | " + f"Metadata exception: {e}"
                     else:
-                        self.doc.loc[self.doc.index[-1], "exceptions"] = f"Metadata exception: {e}"
+                        self.doc.loc[self.doc.index[-1], "exceptions"] = \
+                            f"Metadata exception: {e}"
 
-            #Update entry for last downloaded track
+                #Update dl_history for last downloaded track
+                self.dl_history[pl_name]=curr_tracks.link.to_list()[-1]
+
+            #Update the history file
+            history = json.dumps(self.dl_history)                                           #Prepare the dict for the export
+            with open(self.history_file, 'w') as f:
+                f.write(history)   
             
-            with open(self.history_file) as f:
-                history = json.loads(f.read())
-                history[pl_name]=curr_tracks.link.to_list()[-1]
-                history = json.dumps(history)                                           #Prepare the dict for the export
-                f.write(history)                                                    #Save the last downloaded track of each playlist to txt file
-            
-            # #Remove track from list
-            # self.track_df.drop(self.track_df.loc[self.track_df.link==tracklink].index, 
-            #               inplace=True)
-            scdl.reset() 
-        scdl.finish() 
+            MP3DL.reset() 
+        MP3DL.finish() 
         
         return self.doc
     
@@ -159,16 +167,20 @@ class Soundclouddownloader:
         _ = self.extr_playlists(reextract = True)
         _ = self.download_tracks()
         
-        _ = input("\n\nPress enter to continue with adjusting the downloaded files")
+        # _ = input("\n\nPress enter to continue with adjusting the downloaded files")
         
-        rename_doc = self.MP3r.process_directory()
+        # rename_doc = self.MP3r.process_directory()
         
-        return self.doc, rename_doc
+        # return self.doc, rename_doc
+        
+        return self.doc
     
     
 if __name__ == '__main__':
 
     scdl = Soundclouddownloader()
+    # scdl.download_all()
+    
     # track_df, pl_status = scdl.extr_playlists(reextract = True)
     # doc, rename_doc = scdl.download_all()
     

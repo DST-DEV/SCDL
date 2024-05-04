@@ -506,7 +506,7 @@ class PlaylistLinkExtractor:
     def extr_all(self):
         _ = self.extr_playlists()
         _, _ = self.extr_links()
-        return self.track_df, self.pl_status
+        return self.track_df, self.playlists
 
 if __name__ == '__main__':
     ple = PlaylistLinkExtractor()
