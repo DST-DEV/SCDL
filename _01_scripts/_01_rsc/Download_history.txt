@@ -5,7 +5,7 @@
 "Techno - Other - Kalte Liebe": "https://soundcloud.com/voxnoxberlin/kalte-liebe-schall-schweiss?",
 "Techno - Other - High Energy - Vocal": "https://soundcloud.com/ephypinkman/sex-with-medusa?",
 "Techno - Other - High Energy - Instrumental": "https://soundcloud.com/jaess_tch/live-attack?",
-"Techno - Other - funny":"https://soundcloud.com/ambam_techno/ugg-boots-ambam-edit?"
+"Techno - Other - funny":"https://soundcloud.com/ambam_techno/ugg-boots-ambam-edit?",
 "Techno - Driving - Low Energy - Vocal": "https://soundcloud.com/charlie-sparks-531540495/charlie-sparks-my-humps-free-download?",
 "Techno - Driving - High Energy - Vocal": "https://soundcloud.com/obihardtechno/obi-girls-love-techno-full-version-free-download?",
 "Techno - Driving - High Energy - Instrumental": "https://soundcloud.com/revisedrecords/baarz-detune-her-1?",
