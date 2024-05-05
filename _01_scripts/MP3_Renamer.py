@@ -1,5 +1,6 @@
-import os, re
+import os, re 
 from pathlib import Path
+import music_tag
 from mutagen.easyid3 import EasyID3
 from mutagen.mp3 import MP3
 import pandas as pd
@@ -13,11 +14,14 @@ class MP3Renamer:
     def __init__(self, std_dir = None, lib_path = None):
         #set the standard directory for the code to work in (if none is provided
         # by the user, use the downloads folder)
-        self.std_dir = std_dir or Path("C:/Users/davis/00_data/04_Track_Library/00_Organization/00_New_files")
         self.lib_path = lib_path or Path("C:/Users/davis/00_data/04_Track_Library")
+        self.std_dir = std_dir or Path(self.lib_path, 
+                                       "00_Organization/00_New_files")
         
-        self.file_df = pd.DataFrame(columns=["folder", "filename", "new_filename",
-                                             "exceptions", "processed"])
+        
+        self.file_df = pd.DataFrame(columns=["folder", "goal_folder", "filename", 
+                                             "new_filename","exceptions", "status", 
+                                             "create_missing_dir"])
 
     def read_dir(self, directory=None):
         """Finds all mp3 files within a directory and its substructure. The 
@@ -42,13 +46,14 @@ class MP3Renamer:
             if music_files:                       #check if there are files
                self.file_df = pd.concat([self.file_df,
                    pd.DataFrame(dict(folder=[root]*len(music_files),
+                                     goal_folder =[""]*len(music_files),
                                      filename = music_files,
                                      new_filename = [""]*len(music_files),
                                      exceptions=[""]*len(music_files),
-                                     processed=[False]*len(music_files)
+                                     status=[""]*len(music_files),
+                                     create_missing_dir=[False]*len(music_files)
                                      )
-                                )
-                   ])
+                                )])
                
         return self.file_df
     
@@ -69,8 +74,10 @@ class MP3Renamer:
         """
         if type(file_df) != pd.core.frame.DataFrame or file_df.empty:
             file_df = self.file_df if not self.file_df.empty else self.read_dir()
+        else:
+            self.file_df = file_df
         
-        for index, row in file_df.loc[file_df.processed == False].iterrows():
+        for index, row in file_df.loc[file_df.status == ""].iterrows():
             filename, ext = self.adjust_fname (row["filename"], row["folder"])
             
             self.file_df.loc[index, "new_filename"] = filename + ext
@@ -88,9 +95,9 @@ class MP3Renamer:
                     audio.save()
             except Exception as e:
                 self.file_df.loc[index, "exceptions"] = f"{e.__class__} : {e}"
-                self.file_df.loc[index, "processed"] = False
+                self.file_df.loc[index, "status"] = "Metadata error"
             else:
-                self.file_df.loc[index, "processed"] = True
+                self.file_df.loc[index, "status"] = "Renamed and Metadata adjusted"
         
         return self.file_df
       
@@ -188,27 +195,47 @@ class MP3Renamer:
         """
         
         if type(file_df) != pd.core.frame.DataFrame or file_df.empty:
-            file_df = self.read_dir()
+            file_df = self.file_df if not self.file_df.empty else self.read_dir()
+        else:
+            self.file_df = file_df
         
         for index, row in file_df.iterrows():
-            file_path = os.path.join(row["folder"], row["filename"])
+            
+            #Determine the path to the file
+            if row.new_filename:
+                fname = row.new_filename
+            else:
+                fname = row.filename
+            file_path = Path(row["folder"], fname)
+            
+            #Extract the goal directory from the genre metadata
             try:
-                audio = MP3(file_path, ID3=EasyID3)
-                library_dir = Path(audio["genre"].replace(" - ", "/"))
+                if file_path.suffix == ".mp3":
+                    audio = MP3(file_path, ID3=EasyID3)
+                elif file_path.suffix == ".wav":
+                    audio = music_tag.load_file(file_path)
+                library_dir = Path(audio["genre"][0].replace(" - ", "/"))
+                self.file_df.loc[index, "goal_folder"]=str(library_dir)
             except Exception as e:
                 self.file_df.loc[index, "exceptions"] = f"{e.__class__} : {e}"
-                self.file_df.loc[index, "processed"] = False
+                self.file_df.loc[index, "status"] = "Error during Genre extraction"
             else:
-                try:
-                    shutil.copy2(file_path,
-                                 Path(self.lib_path, library_dir)
-                                )
-                except Exception as e:
-                    self.file_df.loc[index, "exceptions"] = f"{e.__class__} : {e}"
-                    self.file_df.loc[index, "processed"] = False
+                #Move the file
+                if (row.create_missing_dir 
+                    or os.path.isdir (Path(self.lib_path, library_dir))):
+                    try:
+                        if not os.path.isdir (Path(self.lib_path, library_dir)):
+                            os.mkdir(self.lib_path, library_dir)
+                        
+                        os.replace(file_path, 
+                                   Path(self.lib_path, library_dir, fname))
+                    except Exception as e:
+                        self.file_df.loc[index, "exceptions"] = f"{e.__class__} : {e}"
+                        self.file_df.loc[index, "status"] = "Error during copying"
+                    else:
+                        self.file_df.loc[index, "status"] = "Moved to library"
                 else:
-                    self.file_df.loc[index, "processed"] = True
-        
+                    self.file_df.loc[index, "status"] = "Goal directory not found"
         return self.file_df
     
     def process_directory(self, directory=None):
@@ -243,9 +270,10 @@ class MP3Renamer:
 if __name__ == '__main__':
     # std_dir = Path("C:/Users", os.environ.get("USERNAME"), "Downloads", "music")
     path = Path("C:/Users/davis/00_data/04_Track_Library/00_Organization/00_New_files")
-    MP3r = MP3Renamer(path)
+    MP3r = MP3Renamer(lib_path=Path("C:/Users/davis/00_data/04_Track_Library"))
     
-    rename_doc = MP3r.process_directory()
+    # rename_doc = MP3r.process_directory()
+    track_df = MP3r.move_to_library()
     
     
     

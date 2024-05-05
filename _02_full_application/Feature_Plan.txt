@@ -1,0 +1,37 @@
+Funktionen Track Library Manager
+SCDL
+- Find SC Playlists
+  - Feature: Extract all Playlist from my SC account / a specified SC account
+    - Addition: Display found playlists as list, which can be edited (checkbox to include / exclude PL)
+  - Feature: Let user specify playlists to process (via name / links)
+  - Feature: Let user specify a keyword (e.g. Genre, a Theme such as "Dark" or "High Energy") 
+    - Addition: Display found playlists as list, which can be edited (checkbox to include / exclude PL)
+- Extract Tracks:
+  - Feature: Use the List of Playlists from previous step to extract all track links 
+    - Addition: Display Progress (current Playlist vs total number of playlists)
+    - Addition: Display list of playlist as a clickable item in a list. If clicked, a list of all found tracks should be displayed
+    - Addition: List of tracks should be editable (remove/add tracks)
+- Download Tracks
+  - Feature: Download all tracks from the list from the previous step
+    - Addition: Display progress (divide number of tracks into steps of 10 / 50 / 100 (depending on the total number) to update the progress bar)
+    - Addition: Insert Genre in metadata 
+    - Addition: Copy all files to the new files directory in the track library
+    - Addition: Return List of tracks with error messages and current filename and prompt user to manually prepare the files for the next step
+    - Addition: Update Download history
+- Adjust Filename and metadata:
+  - Feature: Adjust the filename and insert the artist and track name information
+    - Addition: When trying to use this feature, prompt the user to confirm he has prepared all the files for this code to work
+    - Addition: Return List of tracks with error messages
+  - Copy tracks to respetive folders in track library (depending on genre information in the metadata) 
+    - Addition: if track already exists there, file should NOT be replaced, but instead it should be noted 
+    - Addition: Return a List of tracks with error messages - user should be able to change the field of the error message to "Replace" or "Neglect" and run the code for the file copying again. The tracks with the keyword "Replace" are copied in the goal directory and replace the existing file, the tracks with the keyword "Neglect" should be deleted
+- Additional Features:
+  - Editor of the Download history file
+  - All directories (Track library, new file library, music folder) should be customizable and if a custom path is specified, it should immediately be checked, if this path exists)
+
+Library Updater
+- Feature: Strip filenames of leading/tailing spaces and insert subfolder in the Track library as genre for all .mp3 files
+- Feature: Copy .mp3 files to music library
+  - Addition (m/b): Check if file is already in music folder and only copy if not the case (Note: check if this is more efficient than skipping this step and always copying all files)
+- Feature: Search tracks from new files directory in the track library an replace the file there with the new file
+  - Addition: search for closest match and display results for each track (e.g. list of the new tracks on one side and if you click on one, a list of matching tracks is displayed on the right where the track to be replaced can be selected. Once selected, the replacement can be confirmed
