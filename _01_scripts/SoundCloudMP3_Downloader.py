@@ -10,13 +10,21 @@ import pandas as pd
 import numpy as np
 
 class SoundcloudMP3Downloader:
-    def __init__(self):
+    def __init__(self, driver = "Firefox"):
         self.cookies_removed = False
         self.tracklist = pd.DataFrame(columns=["title", "link", "exceptions"])
         self.timeout = 15 # seconds
-        options = Options() 
-        options.add_argument("--disable-popup-blocking")
-        self.driver = webdriver.Firefox(options=options)
+        if driver =="Firefox":
+            options = Options() 
+            options.add_argument("--disable-popup-blocking")
+            self.driver = webdriver.Firefox(options=options)
+        elif driver == "Edge":
+            self.driver = webdriver.Edge()
+        elif driver == "Chrome":
+            self.driver = webdriver.Chrome()
+        elif driver == "Safari":
+            self.driver = webdriver.Safari()
+            
         self.og_window = self.driver.current_window_handle
      
     def return_og_window(self):

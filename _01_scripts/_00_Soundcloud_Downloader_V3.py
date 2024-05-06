@@ -142,7 +142,7 @@ class Soundclouddownloader:
                             f"Metadata exception: {e}"
 
                 #Update dl_history for last downloaded track
-                self.dl_history[pl_name]=curr_tracks.link.to_list()[-1]
+                self.dl_history[pl_name]=track.link
 
             #Update the history file
             history = json.dumps(self.dl_history)                                           #Prepare the dict for the export

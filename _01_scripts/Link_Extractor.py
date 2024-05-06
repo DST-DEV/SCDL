@@ -7,17 +7,20 @@ from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.firefox.options import Options
 import unicodedata
 import json
+import time
 
 class PlaylistLinkExtractor:
     timeout = 10
     
     def __init__(self, 
-                 hist_file = "./_01_rsc/Download_history.txt"):
+                 hist_file = "./_01_rsc/Download_history.txt",
+                 driver = "Firefox"):
         self.track_df = pd.DataFrame(columns = ["playlist", "link", "uploader"])
         self.playlists = pd.DataFrame(columns=["name", "link", "status"])
         # self.pl_status = pd.DataFrame(columns = ["link", "name", "status"])
         self.history_file = hist_file
         self.cookies_removed = False
+        self.driver_choice = driver
         
         
         options = Options() 
@@ -46,6 +49,10 @@ class PlaylistLinkExtractor:
         self.playlists: a list of links to the playlists
         """
         
+        #Check the driver
+        self.check_driver()
+        
+        #Load webpage
         print("Extracting playlists from Soundcloud")
         self.driver.get("https://soundcloud.com/user-727245698-705348285/sets")
         
@@ -187,152 +194,225 @@ class PlaylistLinkExtractor:
         
         return alphanumeric_string
     
-    def extr_tracks(self, pl_name):
+    def extr_track(self, index):
         """Extract the track link and account which uploaded the track 
         from the currently open soundcloud playlist using the selenium
         webdriver
         
         Parameters: 
-        None
+        index (int): index of track in playlist
         
         Returns:
-        tracks: a dictionary with the playlist name as the key and a 
-        list of all links to the tracks as the value
+        link (str): link to the track 
+        uploader (str): name of the uploader of the track
         """
-        tracks = pd.DataFrame(columns=["playlist", "link", 'uploader'])
         
-        #Iterate over all tracks and extract infos
-        for i in range(0, len(self.driver.find_elements(
-            By.CLASS_NAME, 
-            "trackList__item.sc-border-light-bottom.sc-px-2x"))):
-            
-            #find track content element (including Wait to prevent StaleElementReferenceException)
-            base_path = "(//li[@class='trackList__item sc-border-light-bottom " \
-                + f"sc-px-2x'])[{i+1}]" \
-                    + "/div/div[@class='trackItem__content sc-truncate']"
-            try:
-                WebDriverWait(self.driver, self.timeout).until(
-                    EC.presence_of_element_located((
-                        By.XPATH,
-                        base_path
-                        +"/a[@class='trackItem__trackTitle sc-link-dark "
-                        + "sc-link-primary sc-font-light']")))
-            except:
-                pass
-            # WebDriverWait(self.driver, self.timeout).until(
-            #     EC.presence_of_element_located((
-            #         By.XPATH,
-            #         "//dic[@class='image image__lightOutline sc-artwork "
-            #         +"sc-artwork-placeholder-4 image__rounded m-loaded']/span")))
-            
-            #find child element which contains the track link
-            link = self.driver.find_element(By.XPATH,
-                base_path
-                +"/a[@class='trackItem__trackTitle sc-link-dark "
-                + "sc-link-primary sc-font-light']").get_attribute(
-                    "href").split("in=user")[0]
-                    
-            #find child element which contaions the uploader name
-            uploader = self.convert_to_alphanumeric(
-                self.driver.find_element(By.XPATH,
-                                   base_path
-                                   + "/a[@class='trackItem__username "
-                                   +"sc-link-light sc-link-secondary "
-                                   + "sc-mr-0.5x']"
-                                   ).text
-                )
-            
-            tracks.loc[len(tracks)] = [pl_name, link, uploader]
-                 
-        return tracks   
-    
-    def extr_tracks_2 (self, pl_link, mode="new", last_track="", index=""):
-        """Extract the track link and account which uploaded the track 
-        from the currently open soundcloud playlist using the selenium
-        webdriver
+        #Check the driver
+        self.check_driver()
         
-        Parameters: 
-        pl_link (str): Link to the playlist
-        mode (str):
-            - 'new': only return new tracks
-            - 'all': return all tracks
-            - 'index': return track at specific index in playlist
-        last_track (str, optional): current last track (for mode 'new'). 
-                                    All tracks after this one in the list will 
-                                    be returned
-        index (int, optional): index of the track (for mode 'index'). 
-                                Note: negative indexes are possible (reverse order)
-                               
-        Returns:
-        tracks (DataFrame): A pandas dataframe with each row representing the a 
-                            track with information on the playlist name, link
-                            to the track and the uploader of the track
-        """
-        tracks = pd.DataFrame(columns=["playlist", "link", 'uploader'])
-        
-        #If the cookies werent rejected yet, then reject cookies
-        if not self.cookies_removed:
-            self.reject_cookies()
-        
-        #Check if playlist is empty and if so, skip it
+        #Base path to the track element
+        base_path = "(//li[@class='trackList__item sc-border-light-bottom " \
+            + f"sc-px-2x'])[{index+1}]" \
+                + "/div/div[@class='trackItem__content sc-truncate']"
+  
+        #find track content element (including Wait to prevent StaleElementReferenceException)
         try:
-            self.driver.find_element(By.CLASS_NAME, "emptyNetworkPage")
+            WebDriverWait(self.driver, self.timeout).until(
+                EC.presence_of_element_located((
+                    By.XPATH,
+                    base_path
+                    +"/a[@class='trackItem__trackTitle sc-link-dark "
+                    + "sc-link-primary sc-font-light']")))
         except:
             pass
-        else:
-            self.pl_status.loc[index, "status"] = "Empty"
-            continue
         
-        
-        #Iterate over all tracks and extract infos
-        for i in range(0, len(self.driver.find_elements(
-            By.CLASS_NAME, 
-            "trackList__item.sc-border-light-bottom.sc-px-2x"))):
+        #find child element which contains the track link
+        link = self.driver.find_element(By.XPATH,
+            base_path
+            +"/a[@class='trackItem__trackTitle sc-link-dark "
+            + "sc-link-primary sc-font-light']").get_attribute(
+                "href").split("in=user")[0]
+                
+        #find child element which contaions the uploader name
+        uploader = self.convert_to_alphanumeric(
+            self.driver.find_element(By.XPATH,
+                               base_path
+                               + "/a[@class='trackItem__username "
+                               +"sc-link-light sc-link-secondary "
+                               + "sc-mr-0.5x']"
+                               ).text
+            )
             
-            #find track content element (including Wait to prevent StaleElementReferenceException)
-            WebDriverWait(self.driver, self.timeout).until(
-                EC.presence_of_element_located((By.XPATH,
-                    "(//li[@class='trackList__item sc-border-light-bottom "
-                    + f"sc-px-2x'])[{i+1}]"
-                    + "/div/div[@class='trackItem__content sc-truncate']")))
-            
-            base_path = "(//li[@class='trackList__item sc-border-light-bottom "\
-                        + f"sc-px-2x'])[{i+1}]"\
-                        + "/div/div[@class='trackItem__content sc-truncate']"
-            
-            #find child element which contains the track link
-            link = self.driver.find_element(By.XPATH,
-                base_path
-                +"/a[@class='trackItem__trackTitle sc-link-dark "
-                + "sc-link-primary sc-font-light']").get_attribute(
-                    "href").split("in=user")[0]
-                    
-            #find child element which contaions the uploader name
-            uploader = self.convert_to_alphanumeric(
-                self.driver.find_element(By.XPATH,
-                                    base_path
-                                    + "/a[@class='trackItem__username "
-                                    +"sc-link-light sc-link-secondary "
-                                    + "sc-mr-0.5x']"
-                                    ).text
-                )
-            
-            tracks.loc[len(tracks)] = [pl_name, link, uploader]
-                 
-        return tracks
+        return link, uploader   
     
-    def extr_links(self, playlists = pd.DataFrame()):
+    
+    # def extr_tracks(self, pl_name, mode = "all"):
+    #     """Extract the track link and account which uploaded the track 
+    #     from the currently open soundcloud playlist using the selenium
+    #     webdriver
+        
+    #     Parameters: 
+    #     pl_name (str): Name of the playlist
+    #     mode (optional): Extraction mode
+    #                     - "all": Extract all tracks (defoult)
+    #                     - "last": Only Extract the last track
+        
+    #     Returns:
+    #     tracks: a dictionary with the playlist name as the key and a 
+    #     list of all links to the tracks as the value
+    #     """
+        
+    #     #Check the driver
+    #     self.check_driver()
+        
+        
+    #     tracks = pd.DataFrame(columns=["playlist", "link", 'uploader'])
+        
+    #     #Iterate over all tracks and extract infos
+    #     for i in range(0, len(self.driver.find_elements(
+    #         By.CLASS_NAME, 
+    #         "trackList__item.sc-border-light-bottom.sc-px-2x"))):
+            
+    #         #find track content element (including Wait to prevent StaleElementReferenceException)
+    #         try:
+    #             WebDriverWait(self.driver, self.timeout).until(
+    #                 EC.presence_of_element_located((
+    #                     By.XPATH,
+    #                     base_path
+    #                     +"/a[@class='trackItem__trackTitle sc-link-dark "
+    #                     + "sc-link-primary sc-font-light']")))
+    #         except:
+    #             pass
+            
+    #         base_path = "(//li[@class='trackList__item sc-border-light-bottom " \
+    #                 + f"sc-px-2x'])[{i+1}]" \
+    #                     + "/div/div[@class='trackItem__content sc-truncate']"
+            
+    #         #find child element which contains the track link
+    #         link = self.driver.find_element(By.XPATH,
+    #             base_path
+    #             +"/a[@class='trackItem__trackTitle sc-link-dark "
+    #             + "sc-link-primary sc-font-light']").get_attribute(
+    #                 "href").split("in=user")[0]
+                    
+    #         #find child element which contaions the uploader name
+    #         uploader = self.convert_to_alphanumeric(
+    #             self.driver.find_element(By.XPATH,
+    #                                 base_path
+    #                                 + "/a[@class='trackItem__username "
+    #                                 +"sc-link-light sc-link-secondary "
+    #                                 + "sc-mr-0.5x']"
+    #                                 ).text
+    #             )
+            
+    #         tracks.loc[len(tracks)] = [pl_name, link, uploader]
+                 
+    #     return tracks   
+    
+    # def extr_tracks_2 (self, pl_link, mode="new", last_track="", index="", 
+    #                    dl_history={}, skp_empty ):
+    #     """Extract the track link and account which uploaded the track 
+    #     from the currently open soundcloud playlist using the selenium
+    #     webdriver
+        
+    #     Parameters: 
+    #     pl_link (str): Link to the playlist
+    #     mode (str):
+    #         - 'new': only return new tracks
+    #         - 'all': return all tracks
+    #         - 'index': return track at specific index in playlist
+    #     last_track (str, optional): current last track (for mode 'new'). 
+    #                                 All tracks after this one in the list will 
+    #                                 be returned
+    #     index (int, optional): index of the track (for mode 'index'). 
+    #                             Note: negative indexes are possible (reverse order)
+                               
+    #     Returns:
+    #     tracks (DataFrame): A pandas dataframe with each row representing the a 
+    #                         track with information on the playlist name, link
+    #                         to the track and the uploader of the track
+    #     """
+        
+    #     #Check the driver
+    #     self.check_driver()
+        
+    #     tracks = pd.DataFrame(columns=["playlist", "link", 'uploader'])
+        
+    #     #If the cookies werent rejected yet, then reject cookies
+    #     if not self.cookies_removed:
+    #         self.reject_cookies()
+        
+    #     #Check if playlist is empty and if so, skip it
+    #     try:
+    #         self.driver.find_element(By.CLASS_NAME, "emptyNetworkPage")
+    #     except:
+    #         pass
+    #     else:
+    #         self.playlists.loc[index, "status"] = "Empty"
+    #         return tracks
+        
+    #     #Check if playlist is still up to date
+    #     with open(self.history_file, "r") as f:
+    #         history = json.loads(f.read())
+        
+    #     #Iterate over all tracks and extract infos
+    #     for i in range(0, len(self.driver.find_elements(
+    #         By.CLASS_NAME, 
+    #         "trackList__item.sc-border-light-bottom.sc-px-2x"))):
+            
+    #         #find track content element (including Wait to prevent StaleElementReferenceException)
+    #         WebDriverWait(self.driver, self.timeout).until(
+    #             EC.presence_of_element_located((By.XPATH,
+    #                 "(//li[@class='trackList__item sc-border-light-bottom "
+    #                 + f"sc-px-2x'])[{i+1}]"
+    #                 + "/div/div[@class='trackItem__content sc-truncate']")))
+            
+    #         base_path = "(//li[@class='trackList__item sc-border-light-bottom "\
+    #                     + f"sc-px-2x'])[{i+1}]"\
+    #                     + "/div/div[@class='trackItem__content sc-truncate']"
+            
+    #         #find child element which contains the track link
+    #         link = self.driver.find_element(By.XPATH,
+    #             base_path
+    #             +"/a[@class='trackItem__trackTitle sc-link-dark "
+    #             + "sc-link-primary sc-font-light']").get_attribute(
+    #                 "href").split("in=user")[0]
+                    
+    #         #find child element which contaions the uploader name
+    #         uploader = self.convert_to_alphanumeric(
+    #             self.driver.find_element(By.XPATH,
+    #                                 base_path
+    #                                 + "/a[@class='trackItem__username "
+    #                                 +"sc-link-light sc-link-secondary "
+    #                                 + "sc-mr-0.5x']"
+    #                                 ).text
+    #             )
+            
+    #         tracks.loc[len(tracks)] = [pl_name, link, uploader]
+                 
+    #     return tracks
+    
+    def extr_links(self, playlists = pd.DataFrame(), mode="new", autosave=True):
         """Extract the links to the tracks within the playlists specified in the
         self.playlists list
         
         Parameters: 
         playlists: List containing the links to the soundcloud playlists to be 
-        evaluated (optional, default is the self.playlists list)
+                   evaluated (optional, default is the self.playlists list)
+        mode (optional): Select the Extraction mode
+                        - "new": Extracts all new songs (compared to dl history)
+                        - "last": Extracts only the last song
+                        - "all": Extracts all songs
+        autosave (optional): whether the results should automatically be saved 
+                            to the self.track_df (default: yes)
         
         Returns:
         self.track_df: a dictionary with the playlist name as the key and a 
         list of all links to the tracks as the value
         """
+        
+        #Check the driver
+        self.check_driver()
         
         if playlists.empty:       #If playlists is empty
             if self.playlists.empty:  #If self.playlists is empty
@@ -344,53 +424,53 @@ class PlaylistLinkExtractor:
         
         with open(self.history_file, "r") as f:
             history = json.loads(f.read())
+            
+        #Prepare Track Dataframe
+        tracks = pd.DataFrame(columns=["playlist", "link", 'uploader'])
         
-        for index, pl in playlists.iterrows():
+        #Process all playlists, which didn't run successfully already 
+        if mode =="new":
+            pls = playlists.loc[
+                     (~playlists.status.str.contains("new tracks found")) 
+                     & (playlists.status != "Empty")
+                     & (playlists.status != "skipped")]
+        else: 
+            pls = playlists.loc[
+                     (~playlists.status.str.contains("new tracks found")) 
+                     & (playlists.status != "Empty")]
+        
+        for index, pl in pls.iterrows():
             #Open playlist
             self.driver.get(pl.link)
+            
+            #If this is the time opening soundcloud of the session, then reject cookies
+            if not self.cookies_removed:
+                self.reject_cookies()
+                self.cookies_removed = True
            
             #If this is the first playlist of the session, then reject cookies
             if not self.cookies_removed:
                 self.reject_cookies()
             
-            def wait_for_elem(self, xpath, msg, index):
-                """Waits for the element specified via the xpath to be located and if
-                an exception occurs, the exception is written in the column 'status'
-                in the self.playlists dataframe
-                
-                Parameters:
-                xpath (str): the xpath of the element to be located
-                msg (str): Additional text at the start of the error message
-                index (int or Pandas index): index of the playlist in the 
-                                            self.playlists dataframe
-                                            
-                Returns:
-                None
-                """
-                
-                try:
-                    #Wait for last track to load
-                    WebDriverWait(self.driver, self.timeout).until(
-                        EC.presence_of_element_located((
-                            By.XPATH,xpath)))
-                except TimeoutException:
-                    # print (f"Playlist {pl_name}: Track loading timeout")
-                    self.playlists = self.add_exception(self.playlists, 
-                                                        col="status", 
-                                                        msg=msg+" loading timeout", 
-                                                        index = index)
-                except Exception as e:
-                    #print (f"Track loading exception for playlist {pl_name}: {e}")
-                    self.playlists = self.add_exception(self.playlists, 
-                                                        col="status",
-                                                        msg=f"{msg} loading exception : {e}", 
-                                                        index = index)
-                return
-            
-            
-            wait_for_elem(self, xpath="(//div[@class='listenDetails'])", 
-                          msg="Playlist", 
-                          index=index)
+            try:
+                #Wait for track container to load
+                WebDriverWait(self.driver, self.timeout).until(
+                    EC.presence_of_element_located((
+                        By.XPATH,"(//div[@class='listenDetails'])")))
+            except TimeoutException:
+                # print (f"Playlist {pl_name}: Track loading timeout")
+                self.playlists = self.add_exception(self.playlists, 
+                                                    col="status", 
+                                                    msg="Playlist loading timeout", 
+                                                    index = index)
+                continue
+            except Exception as e:
+                #print (f"Track loading exception for playlist {pl_name}: {e}")
+                self.playlists = self.add_exception(self.playlists, 
+                                                    col="status",
+                                                    msg=f"Playlist loading exception : {e}", 
+                                                    index = index)
+                continue
             
             #Check if playlist is empty and if so, skip it
             try:
@@ -405,65 +485,93 @@ class PlaylistLinkExtractor:
             scroll_down = 0
             while not self.check_existence() and scroll_down<20:
                 self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight)")
-                scroll_down+=scroll_down   #To prevent infinite looping (sometimes the website doesn't seem to load properly)
+                scroll_down+=1   #To prevent infinite looping (sometimes the website doesn't seem to load properly)
+                time.sleep(.2)
             
-            #Extract links to tracks
-            wait_for_elem(self, 
-                          xpath="(//li[@class='trackList__item sc-border-light-bottom "
-                          + "sc-px-2x'])"
-                          + "[last()]/div"
-                          + "/div[@class='trackItem__content sc-truncate']"
-                          + "/a[@class='trackItem__trackTitle sc-link-dark "
-                          + "sc-link-primary sc-font-light']", 
-                          msg="Track", 
-                          index=index)
+            try:
+                #Wait for last track to load
+                WebDriverWait(self.driver, self.timeout).until(
+                    EC.presence_of_element_located((
+                        By.XPATH,
+                        "(//li[@class='trackList__item sc-border-light-bottom "
+                        + "sc-px-2x'])"
+                        + "[last()]/div"
+                        + "/div[@class='trackItem__content sc-truncate']"
+                        + "/a[@class='trackItem__trackTitle sc-link-dark "
+                        + "sc-link-primary sc-font-light']")))
+            except TimeoutException:
+                # print (f"Playlist {pl_name}: Track loading timeout")
+                self.playlists = self.add_exception(self.playlists, 
+                                                    col="status", 
+                                                    msg="Track loading timeout", 
+                                                    index = index)
+                continue
+            except Exception as e:
+                #print (f"Track loading exception for playlist {pl_name}: {e}")
+                self.playlists = self.add_exception(self.playlists, 
+                                                    col="status",
+                                                    msg=f"Track loading exception : {e}", 
+                                                    index = index)
+                continue
             
-            #Extract links and remove all links previous to the last downloaded track
-            if history.get(pl["name"]):                             #If playlist is listed in the dictionary
-                last_track = history[pl["name"]]
-                
-                if self.driver.find_element(By.XPATH,
+            #Extract the tracks based on the selected mode
+            curr_tracks = pd.DataFrame(columns=["playlist", "link", 'uploader'])
+            
+            if mode == "last":
+                index = len(self.driver.find_elements(
+                        By.CLASS_NAME, 
+                        "trackList__item.sc-border-light-bottom.sc-px-2x"))-1
+                    
+                track, uploader = self.extr_track(index)
+                tracks.loc[len(tracks)] = [pl["name"], track, uploader]
+                if autosave: self.track_df = pd.concat ([self.track_df, tracks])
+                    
+            else:    
+                last_track_hist = history.get(pl["name"])
+                last_track = self.driver.find_element(
+                    By.XPATH,
                     "(//a[@class='trackItem__trackTitle sc-link-dark "
                     + "sc-link-primary sc-font-light'])[last()]").get_attribute(
-                        "href").split("in=user")[0] == last_track:
-                            
+                        "href").split("in=user")[0]
+                       
+                if (mode == "new" 
+                    and history.get(pl["name"]) 
+                    and last_track_hist == last_track):
+                    
+                    #Skip playlist since no new tracks were added since last download
                     self.playlists.loc[index, "status"] = "skipped"
                     print(f"Playlist {pl['name']} skipped since all"
                           + " tracks are already downloaded")
+                
                 else:
-                    tracks = self.extr_tracks(pl["name"])
+                    #Extract tracks
+                    for i in range(0, len(self.driver.find_elements(
+                        By.CLASS_NAME, 
+                        "trackList__item.sc-border-light-bottom.sc-px-2x"))):
                     
-                    if last_track in tracks.link.to_list():
-                        #Only save tracks after the "last_track" (= new tracks) to track_df
-                        new_tracks = tracks[
-                            (tracks.index[tracks.link==last_track]+1
-                            ).to_list()[0]:len(tracks)]
+                        track, uploader = self.extr_track(i)
                         
-                        self.track_df = pd.concat ([self.track_df, new_tracks])  
-                        self.playlists.loc[index, "status"] = f"{len(new_tracks)} new tracks found"
-                        # history[pl_name] = tracks.link.iloc[-1]
-                    else: 
-                        #Save all tracks to track_df
-                        self.track_df = pd.concat ([self.track_df, tracks]) 
-                        self.playlists.loc[index, "status"] = f"{len(tracks)} new tracks found"
-                        # history[pl_name] = tracks.link.iloc[-1]
+                        curr_tracks.loc[len(curr_tracks)] = [pl["name"], track, uploader]
                         
-            else:
-                #Save all tracks to track_df
-                tracks = self.extr_tracks(pl["name"])
-                self.track_df = pd.concat ([self.track_df, tracks]) 
-                self.playlists.loc[index, "status"] = \
-                                            f"{len(tracks)} new tracks found"
-                # history[pl_name] = tracks.link.iloc[-1]
-            
-        self.driver.quit() 
+                    if (mode == "new" 
+                        and history.get(pl["name"]) 
+                        and last_track_hist != last_track
+                        and last_track_hist in curr_tracks.link.to_list()):
+                        
+                        #Filter the new tracks (Only save tracks after the 
+                        # "last_track" (= new tracks))
+                        curr_tracks = curr_tracks[
+                            (curr_tracks.index[curr_tracks.link==last_track_hist]
+                            ).to_list()[0]+1:len(curr_tracks)]
+                            
+                    #Save tracks
+                    tracks = pd.concat ([tracks, curr_tracks])
+                    if autosave: self.track_df = pd.concat ([self.track_df, curr_tracks])
+                    self.playlists.loc[index, "status"] = f"{len(curr_tracks)} new tracks found" 
         
-        # #Update entry for last downloaded track
-        # history = json.dumps(history)                                           #Prepare the dict for the export
-        # with open(self.history_file, 'w') as f:
-        #     f.write(history)                                                    #Save the last downloaded track of each playlist to txt file
+        self.driver.quit()
         
-        return self.track_df, self.playlists
+        return tracks, self.playlists
     
     def add_exception(self, df, col, msg="", index = -1, key = "", search_col=" "):
         if index >=0 & index<len(df):
@@ -500,8 +608,42 @@ class PlaylistLinkExtractor:
         None
         """
         pl = self.extr_playlists()
-
         
+        with open(self.history_file, "r") as f:
+            history = json.loads(f.read())
+        
+        #If mode is 'add_new'. find all playlists which are not yet in the history
+        if mode == "add_new":
+            pl = pl.loc[not pl["name"].isin(history.keys())]
+            
+        
+        tracks, _ = self.extr_links(playlists = pl,
+                                    skp_unchanged = False, 
+                                    mode="last")
+        
+        for index, row in tracks.iterrows:
+            history[row.playlist] = row.link
+        
+
+    
+    def check_driver(self):
+        """checks if the driver is still open and if not, opens a new window 
+        with the selected webdriver"""
+        try:
+           self.driver.current_url
+        except:
+           if self.driver_choice =="Firefox":
+               options = Options() 
+               options.add_argument("--disable-popup-blocking")
+               self.driver = webdriver.Firefox(options=options)
+           elif self.driver_choice == "Edge":
+               self.driver = webdriver.Edge()
+           elif self.driver_choice == "Chrome":
+               self.driver = webdriver.Chrome()
+           elif self.driver_choice == "Safari":
+               self.driver = webdriver.Safari()
+               
+           self.cookies_removed = False
     
     def extr_all(self):
         _ = self.extr_playlists()
@@ -515,6 +657,12 @@ if __name__ == '__main__':
     # track_df, pl_status = ple.extr_all()
     
 
-    playlists = ple.extr_playlists()
-    track_df, pl_status = ple.extr_links()
+    # playlists = ple.extr_playlists()
+    # track_df, pl_status = ple.extr_links()
     
+    
+    
+    test = pd.DataFrame(columns=["name", "link", "status"])
+
+    test.loc[0] = [ "Techno - Blunt - Low Energy - Vocal", "https://soundcloud.com/user-727245698-705348285/sets/techno-blunt-low-energy-vocal", ""]
+    track_df_2, pl_status_2 = ple.extr_links(test)
