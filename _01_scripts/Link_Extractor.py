@@ -16,7 +16,7 @@ class PlaylistLinkExtractor:
                  hist_file = "./_01_rsc/Download_history.txt",
                  driver = "Firefox"):
         self.track_df = pd.DataFrame(columns = ["playlist", "link", "uploader"])
-        self.playlists = pd.DataFrame(columns=["name", "link", "status"])
+        self.playlists = pd.DataFrame(columns=["name", "link", "last_track", "status"])
         # self.pl_status = pd.DataFrame(columns = ["link", "name", "status"])
         self.history_file = hist_file
         self.cookies_removed = False
@@ -80,7 +80,7 @@ class PlaylistLinkExtractor:
         except Exception as e:
             print(f"\nPlaylist extraction error: {e}")
   
-        playlists = pd.DataFrame(columns=["name", "link", "status"])
+        playlists = pd.DataFrame(columns=["name", "link", "last_track", "status"])
         for i in range(len(self.driver.find_elements(By.CLASS_NAME, "sound__coverArt"))):
             link = self.driver.find_element(
                 By.XPATH, 
@@ -97,7 +97,7 @@ class PlaylistLinkExtractor:
                 + "/a[@class='sc-link-primary soundTitle__title sc-link-dark "
                 + "sc-text-h4']/span"
                 ).text
-            playlists.loc[-1]=[name, link, ""]
+            playlists.loc[-1]=[name, link, "", ""]
             playlists = playlists.reset_index(drop=True)
         
         if search_type=="all":
@@ -442,15 +442,15 @@ class PlaylistLinkExtractor:
         for index, pl in pls.iterrows():
             #Open playlist
             self.driver.get(pl.link)
-            
-            #If this is the time opening soundcloud of the session, then reject cookies
-            if not self.cookies_removed:
-                self.reject_cookies()
-                self.cookies_removed = True
            
             #If this is the first playlist of the session, then reject cookies
             if not self.cookies_removed:
                 self.reject_cookies()
+                self.cookies_removed = True
+            
+            #if the current playlist is not yet in self.playlists, then add it 
+            if pl.link not in self.playlists.link.values:
+                self.playlists.loc[-1] = pl.values[0]
             
             try:
                 #Wait for track container to load
@@ -527,7 +527,7 @@ class PlaylistLinkExtractor:
                 if autosave: self.track_df = pd.concat ([self.track_df, tracks])
                     
             else:    
-                last_track_hist = history.get(pl["name"])
+                last_track_hist = pl.last_track or history.get(pl["name"])
                 last_track = self.driver.find_element(
                     By.XPATH,
                     "(//a[@class='trackItem__trackTitle sc-link-dark "
@@ -566,6 +566,7 @@ class PlaylistLinkExtractor:
                             
                     #Save tracks
                     tracks = pd.concat ([tracks, curr_tracks])
+                    self.playlists.loc[index, "last_track"] = curr_tracks.iloc[-1].link
                     if autosave: self.track_df = pd.concat ([self.track_df, curr_tracks])
                     self.playlists.loc[index, "status"] = f"{len(curr_tracks)} new tracks found" 
         
