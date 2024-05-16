@@ -243,31 +243,7 @@ class SoundcloudMP3Downloader:
         None
         """
         self.add_tracklist_info(link, dict(exceptions=exception))
-                
-                
-    #Old code
-    # def add_exception(self, link:str, exception: str):
-    #     """Adds a specified exception to the tracklist for the track specified 
-    #     via the link
-        
-    #     Attributes:
-    #     link: soundcloud link to the track (cf. column "link" in the tracklist)
-    #     exception: String containing the exception text
-            
-    #     Return:
-    #     None
-    #     """
-    #     try:
-    #         self.tracklist.loc[self.tracklist.link==link]  
-    #     except:
-    #         pass
-    #     else:
-    #         i = list(np.where(self.tracklist.link==link)[0])[0]
-    #         if self.tracklist.loc[i, "exceptions"]:           
-    #            self.tracklist.loc[i, "exceptions"] += " | " + str(exception)
-    #         else:
-    #             self.tracklist.loc[i, "exceptions"] = str(exception)
-    
+     
     def finish(self):
         """Closes the application and return the tracklist"""
         self.driver.quit()

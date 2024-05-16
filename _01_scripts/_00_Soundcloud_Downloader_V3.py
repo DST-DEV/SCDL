@@ -12,10 +12,14 @@ import os
 class Soundclouddownloader:
 
     def __init__(self, 
+                 driver = "Firefox",
+                 sc_account = "user-727245698-705348285",
                  doc = pd.DataFrame(columns=["title", "link", "exceptions", 
                                              "genre", "uploader"]), 
                  track_df = pd.DataFrame(columns=["playlist", "link", "uploader", 
                                              "downloaded"])):
+        self.driver = driver
+        self.sc_account = sc_account
         self.doc = doc
         self.track_df = track_df
         self.pl_status = {}   #Status of playlists (skipped or number of new tracks for each playlist)
@@ -42,6 +46,8 @@ class Soundclouddownloader:
         if reextract or self.track_df.empty:
             
             ple = PlaylistLinkExtractor(
+                driver=self.driver,
+                sc_account = self.sc_account,
                 hist_file = os.path.join(os.getcwd(), 
                                           '_01_rsc\\Download_history.txt')
                 )
@@ -79,7 +85,7 @@ class Soundclouddownloader:
         
         #Download the songs
         print (f"\nDownloading {len(tracks_tbd)} new tracks from {pl_len} playlists")
-        MP3DL = SoundcloudMP3Downloader()
+        MP3DL = SoundcloudMP3Downloader(driver=self.driver)
  
         for index, pl_name in playlists.items():
             

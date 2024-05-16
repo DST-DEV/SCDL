@@ -68,7 +68,7 @@ class MP3Renamer:
                                         or f.endswith(".wav")])
 
                 if music_files.size>0:            #check if there are files
-                    pd.concat([file_df,
+                    pd.concat([doc,
                                pd.DataFrame(
                                    dict(folder=[root]*len(music_files), 
                                         filename = music_files[:,0],
@@ -114,6 +114,9 @@ class MP3Renamer:
                        exceptions=[""]*n_files,
                        status=[""]*n_files,
                        create_missing_dir=[False]*n_files)
+        file_df.reindex(columns=["folder", "goal_folder", "filename",
+                                 "new_filename", "extension", "exceptions", 
+                                 "status", "create_missing_dir"])
         
         if mode == "append":
             self.file_df = pd.concat([self.file_df, file_df])
@@ -137,8 +140,10 @@ class MP3Renamer:
         return self.lib_df
     
     def prepare_files (self, df=None):
-        """Strips the filename of a list of mp3 files of predefined obsolete 
-        strings and inserts the artist and title from the metadata
+        """Strips the filename of predefined obsolete strings and inserts the 
+        artist and title in the metadata.
+        If the file is in the .wav format, then the sample rate is adjusted to 
+        44100 Hz if needed
         
         Note: files have to be named in the following form: 'artist - title.mp3'
         
@@ -155,25 +160,19 @@ class MP3Renamer:
             raise ValueError("Dataframe must be non empty")
         
         for index, row in df.loc[df.status == ""].iterrows():
+            #standarize filename
             filename, ext = self.adjust_fname (row["filename"], row["folder"])
-            
             df.loc[index, "new_filename"] = filename + ext
-            
+
+            #Adjust metadata
             file_path = os.path.join(row["folder"], filename + ext)
             try:
-                self.set_metadata_auto(file_path,)
-                
-                if ext == ".mp3":
-                    audio = MP3(file_path, ID3=EasyID3)
-                    
-                    name, _ = os.path.splitext(filename)
-                    
-                    audio['title'] = name.split(" - ")[-1].strip()
-                    audio['artist'] = name.split(" - ")[0].strip()
-                    
-                    audio.save()
+                self.set_metadata_auto(file_path)
             except Exception as e:
-                df.loc[index, "exceptions"] = f"{e.__class__} : {e}"
+                self.file_df = self.add_exception(
+                    self.file_df, col = "status",
+                    msg=f"Metadata error: {e.__class__} : {e}", 
+                    index = index)
                 df.loc[index, "status"] = "Metadata error"
             else:
                 df.loc[index, "status"] = "Renamed and Metadata adjusted"
@@ -296,7 +295,10 @@ class MP3Renamer:
                 library_dir = Path(audio["genre"][0].replace(" - ", "/"))
                 self.file_df.loc[index, "goal_folder"]=str(library_dir)
             except Exception as e:
-                self.file_df.loc[index, "exceptions"] = f"{e.__class__} : {e}"
+                self.file_df = self.add_exception(
+                    self.file_df, col = "status",
+                    msg=f"Genre extraction error: {e.__class__} : {e}", 
+                    index = index)
                 self.file_df.loc[index, "status"] = "Error during Genre extraction"
             else:
                 #Move the file
@@ -309,7 +311,10 @@ class MP3Renamer:
                         os.replace(file_path, 
                                    Path(self.lib_dir, library_dir, fname))
                     except Exception as e:
-                        self.file_df.loc[index, "exceptions"] = f"{e.__class__} : {e}"
+                        self.file_df = self.add_exception(
+                            self.file_df, col = "status",
+                            msg=f"Copying error: {e.__class__} : {e}", 
+                            index = index)
                         self.file_df.loc[index, "status"] = "Error during copying"
                     else:
                         self.file_df.loc[index, "status"] = "Moved to library"
@@ -346,7 +351,8 @@ class MP3Renamer:
         self.file_df = pd.DataFrame(columns=["folder", "filename", 
                                              "exceptions", "processed"])
         
-    def adjust_sample_rate(self, tracks=pd.DataFrame(), max_sr=48000, std_sr=44100, mode="new"):
+    def adjust_sample_rate(self, tracks=pd.DataFrame(), max_sr=48000, 
+                           std_sr=44100, mode="new", insert_genre=True):
         """Finds all .wav files and checks if their sample_rate is below max_sr. 
         If not so, the respective files are converted to the user specified
         sample rate std_sr
@@ -360,34 +366,79 @@ class MP3Renamer:
         mode (opt. - str): which directory should be considered.
                           - "new": only consider the files in self.base_dir
                           - "lib": only consider the files in the track library
+        insert_genre (opt.): whether the genre should be inserted based on the 
+                             folder path (default: true)
             
         Returns:
         doc: documentation of wave files and whether they were changed
         """
+        if type(tracks)==pd.core.frame.DataFrame:
+            if mode =="new":
+                tracks = tracks if not tracks.empty else self.read_tracks(self, 
+                                                                       directory=self.std_dir, 
+                                                                       mode="independent")
+            elif mode == "lib":
+                tracks = tracks if not tracks.empty else self.read_tracks(self, 
+                                                                       directory=self.lib_dir, 
+                                                                       mode="independent")
+            else:
+                raise ValueError("mode must be either 'new' or 'lib'")
         
-        if mode =="new":
-            tracks = tracks if not tracks.empty else self.read_tracks(self, 
-                                                                   directory=self.std_dir, 
-                                                                   mode="independent")
-        elif mode == "lib":
-            tracks = tracks if not tracks.empty else self.read_tracks(self, 
-                                                                   directory=self.lib_dir, 
-                                                                   mode="independent")
+            for index, row in tracks.loc[tracks.extension ==".wav"].iterrows():
+                filepath = Path(row.folder, row.filename + ".wav")
+                
+                try:
+                    adjust_sr(filepath, max_sr, std_sr, insert_genre)
+                except Exception as e:
+                    self.file_df = self.add_exception(
+                        self.file_df, col = "status",
+                        msg=f"sample rate adjustment error: {e.__class__} : {e}", 
+                        index = index)
+                    self.file_df.loc[index, "status"] = "Error during sample rate adjustment"
+                else:
+                    self.file_df.loc[index, "status"] = "sample rate checked"
+        elif type(tracks)==str:
+            filepath = Path(tracks)
+            adjust_sr(filepath, max_sr, std_sr, insert_genre)
+        elif type(tracks)== pathlib.WindowsPath:
+            adjust_sr(filepath, max_sr, std_sr, insert_genre)
         else:
-            raise ValueError("mode must be either 'new' or 'lib'")
-        
-        for index, row in tracks.loc[tracks.extension ==".wav"].iterrows():
-            #Read the wave file
-            filepath = Path(row.folder, row.filename + ".wav")
-            data, sr = soundfile.read(filepath)
+            raise ValueError("Invalid File Format: tracks must be a pandas "
+                             +"Dataframe, a string containing a filepath or a "
+                             +"pathlib.WindowsPath object")
             
-            if sr>max_sr:
-                # Resample the data
-                resampled_data = resample(data, int(len(data)*(std_sr/sr)))
-                soundfile.write(filepath, resampled_data, std_sr, subtype='PCM_16')
+    def adjust_sr(self, filepath, max_sr=48000, 
+                           std_sr=44100, insert_genre=True):
+        """Checks if their sample_rate of the file specified by the filepath
+        is below max_sr. 
+        If not so, the respective files are converted to the user specified
+        sample rate std_sr
+        Note: standard resolution is 16 bit
         
-            self.set_metadata_auto(filepath, update_genre=True)
-      
+        Parameters:
+        filepath (str or pathlib.WindowsPath): filepath to the track to be processed
+        max_sr (opt. - int): maximum allowed sample rate (default: 48000 Hz)
+        std_sr (opt. - int): standard sample rate to which files with a sample
+                             rate higher than max_sr should be converted
+        insert_genre (opt.): whether the genre should be inserted based on the 
+                             folder path (default: true)
+            
+        Returns:
+        None
+        """
+        
+        data, sr = soundfile.read(filepath)
+        
+        if sr>max_sr:
+            # Resample the data
+            resampled_data = resample(data, int(len(data)*(std_sr/sr)))
+            soundfile.write(filepath, resampled_data, std_sr, subtype='PCM_16')
+            
+            if insert_genre:
+                self.set_metadata_auto(filepath, update_genre=True)
+            else:
+                self.set_metadata_auto(filepath, update_genre=False)
+    
     def set_metadata_auto (self, filepath, genre = "", 
                            update_genre=False, only_genre=False):
         """Automatically sets the artist, title and genre metadata of the file
@@ -417,12 +468,14 @@ class MP3Renamer:
         
         if genre or update_genre or only_genre:
             if not genre:
-                genre = str(filepath.parents[0]).replace((str(self.lib_dir))+"\\","").replace ("\\"," - ")
+                genre = str(filepath.parents[0]).replace(
+                    (str(self.lib_dir))+"\\","").replace ("\\"," - ")
             
             if only_genre:
                 self.set_metadata(filepath, genre=genre)
             else:
-                self.set_metadata(filepath, artist=artist, title=title, genre=genre)
+                self.set_metadata(filepath, artist=artist, 
+                                  title=title, genre=genre)
         else:
             self.set_metadata(filepath, artist=artist, title=title)
         
@@ -453,7 +506,27 @@ class MP3Renamer:
         for key in kwargs.keys():
             file[key] = kwargs[key]
         file.save()
-      
+        
+        
+    def add_exception(self, df, col, msg="", index = -1, key = "", search_col=" "):
+        if index >=0 & index<len(df):
+            if df.loc[index, col]:
+                df.loc[index, col] += " | " + msg
+            else:
+                df.loc[index, col] =  msg
+        elif key and (search_col in df.columns):
+            if key in df[search_col].values:
+                index = df.loc[df[search_col] == key].index.values[0]
+                df.loc[index, col] += " | " +  msg
+            else:
+                df.loc[-1] = [""]*len(df.column)
+                df.loc[-1, col]=msg
+                df.loc[-1, search_col]=key
+                df = df.reset_index(drop=True)
+        else:
+            raise ValueError("no valid index or search key and search column provided")
+            
+        return df
 if __name__ == '__main__':
     # std_dir = Path("C:/Users", os.environ.get("USERNAME"), "Downloads", "music")
     path = Path("C:/Users/davis/00_data/04_Track_Library/00_Organization/00_New_files")
