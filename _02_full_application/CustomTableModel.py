@@ -64,6 +64,19 @@ class PandasTableModel (QTC.QAbstractTableModel):
         return None
 
     def setData(self, index, value, role):
+        """Sets the value in the _data at the specified index
+        
+        Parameters:
+        index: QModelIndex of which data should be inserted
+        value: the value to insert
+        role: to determine if an edit is currently being made
+            
+        Returns:
+        bool: After making the edit, True is returned to confirm that an edit
+              was made
+        
+        
+        """
         # if not index.isValid():
         #     return False
         # if role != QTC.Qt.EditRole:
@@ -80,16 +93,14 @@ class PandasTableModel (QTC.QAbstractTableModel):
         
         if index.isValid():
             if role == QTC.Qt.EditRole:
-                if index.column() == 1:
-                    value = int(value)
                 self._data.iat[index.row(),index.column()] = value
                 self.dataChanged.emit(index, index)
                 return True
         return False
     
-    def insertRows(self, row, count):
+    def insertRows(self, row, count, parent=QTC.QModelIndex()):
         if row <= self.rowCount():
-            self.beginInsertRows(QTC.QModelIndex(), 
+            self.beginInsertRows(parent, 
                                  row, 
                                  row+count-1)
             
@@ -103,6 +114,13 @@ class PandasTableModel (QTC.QAbstractTableModel):
             return True
         return False
     
+    def removeRow(self, row, parent=QTC.QModelIndex()):
+        if 0 <= row < self.rowCount(None):
+            self.beginRemoveRows(parent, row, row)
+            self._data.drop(index=row, inplace=True)
+            self.endRemoveRows()
+            return True
+        return False
     
     def flags(self, index):
         return super().flags(index) | QTC.Qt.ItemIsEditable
@@ -234,6 +252,7 @@ class MainWindow(QTW.QMainWindow):
                            'c': ['a', 'b', 'c']})
         self.df2 = pd.DataFrame({"col1":[0,0,0,0], "col2":[1,2,3,4]})
         
+        
         self.view = QTW.QTableView()
         self.pm = PandasTableModel(data=self.df1)
         self.view.setModel(self.pm)
@@ -241,12 +260,16 @@ class MainWindow(QTW.QMainWindow):
         self.btn1 = QTW.QPushButton("Add row")
         self.btn1.clicked.connect(self.add_row)
         
-        self.btn2 = QTW.QPushButton("Print")
-        self.btn2.clicked.connect(self.print_df)
+        self.btn2 = QTW.QPushButton("Del rows")
+        self.btn2.clicked.connect(self.del_rows)
+        
+        self.btn3 = QTW.QPushButton("Print")
+        self.btn3.clicked.connect(self.print_df)
 
         self.main_layout.addWidget(self.view)
         self.main_layout.addWidget(self.btn1)
         self.main_layout.addWidget(self.btn2)
+        self.main_layout.addWidget(self.btn3)
         
         #Set the main Layout
         self.cw.setLayout(self.main_layout)
@@ -254,9 +277,20 @@ class MainWindow(QTW.QMainWindow):
     def print_df(self):
         print(self.pm._data)
     
+    def del_rows(self):
+        rows = sorted(set(index.row() for index in
+                      self.view.selectedIndexes()), reverse=True)
+        if rows:
+            for row in rows:
+                self.pm.removeRow(row)
+    
     def add_row(self):
-        self.pm.insertRows(self.pm.rowCount(), 1)
-
+        rows = sorted(set(index.row() for index in
+                      self.view.selectedIndexes()))
+        if rows and rows[0]<self.pm.rowCount():
+            self.pm.insertRows(rows[0]+1, 1)
+        else:
+            self.pm.insertRows(self.pm.rowCount(), 1)
 
 #%%
 

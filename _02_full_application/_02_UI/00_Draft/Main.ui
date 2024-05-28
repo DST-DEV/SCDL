@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1166</width>
-    <height>785</height>
+    <height>787</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -23,10 +23,10 @@
       <height>741</height>
      </rect>
     </property>
-    <layout class="QGridLayout" name="gridLayout" rowstretch="4,1" columnstretch="3,2,3">
+    <layout class="QGridLayout" name="gridLayout" rowstretch="4,0" columnstretch="5,3,5">
      <item row="0" column="0">
       <layout class="QGridLayout" name="grid_left">
-       <item row="1" column="0">
+       <item row="3" column="0">
         <widget class="QPushButton" name="btn_save_left">
          <property name="text">
           <string>Save</string>
@@ -34,6 +34,13 @@
         </widget>
        </item>
        <item row="1" column="1">
+        <widget class="QPushButton" name="btn_delrow_left">
+         <property name="text">
+          <string>Delete current row</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="1">
         <widget class="QPushButton" name="btn_cancel_left">
          <property name="text">
           <string>Cancel</string>
@@ -42,6 +49,62 @@
        </item>
        <item row="0" column="0" colspan="2">
         <widget class="QTableWidget" name="tbl_left"/>
+       </item>
+       <item row="1" column="0">
+        <widget class="QPushButton" name="btn_addrow_left">
+         <property name="text">
+          <string>Add row</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0" colspan="2">
+        <widget class="Line" name="line_tbl_left">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item row="0" column="2">
+      <layout class="QGridLayout" name="grid_right">
+       <item row="1" column="0">
+        <widget class="QPushButton" name="btn_addrow_right">
+         <property name="text">
+          <string>Add row</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QPushButton" name="btn_delrow_right">
+         <property name="text">
+          <string>Delete current row</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="0">
+        <widget class="QPushButton" name="btn_save_right">
+         <property name="text">
+          <string>Save</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="0" colspan="2">
+        <widget class="QTableWidget" name="tbl_right"/>
+       </item>
+       <item row="3" column="1">
+        <widget class="QPushButton" name="btn_cancel_right">
+         <property name="text">
+          <string>Cancel</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0" colspan="2">
+        <widget class="Line" name="line_tbl_right">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
        </item>
       </layout>
      </item>
@@ -54,7 +117,7 @@
         <enum>QTabWidget::Rounded</enum>
        </property>
        <property name="currentIndex">
-        <number>0</number>
+        <number>1</number>
        </property>
        <widget class="QWidget" name="tab_scdl">
         <attribute name="title">
@@ -65,13 +128,53 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>281</width>
-           <height>551</height>
+           <width>261</width>
+           <height>461</height>
           </rect>
          </property>
-         <layout class="QGridLayout" name="glayout_SCDL" rowstretch="1,7,1,1,1,3,1,1,1,3,7">
-          <item row="2" column="0">
-           <spacer name="verticalSpacer_4">
+         <layout class="QGridLayout" name="glayout_SCDL" rowstretch="1,20,1,1,1,6,1,1,1,6,1">
+          <item row="6" column="0">
+           <spacer name="verticalSpacer_2">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item row="0" column="0">
+           <spacer name="verticalSpacer_17">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item row="7" column="0">
+           <widget class="Line" name="line_2">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="Line" name="line">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="0">
+           <spacer name="verticalSpacer_3">
             <property name="orientation">
              <enum>Qt::Vertical</enum>
             </property>
@@ -95,178 +198,6 @@
              </size>
             </property>
            </spacer>
-          </item>
-          <item row="10" column="0">
-           <spacer name="verticalSpacer_5">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>40</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item row="3" column="0">
-           <widget class="Line" name="line">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="0">
-           <spacer name="verticalSpacer_17">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>40</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item row="5" column="0">
-           <layout class="QGridLayout" name="glayout_track_ext" columnstretch="1,30,1">
-            <item row="0" column="1">
-             <widget class="QLabel" name="lbl_track_ext">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="text">
-               <string>Track Extractor</string>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignCenter</set>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="0">
-             <spacer name="horizontalSpacer_3">
-              <property name="orientation">
-               <enum>Qt::Horizontal</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>40</width>
-                <height>20</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
-            <item row="1" column="1">
-             <widget class="QPushButton" name="btn_track_ext">
-              <property name="text">
-               <string>Extract Tracks</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="2">
-             <spacer name="horizontalSpacer_4">
-              <property name="orientation">
-               <enum>Qt::Horizontal</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>40</width>
-                <height>20</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
-           </layout>
-          </item>
-          <item row="6" column="0">
-           <spacer name="verticalSpacer_2">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>40</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item row="7" column="0">
-           <widget class="Line" name="line_2">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="0">
-           <spacer name="verticalSpacer_3">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>40</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item row="9" column="0">
-           <layout class="QGridLayout" name="glayout_track_dl" rowstretch="0,0,0" columnstretch="1,30,1">
-            <item row="2" column="2">
-             <spacer name="horizontalSpacer_6">
-              <property name="orientation">
-               <enum>Qt::Horizontal</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>40</width>
-                <height>20</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
-            <item row="2" column="1">
-             <widget class="QPushButton" name="btn_track_dl">
-              <property name="text">
-               <string>Download Tracks</string>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="0">
-             <spacer name="horizontalSpacer_5">
-              <property name="orientation">
-               <enum>Qt::Horizontal</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>40</width>
-                <height>20</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
-            <item row="1" column="1">
-             <widget class="QLabel" name="lbl_track_dl">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="text">
-               <string>Track Downloader</string>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignCenter</set>
-              </property>
-             </widget>
-            </item>
-           </layout>
           </item>
           <item row="1" column="0">
            <layout class="QGridLayout" name="glayout_pl_search" rowstretch="1,1,1,1,2,1,0" columnstretch="1,30,1">
@@ -368,6 +299,138 @@
             </item>
            </layout>
           </item>
+          <item row="2" column="0">
+           <spacer name="verticalSpacer_4">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item row="9" column="0">
+           <layout class="QGridLayout" name="glayout_track_dl" rowstretch="0,0,0" columnstretch="1,30,1">
+            <item row="2" column="2">
+             <spacer name="horizontalSpacer_6">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item row="2" column="1">
+             <widget class="QPushButton" name="btn_track_dl">
+              <property name="text">
+               <string>Download Tracks</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="0">
+             <spacer name="horizontalSpacer_5">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item row="1" column="1">
+             <widget class="QLabel" name="lbl_track_dl">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="text">
+               <string>Track Downloader</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item row="10" column="0">
+           <spacer name="verticalSpacer_5">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item row="5" column="0">
+           <layout class="QGridLayout" name="glayout_track_ext" rowstretch="10,0" columnstretch="1,30,1">
+            <item row="1" column="1">
+             <widget class="QPushButton" name="btn_track_ext">
+              <property name="text">
+               <string>Extract Tracks</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <spacer name="horizontalSpacer_3">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item row="1" column="2">
+             <spacer name="horizontalSpacer_4">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item row="0" column="1">
+             <widget class="QLabel" name="lbl_track_ext">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="text">
+               <string>Track Extractor</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
          </layout>
         </widget>
        </widget>
@@ -380,8 +443,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>281</width>
-           <height>551</height>
+           <width>261</width>
+           <height>451</height>
           </rect>
          </property>
          <layout class="QGridLayout" name="glayout_lib_updater" rowstretch="1,1,5,1,1,1,1,5,1,1,1,1,5,5,5" columnstretch="1,30,1">
@@ -566,29 +629,8 @@
        </widget>
       </widget>
      </item>
-     <item row="0" column="2">
-      <layout class="QGridLayout" name="grid_right">
-       <item row="1" column="0">
-        <widget class="QPushButton" name="btn_save_right">
-         <property name="text">
-          <string>Save</string>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="1">
-        <widget class="QPushButton" name="btn_cancel_right">
-         <property name="text">
-          <string>Cancel</string>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="0" colspan="2">
-        <widget class="QTableWidget" name="tbl_right"/>
-       </item>
-      </layout>
-     </item>
      <item row="1" column="0" colspan="3">
-      <layout class="QGridLayout" name="glayout_msg" columnstretch="1,100">
+      <layout class="QGridLayout" name="glayout_msg" rowstretch="2,40,1" columnstretch="1,100">
        <item row="0" column="1">
         <widget class="QLabel" name="lbl_msg">
          <property name="font">
@@ -603,6 +645,9 @@
        </item>
        <item row="1" column="1">
         <widget class="QTextEdit" name="txtedit_messages">
+         <property name="enabled">
+          <bool>true</bool>
+         </property>
          <property name="readOnly">
           <bool>true</bool>
          </property>
@@ -620,6 +665,28 @@
           </size>
          </property>
         </spacer>
+       </item>
+       <item row="2" column="1">
+        <widget class="QProgressBar" name="progressBar">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="value">
+          <number>0</number>
+         </property>
+         <property name="textVisible">
+          <bool>false</bool>
+         </property>
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="textDirection">
+          <enum>QProgressBar::TopToBottom</enum>
+         </property>
+        </widget>
        </item>
       </layout>
      </item>
