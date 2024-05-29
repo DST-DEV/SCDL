@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1166</width>
+    <width>1180</width>
     <height>787</height>
    </rect>
   </property>
@@ -17,7 +17,7 @@
    <widget class="QWidget" name="gridLayoutWidget_5">
     <property name="geometry">
      <rect>
-      <x>0</x>
+      <x>10</x>
       <y>0</y>
       <width>1161</width>
       <height>741</height>
@@ -117,7 +117,7 @@
         <enum>QTabWidget::Rounded</enum>
        </property>
        <property name="currentIndex">
-        <number>1</number>
+        <number>0</number>
        </property>
        <widget class="QWidget" name="tab_scdl">
         <attribute name="title">
@@ -630,8 +630,8 @@
       </widget>
      </item>
      <item row="1" column="0" colspan="3">
-      <layout class="QGridLayout" name="glayout_msg" rowstretch="2,40,1" columnstretch="1,100">
-       <item row="0" column="1">
+      <layout class="QGridLayout" name="glayout_msg" rowstretch="2,0,0" columnstretch="1">
+       <item row="0" column="0">
         <widget class="QLabel" name="lbl_msg">
          <property name="font">
           <font>
@@ -643,30 +643,7 @@
          </property>
         </widget>
        </item>
-       <item row="1" column="1">
-        <widget class="QTextEdit" name="txtedit_messages">
-         <property name="enabled">
-          <bool>true</bool>
-         </property>
-         <property name="readOnly">
-          <bool>true</bool>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="0" rowspan="2">
-        <spacer name="horizontalSpacer_9">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>40</width>
-           <height>20</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-       <item row="2" column="1">
+       <item row="2" column="0">
         <widget class="QProgressBar" name="progressBar">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
@@ -688,6 +665,16 @@
          </property>
         </widget>
        </item>
+       <item row="1" column="0">
+        <widget class="QTextEdit" name="txtedit_messages">
+         <property name="enabled">
+          <bool>true</bool>
+         </property>
+         <property name="readOnly">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
       </layout>
      </item>
     </layout>
@@ -698,7 +685,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1166</width>
+     <width>1180</width>
      <height>22</height>
     </rect>
    </property>

@@ -134,76 +134,6 @@ class PlaylistLinkExtractor:
         
         return self.playlists
     
-    def reject_cookies(self):
-        """Rejects all Cookies of the https://www.forhub.io/soundcloud/en/ 
-        website
-        
-        Parameters: 
-        None
-        
-        Returns:
-        None
-        """
-        
-        try:
-            WebDriverWait(self.driver, self.timeout).until(
-                EC.element_to_be_clickable((
-                    By.ID, 
-                    "onetrust-reject-all-handler")))
-        except TimeoutException:
-            print ("Soundcloud cookie loading timeout")
-        except Exception as e:
-            print(f"Soundcloud cookie rejection exception: {e}")
-
-        self.driver.find_element(By.ID, "onetrust-reject-all-handler").click()
-        
-        self.cookies_removed = True
-        
-        return
-    
-    def check_existence (self,  
-                         locator_type = By.XPATH,
-                         search_str = "//div[@class='paging-eof sc-border-light-top']"): 
-        """Checks if an html element of a specific class exists using the 
-        specified driver from the selenium package
-        
-        Parameters: 
-        locator_type: locator type for the search of the element (cf. 
-                      https://www.selenium.dev/documentation/webdriver/elements/locators/)
-        search_str: search string for the element for which existence should be checked
-        
-        Returns:
-        bool value
-        """
-
-        try:
-            self.driver.find_element(locator_type, search_str)
-            return True
-        except:
-            return False
-    
-    def convert_to_alphanumeric(self, input_string):
-        """Convert an arbitrary string to its closest alphanumeric representation 
-        in standard ascii characters (remove non ascii characters and convert 
-                                      diacritics to standard characters)
-        
-        Parameters:
-        input_string: the string to be converted
-        
-        Returns:
-        alphanumeric_string: the alphanumeric ascii representation of the string
-        """
-        
-        # Normalize the string to ensure compatibility with ASCII characters
-        normalized_string = unicodedata.normalize(
-            'NFKD', input_string).encode('ascii', 'ignore').decode('ascii')
-        
-        # Remove non-alphanumeric characters
-        alphanumeric_string = ''.join(char for char in normalized_string 
-                                      if char.isalnum() or char.isspace())
-        
-        return alphanumeric_string
-    
     def extr_track(self, index):
         """Extract the track link and account which uploaded the track 
         from the currently open soundcloud playlist using the selenium
@@ -489,7 +419,53 @@ class PlaylistLinkExtractor:
         for index, row in tracks.iterrows:
             history[row.playlist] = row.link
         
-
+    def reject_cookies(self):
+        """Rejects all Cookies of the https://www.forhub.io/soundcloud/en/ 
+        website
+        
+        Parameters: 
+        None
+        
+        Returns:
+        None
+        """
+        
+        try:
+            WebDriverWait(self.driver, self.timeout).until(
+                EC.element_to_be_clickable((
+                    By.ID, 
+                    "onetrust-reject-all-handler")))
+        except TimeoutException:
+            print ("Soundcloud cookie loading timeout")
+        except Exception as e:
+            print(f"Soundcloud cookie rejection exception: {e}")
+    
+        self.driver.find_element(By.ID, "onetrust-reject-all-handler").click()
+        
+        self.cookies_removed = True
+        
+        return
+    
+    def check_existence (self,  
+                         locator_type = By.XPATH,
+                         search_str = "//div[@class='paging-eof sc-border-light-top']"): 
+        """Checks if an html element of a specific class exists using the 
+        specified driver from the selenium package
+        
+        Parameters: 
+        locator_type: locator type for the search of the element (cf. 
+                      https://www.selenium.dev/documentation/webdriver/elements/locators/)
+        search_str: search string for the element for which existence should be checked
+        
+        Returns:
+        bool value
+        """
+    
+        try:
+            self.driver.find_element(locator_type, search_str)
+            return True
+        except:
+            return False
     
     def check_driver(self):
         """checks if the driver is still open and if not, opens a new window 

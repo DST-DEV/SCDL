@@ -11,7 +11,7 @@ from mutagen.mp3 import MP3
 import unicodedata
 import shutil
 
-class MP3Renamer:
+class LibManager:
     ob_strs = ["premiere", "P R E M I E R E", "free download", "free dl", 
                "Free DL", "FreeDL", "exclusive", "|", "preview"]        #common obsolete strings
     
@@ -388,7 +388,7 @@ class MP3Renamer:
                 filepath = Path(row.folder, row.filename + ".wav")
                 
                 try:
-                    adjust_sr(filepath, max_sr, std_sr, insert_genre)
+                    self.adjust_sr(filepath, max_sr, std_sr, insert_genre)
                 except Exception as e:
                     self.file_df = self.add_exception(
                         self.file_df, col = "status",
@@ -399,9 +399,9 @@ class MP3Renamer:
                     self.file_df.loc[index, "status"] = "sample rate checked"
         elif type(tracks)==str:
             filepath = Path(tracks)
-            adjust_sr(filepath, max_sr, std_sr, insert_genre)
+            self.adjust_sr(filepath, max_sr, std_sr, insert_genre)
         elif type(tracks)== pathlib.WindowsPath:
-            adjust_sr(filepath, max_sr, std_sr, insert_genre)
+            self.adjust_sr(filepath, max_sr, std_sr, insert_genre)
         else:
             raise ValueError("Invalid File Format: tracks must be a pandas "
                              +"Dataframe, a string containing a filepath or a "

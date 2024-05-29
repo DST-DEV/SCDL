@@ -4,27 +4,63 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
-from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.firefox.options import Options as FirefoxOptions
+from selenium.webdriver.firefox.firefox_profile import FirefoxProfile
 from functools import reduce
+from pathlib import Path
 import pandas as pd
 import numpy as np
+import pathlib
+import os
 
 class SoundcloudMP3Downloader:
-    def __init__(self, driver = "Firefox"):
+    def __init__(self, driver = "Firefox", new_files_folder = None):
         self.cookies_removed = False
         self.tracklist = pd.DataFrame(columns=["title", "link", "exceptions"])
         self.timeout = 15 # seconds
+        
+        if type(new_files_folder)==type(None):
+            self.new_files_folder = Path("C:/Users", 
+                                         os.environ.get("USERNAME"), 
+                                         "Downloads/Souncloud Download")
+            if not self.new_files_folder.exists():
+                os.mkdir(self.new_files_folder)
+        elif type(new_files_folder)==str:
+            self.new_files_folder = Path(new_files_folder)
+        elif type(new_files_folder)==pathlib.WindowsPath:
+            self.new_files_folder = new_files_folder
+        else:
+            raise ValueError("Filepath for new files folder must be of type "
+                             + "str or pathlib.WindowsPath, not "
+                             + f"{type(new_files_folder)}")
+        
+        
         if driver =="Firefox":
-            options = Options() 
+            options = FirefoxOptions() 
             options.add_argument("--disable-popup-blocking")
+            
+            profile = FirefoxProfile()
+            profile.set_preference('browser.download.folderList', 2)  # Use custom download path
+            profile.set_preference('browser.download.manager.showWhenStarting', False)
+            profile.set_preference('browser.download.dir', 
+                                   str(self.new_files_folder))
+            profile.set_preference('browser.helperApps.neverAsk.saveToDisk', 
+                                   'application/pdf')
+            options.profile = profile
+            
             self.driver = webdriver.Firefox(options=options)
         elif driver == "Edge":
             self.driver = webdriver.Edge()
         elif driver == "Chrome":
-            self.driver = webdriver.Chrome()
+            options = webdriver.ChromeOptions()  
+            prefs = {"download.default_directory" : 
+                     str(self.new_files_folder).replace("\\", "/")}
+            options.add_experimental_option("prefs", prefs)
+            self.driver = webdriver.Chrome(executable_path='./chromedriver', 
+                                           chrome_options=options)
         elif driver == "Safari":
             self.driver = webdriver.Safari()
-            
+        
         self.og_window = self.driver.current_window_handle
      
     def return_og_window(self):

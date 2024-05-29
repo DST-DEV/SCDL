@@ -22,17 +22,19 @@ class PandasTableModel (QTC.QAbstractTableModel):
     """
 
     def __init__(self, data, parent=None):
-        QTC.QAbstractTableModel.__init__(self, parent)
+        super(PandasTableModel, self).__init__()
+        # QTC.QAbstractTableModel.__init__(self, parent)
         self._data = data
 
     def rowCount(self, parent=None):
-        return len(self._data.values)
+        return self._data.shape[0]
 
     def columnCount(self, parent=None):
-        return self._data.columns.size
+        return self._data.shape[1]
 
     def data(self, index, role=QTC.Qt.DisplayRole):
         """Returns data at index
+        Note: the last Column has checkboxes included automatically
         
         Parameters:
         index: QModelIndex of which data should be returned
@@ -42,10 +44,19 @@ class PandasTableModel (QTC.QAbstractTableModel):
         Value at index in the form of a string or None if the index is not valid
         """
         
-        if index.isValid():
-            if role == QTC.Qt.DisplayRole:
-                return str(self._data.values[index.row()][index.column()])
-        return None
+        if not index.isValid():
+            return QTC.QVariant()
+        
+        if role == QTC.Qt.DisplayRole:
+            if index.column() == self.columnCount()-1:
+                return "Yes" if self._data.iloc[index.row(), index.column()] == True else "No"
+            else:
+                return str(self._data.iloc[index.row(), index.column()])
+        elif role == QTC.Qt.CheckStateRole and index.column() == self.columnCount()-1:
+            return QTC.Qt.Checked if self._data.iloc[index.row(), index.column()] else QTC.Qt.Unchecked
+            
+        
+        return QTC.QVariant()
 
     def headerData(self, col, orientation, role):
         """Returns column name at column index (col)
@@ -64,7 +75,8 @@ class PandasTableModel (QTC.QAbstractTableModel):
         return None
 
     def setData(self, index, value, role):
-        """Sets the value in the _data at the specified index
+        """Sets the value in the _data at the specified index (Sets the role 
+        data for the item at index to value)
         
         Parameters:
         index: QModelIndex of which data should be inserted
@@ -72,8 +84,8 @@ class PandasTableModel (QTC.QAbstractTableModel):
         role: to determine if an edit is currently being made
             
         Returns:
-        bool: After making the edit, True is returned to confirm that an edit
-              was made
+        bool: After making the edit, returns true if successful; otherwise 
+              returns false
         
         
         """
@@ -91,12 +103,20 @@ class PandasTableModel (QTC.QAbstractTableModel):
         # self.dataChanged.emit(index, index)
         # return True
         
-        if index.isValid():
-            if role == QTC.Qt.EditRole:
-                self._data.iat[index.row(),index.column()] = value
-                self.dataChanged.emit(index, index)
-                return True
+        if not index.isValid():
+            return False
+        
+        if role == QTC.Qt.EditRole:
+            self._data.iat[index.row(),index.column()] = value
+            self.dataChanged.emit(index, index)
+            return True
+        if role == QTC.Qt.CheckStateRole and index.column() == self.columnCount()-1:
+            self._data.iat[index.row(),index.column()] = (value == QTC.Qt.Checked)
+            self.dataChanged.emit(index, index, [QTC.Qt.CheckStateRole])
+            return True
+        
         return False
+
     
     def insertRows(self, row, count, parent=QTC.QModelIndex()):
         if row <= self.rowCount():
@@ -105,7 +125,7 @@ class PandasTableModel (QTC.QAbstractTableModel):
                                  row+count-1)
             
             new_rows = pd.DataFrame(columns=self._data.columns,
-                                    data = [[""]*self.columnCount()]*count,
+                                    data = [[""]*(self.columnCount()-1) + [False]]*count,
                                     index=[row-1+i/100 for i in range(count)])
             self._data = pd.concat([self._data, new_rows])
             self._data = self._data.sort_index().reset_index(drop=True)
@@ -123,16 +143,14 @@ class PandasTableModel (QTC.QAbstractTableModel):
         return False
     
     def flags(self, index):
-        return super().flags(index) | QTC.Qt.ItemIsEditable
+        if not index.isValid():
+            return QTC.Qt.NoItemFlags
         
-        #Alternative code:
-        # flags = super(self.__class__,self).flags(index)
-        # flags |= QTC.Qt.ItemIsEditable
-        # flags |= QTC.Qt.ItemIsSelectable
-        # flags |= QTC.Qt.ItemIsEnabled
-        # flags |= QTC.Qt.ItemIsDragEnabled
-        # flags |= QTC.Qt.ItemIsDropEnabled
-        # return flags
+        if index.column() == self.columnCount()-1:
+            return QTC.Qt.ItemIsEnabled | QTC.Qt.ItemIsUserCheckable
+        else:
+            return super().flags(index) | QTC.Qt.ItemIsEditable
+
     
     def change_data(self, data):
         """Change the data of the table
@@ -147,93 +165,9 @@ class PandasTableModel (QTC.QAbstractTableModel):
         self.beginResetModel()
         self._data = data
         self.endResetModel()
-    
-#%%
-
-# import sys
-# from PyQt5.QtWidgets import (QApplication, QWidget, QTableView, QVBoxLayout)
-# from PyQt5.QtCore import Qt, QAbstractTableModel, QModelIndex
-
-# class TableModel(QAbstractTableModel):
-# 	def __init__(self, data):
-# 		super().__init__()
-# 		self._data = data
-
-# 	def rowCount(self, parent=QModelIndex()):
-# 		return self._data.shape[0]
-
-# 	def columnCount(self, parent=QModelIndex()):
-# 		return self._data.shape[1]
-
-# 	def data(self, index, role=Qt.DisplayRole):
-# 		# display data
-# 		if role == Qt.DisplayRole:
-# 			print('Display role:', index.row(), index.column())
-# 			try:
-# 				return self._data[index.row()][index.column()]
-# 			except IndexError:
-# 				return ''
-
-# 	def setData(self, index, value, role=Qt.EditRole):		
-# 		if role in (Qt.DisplayRole, Qt.EditRole):
-# 			print('Edit role:', index.row(), index.column())
-# 			# if value is blank
-# 			if not value:
-# 				return False	
-# 			self._data[index.row()][index.column()] = value
-# 			self.dataChanged.emit(index, index)
-# 		return True
-
-# 	def flags(self, index):
-# 		return super().flags(index) | Qt.ItemIsEditable
-
-# class MainApp(QWidget):
-# 	def __init__(self):
-# 		super().__init__()
-# 		self.window_width, self.window_height = 1600, 1200
-# 		self.setMinimumSize(self.window_width, self.window_height)
-# 		self.setStyleSheet('''
-# 			QWidget {
-# 				font-size: 30px;
-# 			}
-# 		''')		
-
-# 		self.layout = {}
-# 		self.layout['main'] = QVBoxLayout()
-# 		self.setLayout(self.layout['main'])
-
-# 		self.table = QTableView()
-# 		self.layout['main'].addWidget(self.table)
-
-# 		data_model = TableModel(data)
-# 		self.table.setModel(data_model)
-
-
-# if __name__ == '__main__':
-# 	data = [
-# 		['A1', 'A2', 'A3'],
-# 		['B1', 'B2', 'B3', 'B4'],
-# 		['C1', 'C2', 'C3', 'C4', 'C5']
-# 	]
-
-# 	# row count
-# 	# print(len(data))
-
-# 	# column count
-# 	# print(len(max(data, key=len)))
-
-# 	app = QApplication(sys.argv)
-# 	
-# 	myApp = MainApp()
-# 	myApp.show()
-
-# 	try:
-# 		sys.exit(app.exec_())
-# 	except SystemExit:
-# 		print('Closing Window...')
+ 
 
 #%%
-
 
 class MainWindow(QTW.QMainWindow):
     def __init__(self):
@@ -249,12 +183,12 @@ class MainWindow(QTW.QMainWindow):
         
         self.df1 = pd.DataFrame({'a': ['Mary', 'Jim', 'John'],
                            'b': [100.1, 200.2, 300.3],
-                           'c': ['a', 'b', 'c']})
+                           'c': [False, False, False]})
         self.df2 = pd.DataFrame({"col1":[0,0,0,0], "col2":[1,2,3,4]})
         
         
         self.view = QTW.QTableView()
-        self.pm = PandasTableModel(data=self.df1)
+        self.pm = PandasTableModel(self.df1)
         self.view.setModel(self.pm)
         
         self.btn1 = QTW.QPushButton("Add row")

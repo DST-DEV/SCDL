@@ -1,14 +1,22 @@
 import os
-import pandas as pd
-from pathlib import Path
 import shutil
+import soundfile
+import difflib
+import numpy as np
+import pandas as pd
+import pathlib
+from pathlib import Path
+from scipy.signal import resample
 from mutagen.easyid3 import EasyID3
 from mutagen.mp3 import MP3
+import music_tag
 
 
 class File_Replacer:
-    def __init__(self, base_dir=None, tracks=[]):
-        self.base_dir = base_dir or Path("C:/Users/davis/00_data/04_Track_Library/",
+    def __init__(self, lib_dir=None, base_dir=None, tracks=[]):
+        
+        self.lib_dir = lib_dir or Path("C:/Users/davis/00_data/04_Track_Library")
+        self.base_dir = base_dir or Path(self.lib_dir,
                                          "00_Organization/00_new_files")
         self.tracks = tracks
         self.lib = pd.DataFrame(columns = ["filename", 
@@ -56,7 +64,7 @@ class File_Replacer:
         """
         
         #if no directory is provided, use the standard one
-        directory = directory or Path("C:/Users/davis/00_data/04_Track_Library")
+        directory = directory or self.lib_dir
         
         doc = pd.DataFrame(columns=["filename", "extension", "folder"])
         
@@ -79,10 +87,11 @@ class File_Replacer:
                                                              "folder"], 
                                                   data = file_list)
                                      ])
-               
-        return doc.reset_index(drop=True)
+        
+        self.lib = doc.reset_index(drop=True)        
+        return self.lib
     
-    def find_tracks(self, tracks=[], base_dir=None):
+    def find_tracks(self, tracks=[], base_dir=None, lib_dir=None):
         """Find the music files specified in the parameter tracks in the Track 
         library (C:/Users/davis/00_data/04_Track_Library)
         
@@ -100,26 +109,28 @@ class File_Replacer:
                           the library
         """
         
-        tracks = tracks or self.tracks or self.read_tracks(base_dir)
-
+        tracks = tracks or self.tracks or self.read_tracks(base_dir) 
+        
         track_library = self.lib if not self.lib.empty else \
-            self.read_dir(Path("C:/Users/davis/00_data/04_Track_Library"))
+            self.read_dir(self.lib_dir)
         
         track_library["filename_lower"] = [fname.lower().strip() for fname in 
                                      track_library["filename"]]
+        lib_fnames_lower = track_library["filename_lower"].values
+        
         
         track_comparison = pd.DataFrame(columns=["new_file", 
                                                  "library_file", 
                                                  "folder"])
         
         for track in tracks:
-            if str(Path(track.lower()).with_suffix('')).strip() in \
-                track_library.filename_lower.values:
-                    
-                res = track_library.loc[
-                    track_library.filename_lower==str(Path(track.lower()
-                                                           ).with_suffix('')
-                                                      ).strip()]
+            track_striped = str(Path(track.lower()).with_suffix('')).strip()
+            
+            closest_match = difflib.get_close_matches(track_striped, 
+                                                      lib_fnames_lower, 
+                                                      n=1, cutoff=0.6)
+            if closest_match:
+                res = track_library.loc[track_library.filename_lower==closest_match[0]]
                 
                 track_comparison.loc[
                     len(track_comparison)] = [track, 
@@ -131,6 +142,25 @@ class File_Replacer:
                     len(track_comparison)] = [track, 
                                               "Track not found", 
                                               ""]
+            
+            # if str(Path(track.lower()).with_suffix('')).strip() in \
+            #     track_library.filename_lower.values:
+                    
+            #     res = track_library.loc[
+            #         track_library.filename_lower==str(Path(track.lower()
+            #                                                ).with_suffix('')
+            #                                           ).strip()]
+                
+            #     track_comparison.loc[
+            #         len(track_comparison)] = [track, 
+            #                                   res.filename.values[0] 
+            #                                   + res.extension.values[0], 
+            #                                   res.folder.values[0]]
+            # else:
+            #     track_comparison.loc[
+            #         len(track_comparison)] = [track, 
+            #                                   "Track not found", 
+            #                                   ""]
         
         self.track_comparison = track_comparison
         self.track_comparison["status"] = [None]*len(track_comparison)
@@ -197,7 +227,7 @@ class File_Replacer:
             """
         if track_library.empty:
             track_library = self.lib if not self.lib.empty else \
-                self.read_dir(Path("C:/Users/davis/00_data/04_Track_Library")) 
+                self.read_dir(self.lib_dir) 
         
         for index, row in track_library.iterrows():
             os.replace(os.path.join(row.folder, row.filename + row.extension), 
@@ -223,17 +253,15 @@ class File_Replacer:
             """
         if track_library.empty:
             track_library = self.lib if not self.lib.empty else \
-                self.read_dir(Path("C:/Users/davis/00_data/04_Track_Library")) 
+                self.read_dir(self.lib_dir) 
         
         track_library = track_library.loc[
             track_library.extension == ".mp3"].reset_index(drop=True)
         
         for index, row in track_library.iterrows():
-            audio = MP3(os.path.join(row.folder, row.filename + row.extension), ID3=EasyID3)
-            audio ["genre"] = row.folder.replace(
-                "C:\\Users\\davis\\00_data\\04_Track_Library\\", 
-                "").replace("\\", " - ")
-            audio.save()
+            self.set_metadata_auto (os.path.join(row.folder, 
+                                                 row.filename + row.extension), 
+                                    only_genre=True)
         
     def copy_to_music_lib(self):
         """Copies the mp3 files in the Music directory on the hard drive 
@@ -254,7 +282,97 @@ class File_Replacer:
         for index, row in mp3_files.iterrows():
             shutil.copy2(Path(row.folder, row.filename + row.extension), 
                          Path("C:/Users/davis/00_data/03_Music"))
+    
+    def adjust_sample_rate(self, tracks=[], max_sr=48000, std_sr=44100, mode="new"):
+        """Finds all .wav files and checks if their sample_rate is below max_sr. 
+        If not so, the respective files are converted to the user specified
+        sample rate std_sr
+        Note: standard resolution is 16 bit
+        
+        Parameters:
+        tracks (opt. - list): List of paths to the tracks to be processed
+        max_sr (opt. - int): maximum allowed sample rate (default: 48000 Hz)
+        std_sr (opt. - int): standard sample rate to which files with a sample
+                             rate higher than max_sr should be converted
+        mode (opt. - str): which directory should be considered.
+                          - "new": only consider the files in self.base_dir
+                          - "lib": only consider the files in the track library
             
+        Returns:
+        doc: documentation of wave files and whether they were changed
+        """
+        
+        if mode =="new":
+            tracks = tracks or self.tracks or self.read_tracks(self.base_dir) 
+        elif mode == "lib":
+            if not tracks:
+                tracks = self.lib if not self.lib.empty else \
+                    self.read_dir(Path("C:/Users/davis/00_data/04_Track_Library")) 
+                tracks = [row.folder + row.filename + row.extension 
+                          for index,row in tracks.iterrows()]
+        else:
+            raise ValueError("mode must be either 'new' or 'lib'")
+        
+        for wavfile in list(filter(lambda s: s.endswith(".wav"), tracks)):
+            #Read the wave file
+            data, sr = soundfile.read(wavfile)
+            
+            if sr>max_sr:
+                # Resample the data
+                resampled_data = resample(data, int(len(data)*(std_sr/sr)))
+                soundfile.write(wavfile, resampled_data, std_sr, subtype='PCM_16')
+                
+                #Adjust the Metadata (gets deleted when changing the sample rate)
+                self.set_metadata_auto(wavfile)
+            
+    def set_metadata_auto (self, filepath, only_genre=False):
+        """Automatically extracts the artist, title and genre information from
+        the filepath and adjusts the metadata of the file
+        
+        Parameters:
+        filepath: (str or pathlib.WindowsPath): absolute path to the file to 
+                  be edited
+        only_genre (bool): Whether only the genre should be adjusted
+            
+        Returns:
+        None
+        """
+        if type(filepath)==str:
+            filepath=Path(filepath)
+        elif type(filepath)!=pathlib.WindowsPath:
+            raise ValueError("Filepath must be of type str or pathlib.WindowsPath")
+        
+        genre = str(filepath.parent).replace(str(self.lib_dir)+"\\", 
+            "").replace("\\", " - ")
+        
+        if only_genre:
+            self.set_metadata(filepath, genre=genre)
+        else:
+            artist, title = filepath.stem.split("-", maxsplit=1)
+            self.set_metadata(filepath, artist=artist, title=title, genre=genre)
+    
+    def set_metadata(self, filepath, **kwargs):
+        """Writes the metadata provided via the **kwargs parameter into the 
+            file provided by the filename
+        
+        Parameters:
+        filepath (str or pathlib.WindowsPath): absolute path to the file to 
+                be edited
+        **kwargs: metadata to be edited
+            
+        Returns:
+        None
+        """
+        if type(filepath)==str:
+            filepath=Path(filepath)
+        elif type(filepath)!=pathlib.WindowsPath:
+            raise ValueError("filepath must be of type str or pathlib.WindowsPath")
+            
+        file = music_tag.load_file(filepath)
+        for key in kwargs.keys():
+            file[key] = kwargs[key]
+        file.save()
+    
     def process_new_tracks(self, base_dir = None, tracks = []):
         
         if base_dir:
@@ -273,6 +391,6 @@ if __name__ == '__main__':
     # fp.update_genre()
 
     
-    tc = fp.process_new_tracks()
+    # tc = fp.process_new_tracks()
     # repl_df = fp.replace_tracks()
     
