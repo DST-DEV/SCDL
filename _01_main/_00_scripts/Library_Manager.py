@@ -1,29 +1,42 @@
-import os, re 
-import music_tag
-import soundfile
+#General imports
+import re
 import numpy as np
 import pandas as pd
+
+#Soundfile adjustment imports
+import music_tag
+import soundfile
+import unicodedata
+from scipy.signal import resample
+
+#File Handling imports
+import os
+import shutil
+import difflib
 import pathlib
 from pathlib import Path
-from scipy.signal import resample
-from mutagen.easyid3 import EasyID3
-from mutagen.mp3 import MP3
-import unicodedata
-import shutil
 
+#%%
 class LibManager:
     ob_strs = ["premiere", "P R E M I E R E", "free download", "free dl", 
                "Free DL", "FreeDL", "exclusive", "|", "preview"]        #common obsolete strings
     
-    def __init__(self, std_dir = None, lib_dir = None):
+    def __init__(self, lib_dir = None, std_dir = None):
         #set the standard directory for the code to work in (if none is provided
         # by the user, use the downloads folder)
-        self.lib_dir = lib_dir or Path("C:/Users/davis/00_data/04_Track_Library")
-        self.std_dir = std_dir or Path(self.lib_dir, 
-                                       "00_Organization/00_New_files")
+        if type(lib_dir)==str:
+            self.lib_dir = Path(lib_dir) 
+        elif type(lib_dir)==type(None) or type(lib_dir)==type(Path()):
+            self.lib_dir = lib_dir or Path("C:/Users/davis/00_data/04_Track_Library")
+        
+        if type(std_dir)==str:
+            self.std_dir = Path(std_dir) 
+        elif type(std_dir)==type(None) or type(std_dir)==type(Path()):
+            self.std_dir = std_dir or Path(self.lib_dir, 
+                                           "00_Organization/00_New_files")
         
         
-        self.file_df = pd.DataFrame(columns=["folder", "goal_folder", "filename",
+        self.file_df = pd.DataFrame(columns=["folder", "goal_dir", "filename",
                                              "new_filename", "extension", 
                                              "exceptions", "status", 
                                              "create_missing_dir"])
@@ -42,7 +55,7 @@ class LibManager:
                      folder of all found files
         """
         self.lib_df = self.read_files(self.lib_dir)
-        return self.lib_dir
+        return self.lib_df
     
     
     def read_files(self, directory, excluded_folders = ["00_General"]):
@@ -62,13 +75,14 @@ class LibManager:
         #Search for all mp3 & wav files in the directory, including subdirectories
         for root, _, files in os.walk(directory):
             #Exclude the excluded folders:
-            if not any(excl in root for excl in excluded_folders):        
-                music_files = np.array([f for f in files 
+            if not any(excl in root for excl in excluded_folders if excl!=""):        
+                music_files = np.array([[Path(f).stem, Path(f).suffix] 
+                                        for f in files 
                                         if f.endswith(".mp3") 
                                         or f.endswith(".wav")])
-
-                if music_files.size>0:            #check if there are files
-                    pd.concat([doc,
+                
+                if music_files.shape[0]>0:            #check if there are files
+                    doc = pd.concat([doc,
                                pd.DataFrame(
                                    dict(folder=[root]*len(music_files), 
                                         filename = music_files[:,0],
@@ -105,16 +119,18 @@ class LibManager:
                               + "'independent'")
         
         #read the files (if no directory is provided, use the standard one)
-        file_df = self.read_files(directory or self.std_dir)
+        
+        file_df = self.read_files(directory = directory or self.std_dir,
+                                  excluded_folders = [""])
         
         #add additional columns for later
         n_files = len(file_df.index)
-        file_df.assign(goal_folder=[""]*n_files,
-                       new_filename = [""]*n_files,
-                       exceptions=[""]*n_files,
-                       status=[""]*n_files,
-                       create_missing_dir=[False]*n_files)
-        file_df.reindex(columns=["folder", "goal_folder", "filename",
+        file_df = file_df.assign(goal_dir=[""]*n_files,
+                                 new_filename = [""]*n_files,
+                                 exceptions=[""]*n_files,
+                                 status=[""]*n_files,
+                                 create_missing_dir=[False]*n_files)
+        file_df.reindex(columns=["folder", "goal_dir", "filename",
                                  "new_filename", "extension", "exceptions", 
                                  "status", "create_missing_dir"])
         
@@ -259,24 +275,35 @@ class LibManager:
         
         return alphanumeric_string
     
-    def move_to_library(self, file_df=None):
-        """Moves the Tracks in the file_df in their respective folder based on 
-        the genre metadata
+    def determine_goal_folder (self, mode, file_df=None):
+        """Finds the goal subfolder for the files in the file_df depending on 
+        the selected mode
         
         Parameters:
-        file_df (optional): Dataframe containing information on the folder 
-                            and filename of all files to be processed
+        file_df (pd.DataFrame, optional): 
+            Dataframe containing information on the folder and filename of all 
+            files to be processed
+        mode (str):
+            Whether the genre metadata or the filename should be used to 
+            determine the goal directory for the file
+            Choices:
+                - 'metadata': Genre metadata is used as the goal folder 
+                - 'namesearch': Closest match of filename in the library is used
+                for the goal path
             
         Returns:
         file_df: updated version of the dataframe with information on occured 
-                 exceptions
+                 exceptions and the goal folder
         """
         
         if type(file_df) != pd.core.frame.DataFrame or file_df.empty:
             file_df = self.file_df if not self.file_df.empty else self.read_tracks()
         else:
             self.file_df = file_df
-        
+            
+        if mode=="namesearch":
+            lib_df = self.lib_df if not self.lib_df.empty else self.read_dir()
+            
         for index, row in file_df.iterrows():
             
             #Determine the path to the file
@@ -284,42 +311,136 @@ class LibManager:
                 fname = row.new_filename
             else:
                 fname = row.filename
-            file_path = Path(row["folder"], fname)
             
-            #Extract the goal directory from the genre metadata
-            try:
-                if file_path.suffix == ".mp3":
-                    audio = MP3(file_path, ID3=EasyID3)
-                elif file_path.suffix == ".wav":
+            if mode == "metadata":
+                file_path = Path(self.std_dir, row["folder"], 
+                                 fname + row["extension"])
+                
+                #Extract the goal directory from the genre metadata
+                try:
                     audio = music_tag.load_file(file_path)
-                library_dir = Path(audio["genre"][0].replace(" - ", "/"))
-                self.file_df.loc[index, "goal_folder"]=str(library_dir)
-            except Exception as e:
-                self.file_df = self.add_exception(
-                    self.file_df, col = "status",
-                    msg=f"Genre extraction error: {e.__class__} : {e}", 
-                    index = index)
-                self.file_df.loc[index, "status"] = "Error during Genre extraction"
-            else:
-                #Move the file
-                if (row.create_missing_dir 
-                    or os.path.isdir (Path(self.lib_dir, library_dir))):
-                    try:
-                        if not os.path.isdir (Path(self.lib_dir, library_dir)):
-                            os.mkdir(self.lib_dir, library_dir)
-                        
-                        os.replace(file_path, 
-                                   Path(self.lib_dir, library_dir, fname))
-                    except Exception as e:
-                        self.file_df = self.add_exception(
-                            self.file_df, col = "status",
-                            msg=f"Copying error: {e.__class__} : {e}", 
-                            index = index)
-                        self.file_df.loc[index, "status"] = "Error during copying"
+                    library_dir = Path(str(audio["genre"]).replace(" - ", "/"))
+                    file_df.loc[index, "goal_dir"]=str(library_dir)
+                except Exception as e:
+                    file_df = self.add_exception(
+                        file_df, col = "status",
+                        msg=f"Genre extraction error: {e.__class__} : {e}", 
+                        index = index)
+                    file_df.loc[index, "status"] = "Error during Genre extraction"            
+            elif mode=="namesearch":
+                closest_match = difflib.get_close_matches(fname, 
+                                                          lib_df.filename.tolist(), 
+                                                          n=1, cutoff=0.6)
+                if closest_match:
+                    res = lib_df.loc[lib_df.filename==closest_match[0]]
+                    
+                    if res.shape[0]==1:
+                        res = res.folder.to_list()[0] + "/"\
+                            + res.filename.to_list()[0]\
+                            + res.extension.to_list()[0]
                     else:
-                        self.file_df.loc[index, "status"] = "Moved to library"
-                else:
-                    self.file_df.loc[index, "status"] = "Goal directory not found"
+                        res = " | ".join(res.folder.to_list() + "/"
+                                         + res.filename.to_list()
+                                         + res.extension.to_list())
+                    file_df.loc[index, "goal_dir"] = res
+            else:
+                raise ValueError("mode must me either 'metadata' or 'namesearch,"
+                                 f" not {mode}")
+        
+        self.file_df = file_df
+        return file_df
+    
+    def move_to_library(self, file_df=None):
+        """Moves the Tracks in the file_df in their respective folder based on 
+        the entries in the goal folder column of the file_df
+        
+        Parameters:
+        file_df (pd.DataFrame, optional): 
+            Dataframe containing information on the folder and filename of all 
+            files to be processed as well as the goal directory
+            
+        Returns:
+        file_df: updated version of the dataframe with information on occured 
+                 exceptions
+        """
+        
+        #Check inputs
+        if type(file_df) != pd.core.frame.DataFrame or file_df.empty:
+            file_df = self.file_df if not self.file_df.empty else self.read_tracks()
+        
+        lib_df = self.lib_df if not self.lib_df.empty else self.read_dir()
+        
+        #Iterate over all tracks
+        for index, row in file_df.iterrows():
+            
+            #Determine the path to the file
+            if row.new_filename:
+                fname = row.new_filename
+            else:
+                fname = row.filename
+            file_path = Path(self.std_dir, row["folder"], fname + row["extension"])
+            
+            #If a goal directory is specified
+            if file_df.loc[index, "goal_dir"]:
+                #Retrieve all goal directories (there might be multiple)
+                goal_dir = file_df.loc[index, "goal_dir"].split(" | ")
+                 
+                for gd in goal_dir:
+                    gd = Path(gd)
+                    
+                    if gd.suffix:
+                        #If the goal directory is a file, replace the file with 
+                        #the new file
+                        try:
+                            os.replace(file_path, Path(self.lib_dir, gd))
+                        except Exception as e:
+                            self.file_df = self.add_exception(
+                                self.file_df, col = "exceptions",
+                                msg=f"Copying error for goal directory {gd}: "
+                                    + f"{e.__class__} : {e}", 
+                                index = index)
+                        else:
+                            self.file_df = self.add_exception(
+                                self.file_df, col = "status",
+                                msg=f"Moved to {gd}", 
+                                index = index)
+                    else:
+                        #If the goal directory is a folder, then move the file 
+                        # to this folder (Note: if there is already a file with
+                        #the same name in the goal folder, then it is replaced)
+                        
+                        #Check if goal directory exists and whether it should be 
+                        #created if it doesn't exist
+                        if (row.create_missing_dir 
+                            or os.path.isdir (Path(self.lib_dir, gd))):
+                            
+                            try:
+                                if not os.path.isdir (Path(self.lib_dir, gd)):
+                                    os.mkdir(self.lib_dir, gd)
+                                
+                                os.replace(file_path, 
+                                           Path(self.lib_dir, 
+                                                gd, 
+                                                fname + row["extension"]))
+                            except Exception as e:
+                                self.file_df = self.add_exception(
+                                    self.file_df, col = "exceptions",
+                                    msg=f"Copying error for goal directory {gd}: "
+                                        + f"{e.__class__} : {e}", 
+                                    index = index)
+                            else:
+                                self.file_df = self.add_exception(
+                                    self.file_df, col = "status",
+                                    msg=f"Moved to {gd}", 
+                                    index = index)
+                        else:
+                            self.file_df.loc[index, "status"] = "Goal directory not found"
+            else:
+                self.file_df = self.add_exception(
+                    self.file_df, col = "exceptions",
+                    msg="No goal directory specified", 
+                    index = index)
+                
         return self.file_df
     
     def process_directory(self, directory=None):
@@ -400,7 +521,7 @@ class LibManager:
         elif type(tracks)==str:
             filepath = Path(tracks)
             self.adjust_sr(filepath, max_sr, std_sr, insert_genre)
-        elif type(tracks)== pathlib.WindowsPath:
+        elif type(tracks)== type(Path()):
             self.adjust_sr(filepath, max_sr, std_sr, insert_genre)
         else:
             raise ValueError("Invalid File Format: tracks must be a pandas "
@@ -460,7 +581,7 @@ class LibManager:
         
         if type(filepath)==str:
             filepath=Path(filepath)
-        elif type(filepath)!=pathlib.WindowsPath:
+        elif type(filepath)!=type(Path()):
             raise ValueError("filepath must be of type str or "
                              + f"pathlib.WindowsPath, not {type(filepath)}")
         
@@ -493,7 +614,7 @@ class LibManager:
         
         if type(filepath)==str:
             filepath=Path(filepath)
-        elif type(filepath)!=pathlib.WindowsPath:
+        elif type(filepath)!=type(Path()):
             raise ValueError("filepath must be of type str or "
                              + f"pathlib.WindowsPath, not {type(filepath)}")
         
@@ -529,9 +650,15 @@ class LibManager:
         return df
 if __name__ == '__main__':
     # std_dir = Path("C:/Users", os.environ.get("USERNAME"), "Downloads", "music")
-    path = Path("C:/Users/davis/00_data/04_Track_Library/00_Organization/00_New_files")
-    MP3r = MP3Renamer(lib_dir=Path("C:/Users/davis/00_data/04_Track_Library"))
+    # path = Path("C:/Users/davis/00_data/04_Track_Library/00_Organization/00_New_files")
     
+    std_dir = r"C:\Users\davis\Downloads\SCDL test\00_General\new files"
+    lib_dir = r"C:\Users\davis\Downloads\SCDL test"
+    MP3r = LibManager(lib_dir, std_dir)
+    lib_df = MP3r.read_dir()
+    track_df = MP3r.read_tracks()
+    file_df = MP3r.determine_goal_folder(mode="metadata")
+    # 
     # rename_doc = MP3r.process_directory()
     # track_df = MP3r.move_to_library()
     
