@@ -30,7 +30,7 @@ SCDL
   - All directories (Track library, new file library, music folder) should be customizable and if a custom path is specified, it should immediately be checked, if this path exists)
 
 Library Updater
-- Feature: Strip filenames of leading/tailing spaces and insert subfolder in the Track library as genre for all .mp3 files
+- Feature: Strip filenames of leading/tailing spaces and insert subfolder in the Track library as genre
 - Feature: Copy .mp3 files to music library
   - Addition (m/b): Check if file is already in music folder and only copy if not the case (Note: check if this is more efficient than skipping this step and always copying all files)
 - Feature: Search tracks from new files directory in the track library an replace the file there with the new file

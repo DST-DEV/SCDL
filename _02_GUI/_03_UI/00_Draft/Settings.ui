@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>459</width>
-    <height>327</height>
+    <width>497</width>
+    <height>325</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -35,14 +35,14 @@
      <x>10</x>
      <y>150</y>
      <width>441</width>
-     <height>141</height>
+     <height>190</height>
     </rect>
    </property>
    <layout class="QGridLayout" name="gridLayout">
-    <item row="0" column="0">
-     <widget class="QLabel" name="lbl_track_lib">
-      <property name="text">
-       <string>Track Library Path</string>
+    <item row="0" column="1">
+     <widget class="QLineEdit" name="lineEdit_track_lib">
+      <property name="placeholderText">
+       <string>C:/Users/davis/00_data/04_Track_Library</string>
       </property>
      </widget>
     </item>
@@ -50,13 +50,6 @@
      <widget class="QLabel" name="lbl_downloads">
       <property name="text">
        <string>Downloads Folder Path</string>
-      </property>
-     </widget>
-    </item>
-    <item row="0" column="1">
-     <widget class="QLineEdit" name="lineEdit_track_lib">
-      <property name="placeholderText">
-       <string>C:/Users/davis/00_data/04_Track_Library</string>
       </property>
      </widget>
     </item>
@@ -80,10 +73,10 @@
       </property>
      </widget>
     </item>
-    <item row="1" column="1">
-     <widget class="QLineEdit" name="lineEdit_dl_folder">
+    <item row="3" column="1">
+     <widget class="QLineEdit" name="lineEdit_nf_fld">
       <property name="placeholderText">
-       <string>C:/Users/davis/00_data/04_Track_Library/00_Organization/00_new_files</string>
+       <string>C:/Users/davis/Downloads/SC DL</string>
       </property>
      </widget>
     </item>
@@ -107,21 +100,38 @@
       </property>
      </widget>
     </item>
-    <item row="2" column="0">
-     <widget class="QLabel" name="lbl_downloads_2">
+    <item row="0" column="0">
+     <widget class="QLabel" name="lbl_track_lib">
       <property name="text">
-       <string>New Files Folder</string>
+       <string>Track Library Path</string>
       </property>
      </widget>
     </item>
-    <item row="2" column="1">
-     <widget class="QLineEdit" name="lineEdit_new_files_folder">
+    <item row="4" column="1">
+     <widget class="QPlainTextEdit" name="plainTextEdit">
+      <property name="plainText">
+       <string/>
+      </property>
       <property name="placeholderText">
-       <string>C:/Users/davis/Downloads</string>
+       <string>&quot;00_General&quot;</string>
       </property>
      </widget>
     </item>
-    <item row="2" column="2">
+    <item row="2" column="0">
+     <widget class="QLabel" name="lbl_music_lib">
+      <property name="text">
+       <string>Music Folder Path</string>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="1">
+     <widget class="QLineEdit" name="lineEdit_dl_folder">
+      <property name="placeholderText">
+       <string>C:/Users/davis/00_data/04_Track_Library/00_Organization/00_new_files</string>
+      </property>
+     </widget>
+    </item>
+    <item row="3" column="2">
      <widget class="QPushButton" name="btn_new_files_folder">
       <property name="accessibleDescription">
        <string extracomment="Choose in Explorer"/>
@@ -138,6 +148,39 @@
       </property>
       <property name="flat">
        <bool>true</bool>
+      </property>
+     </widget>
+    </item>
+    <item row="4" column="0">
+     <widget class="QLabel" name="lbl_excl_flds">
+      <property name="text">
+       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Excluded Track &lt;/p&gt;&lt;p&gt;Library Folders&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      </property>
+      <property name="textFormat">
+       <enum>Qt::MarkdownText</enum>
+      </property>
+      <property name="wordWrap">
+       <bool>false</bool>
+      </property>
+      <property name="textInteractionFlags">
+       <set>Qt::NoTextInteraction</set>
+      </property>
+     </widget>
+    </item>
+    <item row="3" column="0">
+     <widget class="QLabel" name="lbl_nf_dir">
+      <property name="text">
+       <string>New Files Folder Path</string>
+      </property>
+      <property name="textInteractionFlags">
+       <set>Qt::LinksAccessibleByMouse</set>
+      </property>
+     </widget>
+    </item>
+    <item row="2" column="1">
+     <widget class="QLineEdit" name="lineEdit_music_lib">
+      <property name="placeholderText">
+       <string>C:\Users\davis\00_data\03_Music</string>
       </property>
      </widget>
     </item>
@@ -192,16 +235,6 @@
       <item>
        <property name="text">
         <string>Chrome</string>
-       </property>
-      </item>
-      <item>
-       <property name="text">
-        <string>Edge</string>
-       </property>
-      </item>
-      <item>
-       <property name="text">
-        <string>Safari</string>
        </property>
       </item>
      </widget>
