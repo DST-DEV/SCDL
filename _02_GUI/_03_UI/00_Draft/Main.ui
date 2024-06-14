@@ -449,35 +449,35 @@
          </property>
          <layout class="QGridLayout" name="gLayout_Lib" rowstretch="1,5,5,5,5,1,1,1,5,5,5,1,1,1,5,5,1,1,1,5,5,5,1,5,1">
           <item row="12" column="0">
-           <widget class="Line" name="line_lib2_2">
+           <widget class="Line" name="line_lib2">
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
             </property>
            </widget>
           </item>
           <item row="2" column="0">
-           <widget class="QPushButton" name="btn_read_lib_2">
+           <widget class="QPushButton" name="btn_read_lib">
             <property name="text">
              <string>Read library</string>
             </property>
            </widget>
           </item>
           <item row="22" column="0">
-           <widget class="Line" name="line_lib4_2">
+           <widget class="Line" name="line_lib4">
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
             </property>
            </widget>
           </item>
           <item row="23" column="0">
-           <widget class="QPushButton" name="btn_move_files_2">
+           <widget class="QPushButton" name="btn_move_files">
             <property name="text">
              <string>Move files</string>
             </property>
            </widget>
           </item>
           <item row="8" column="0">
-           <widget class="QLabel" name="lbl_file_uni_4">
+           <widget class="QLabel" name="lbl_file_uni">
             <property name="text">
              <string>File Unifyer</string>
             </property>
@@ -487,7 +487,7 @@
            </widget>
           </item>
           <item row="5" column="0">
-           <spacer name="verticalSpacer_lib3_2">
+           <spacer name="verticalSpacer_lib3">
             <property name="orientation">
              <enum>Qt::Vertical</enum>
             </property>
@@ -500,7 +500,7 @@
            </spacer>
           </item>
           <item row="14" column="0">
-           <widget class="QLabel" name="lbl_file_uni_5">
+           <widget class="QLabel" name="lbl_music_sync">
             <property name="text">
              <string>Music Sync</string>
             </property>
@@ -510,7 +510,7 @@
            </widget>
           </item>
           <item row="13" column="0">
-           <spacer name="verticalSpacer_lib5_2">
+           <spacer name="verticalSpacer_lib5">
             <property name="orientation">
              <enum>Qt::Vertical</enum>
             </property>
@@ -523,7 +523,7 @@
            </spacer>
           </item>
           <item row="19" column="0">
-           <widget class="QLabel" name="lbl_file_uni_6">
+           <widget class="QLabel" name="lbl_lib_update">
             <property name="text">
              <string>Library Updater</string>
             </property>
@@ -533,9 +533,9 @@
            </widget>
           </item>
           <item row="10" column="0">
-           <layout class="QGridLayout" name="gLayout_uni_2" columnstretch="1,5,1">
+           <layout class="QGridLayout" name="gLayout_uni" columnstretch="1,5,1">
             <item row="1" column="1">
-             <widget class="QRadioButton" name="rbtn_nf_2">
+             <widget class="QRadioButton" name="rbtn_nf">
               <property name="text">
                <string>New files</string>
               </property>
@@ -545,7 +545,7 @@
              </widget>
             </item>
             <item row="0" column="2" rowspan="2">
-             <spacer name="hSpacer_uni_r_2">
+             <spacer name="hSpacer_uni_r">
               <property name="orientation">
                <enum>Qt::Horizontal</enum>
               </property>
@@ -558,7 +558,7 @@
              </spacer>
             </item>
             <item row="0" column="1">
-             <widget class="QRadioButton" name="rbtn_lib_2">
+             <widget class="QRadioButton" name="rbtn_lib">
               <property name="text">
                <string>Library</string>
               </property>
@@ -568,7 +568,7 @@
              </widget>
             </item>
             <item row="0" column="0" rowspan="2">
-             <spacer name="hSpacer_uni_l_2">
+             <spacer name="hSpacer_uni_l">
               <property name="orientation">
                <enum>Qt::Horizontal</enum>
               </property>
@@ -583,7 +583,7 @@
            </layout>
           </item>
           <item row="0" column="0">
-           <spacer name="verticalSpacer_lib1_2">
+           <spacer name="verticalSpacer_lib1">
             <property name="orientation">
              <enum>Qt::Vertical</enum>
             </property>
@@ -599,28 +599,28 @@
            </spacer>
           </item>
           <item row="17" column="0">
-           <widget class="Line" name="line_lib3_2">
+           <widget class="Line" name="line_lib3">
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
             </property>
            </widget>
           </item>
           <item row="3" column="0">
-           <widget class="QPushButton" name="btn_read_new_2">
+           <widget class="QPushButton" name="btn_read_new">
             <property name="text">
              <string>Read new files</string>
             </property>
            </widget>
           </item>
           <item row="4" column="0">
-           <widget class="QLineEdit" name="lineEdit_nf_dir_2">
+           <widget class="QLineEdit" name="lineEdit_nf_dir">
             <property name="placeholderText">
              <string>C:/Users/davis/Downloads/SC DL</string>
             </property>
            </widget>
           </item>
           <item row="16" column="0">
-           <spacer name="verticalSpacer_lib6_2">
+           <spacer name="verticalSpacer_lib6">
             <property name="orientation">
              <enum>Qt::Vertical</enum>
             </property>
@@ -633,14 +633,14 @@
            </spacer>
           </item>
           <item row="20" column="0">
-           <widget class="QPushButton" name="btn_goalfld_search_2">
+           <widget class="QPushButton" name="btn_goalfld_search">
             <property name="text">
              <string>Search new tracks in Library</string>
             </property>
            </widget>
           </item>
           <item row="7" column="0">
-           <spacer name="verticalSpacer_lib2_2">
+           <spacer name="verticalSpacer_lib2">
             <property name="orientation">
              <enum>Qt::Vertical</enum>
             </property>
@@ -653,7 +653,7 @@
            </spacer>
           </item>
           <item row="18" column="0">
-           <spacer name="verticalSpacer_lib7_2">
+           <spacer name="verticalSpacer_lib7">
             <property name="orientation">
              <enum>Qt::Vertical</enum>
             </property>
@@ -666,21 +666,21 @@
            </spacer>
           </item>
           <item row="6" column="0">
-           <widget class="Line" name="line_lib1_2">
+           <widget class="Line" name="line_lib1">
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
             </property>
            </widget>
           </item>
           <item row="15" column="0">
-           <widget class="QPushButton" name="btn_sync_music_2">
+           <widget class="QPushButton" name="btn_sync_music">
             <property name="text">
              <string>Sync .mp3 files</string>
             </property>
            </widget>
           </item>
           <item row="1" column="0">
-           <widget class="QLabel" name="lbl_read_dirs_2">
+           <widget class="QLabel" name="lbl_read_dirs">
             <property name="text">
              <string>Inputs</string>
             </property>
@@ -690,7 +690,7 @@
            </widget>
           </item>
           <item row="24" column="0">
-           <spacer name="verticalSpacer_lib8_2">
+           <spacer name="verticalSpacer_lib8">
             <property name="orientation">
              <enum>Qt::Vertical</enum>
             </property>
@@ -706,14 +706,14 @@
            </spacer>
           </item>
           <item row="9" column="0">
-           <widget class="QPushButton" name="btn_file_uni_2">
+           <widget class="QPushButton" name="btn_file_uni">
             <property name="text">
              <string>Unify files</string>
             </property>
            </widget>
           </item>
           <item row="11" column="0">
-           <spacer name="verticalSpacer_lib4_2">
+           <spacer name="verticalSpacer_lib4">
             <property name="orientation">
              <enum>Qt::Vertical</enum>
             </property>
@@ -726,9 +726,9 @@
            </spacer>
           </item>
           <item row="21" column="0">
-           <layout class="QGridLayout" name="gLayout_move_2" columnstretch="1,30,1">
+           <layout class="QGridLayout" name="gLayout_move" columnstretch="1,30,1">
             <item row="0" column="0" rowspan="2">
-             <spacer name="hSpacer_move_l_2">
+             <spacer name="hSpacer_move_l">
               <property name="orientation">
                <enum>Qt::Horizontal</enum>
               </property>
@@ -741,7 +741,7 @@
              </spacer>
             </item>
             <item row="1" column="1">
-             <widget class="QRadioButton" name="rbtn_search_2">
+             <widget class="QRadioButton" name="rbtn_search">
               <property name="text">
                <string>Search filename in Library</string>
               </property>
@@ -751,7 +751,7 @@
              </widget>
             </item>
             <item row="0" column="1">
-             <widget class="QRadioButton" name="rbtn_meta_2">
+             <widget class="QRadioButton" name="rbtn_meta">
               <property name="text">
                <string>Use genre metadata</string>
               </property>
@@ -761,7 +761,7 @@
              </widget>
             </item>
             <item row="0" column="2" rowspan="2">
-             <spacer name="hSpacer_move_r_2">
+             <spacer name="hSpacer_move_r">
               <property name="orientation">
                <enum>Qt::Horizontal</enum>
               </property>
