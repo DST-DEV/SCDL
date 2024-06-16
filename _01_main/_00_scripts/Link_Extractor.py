@@ -14,28 +14,15 @@ class PlaylistLinkExtractor:
     
     def __init__(self, 
                  hist_file = "./_01_rsc/Download_history.txt",
-                 driver = "Firefox",
+                 driver_choice = "Firefox",
                  sc_account = "user-727245698-705348285"):
         self.track_df = pd.DataFrame(columns = ["playlist", "link", "uploader"])
         self.playlists = pd.DataFrame(columns=["name", "link", "last_track", "status"])
         self.history_file = hist_file
         self.cookies_removed = False
-        self.driver_choice = driver
+        self.driver_choice = driver_choice
         self.sc_account = sc_account
         
-        
-        if driver =="Firefox":
-            options = Options() 
-            # options.add_argument("-headless")
-            options.add_argument("--disable-popup-blocking")
-            self.driver = webdriver.Firefox(options=options)
-        elif driver == "Edge":
-            self.driver = webdriver.Edge()
-        elif driver == "Chrome":
-            self.driver = webdriver.Chrome()
-        elif driver == "Safari":
-            self.driver = webdriver.Safari()
-
     def extr_playlists(self, search_key=[], search_type="all", 
                        sc_account = "user-727245698-705348285"):
         """Extract the links to the playlists from the soundcloud playlist 
@@ -131,7 +118,7 @@ class PlaylistLinkExtractor:
                         playlists["name"].isin(search_key)
                         ]
         
-        
+        print (f"Extracted {playlists.shape[0]} playlists")
         return self.playlists
     
     def extr_track(self, index):
@@ -506,4 +493,4 @@ if __name__ == '__main__':
     test = pd.DataFrame(columns=["name", "link", "status"])
 
     test.loc[0] = [ "Techno - Blunt - Low Energy - Vocal", "https://soundcloud.com/user-727245698-705348285/sets/techno-blunt-low-energy-vocal", ""]
-    track_df_2, pl_status_2 = ple.extr_links(test)
+    # track_df_2, pl_status_2 = ple.extr_links(test)

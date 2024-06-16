@@ -93,8 +93,8 @@ def find_closest_match3(query, choices):
     else:
         return None
 
-# # Example usage:
-# choices = ["apple", "banana", "orange", "grape", "watermelon"]
-# query = "appl"
-# closest_match = find_closest_match(query, choices)
-# print("Closest match to '{}': {}".format(query, closest_match))
+# Example usage:
+choices = ["apple", "banana", "orange", "grape", "watermelon"]
+query = "appl"
+closest_match = find_closest_match3(query, choices)
+print("Closest match to '{}': {}".format(query, closest_match))

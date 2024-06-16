@@ -21,7 +21,8 @@ class LibManager:
     ob_strs = ["premiere", "P R E M I E R E", "free download", "free dl", 
                "Free DL", "FreeDL", "exclusive", "|", "preview"]        #common obsolete strings
     
-    def __init__(self, lib_dir = None, std_dir = None):
+    def __init__(self, lib_dir = None, nf_dir = None, 
+                 excl_lib_folders=["00_General"]):
         #set the standard directory for the code to work in (if none is provided
         # by the user, use the downloads folder)
         if type(lib_dir)==str:
@@ -29,12 +30,13 @@ class LibManager:
         elif type(lib_dir)==type(None) or type(lib_dir)==type(Path()):
             self.lib_dir = lib_dir or Path("C:/Users/davis/00_data/04_Track_Library")
         
-        if type(std_dir)==str:
-            self.std_dir = Path(std_dir) 
-        elif type(std_dir)==type(None) or type(std_dir)==type(Path()):
-            self.std_dir = std_dir or Path(self.lib_dir, 
+        if type(nf_dir)==str:
+            self.nf_dir = Path(nf_dir) 
+        elif type(nf_dir)==type(None) or type(nf_dir)==type(Path()):
+            self.nf_dir = nf_dir or Path(self.lib_dir, 
                                            "00_Organization/00_New_files")
         
+        self.excl_lib_folders = excl_lib_folders
         
         self.file_df = pd.DataFrame(columns=["folder", "goal_dir", "filename",
                                              "new_filename", "extension", 
@@ -58,7 +60,7 @@ class LibManager:
         return self.lib_df
     
     
-    def read_files(self, directory, excluded_folders = ["00_General"]):
+    def read_files(self, directory, excluded_folders = []):
         """Finds all mp3 & wav files within a directory and its substructure.
         
         Parameters:
@@ -69,6 +71,15 @@ class LibManager:
         doc: Dataframe with information on the filename, file extension and 
              folder of all found files
         """
+        
+        #Check inputs:
+        if type (excluded_folders) == str:
+            excluded_folders = [excluded_folders]
+        elif type(excluded_folders) == list:
+            if len(excluded_folders)==0:
+                excluded_folders = self.excl_lib_folders
+        else:
+            excluded_folders = self.excl_lib_folders
         
         doc = pd.DataFrame(columns=["folder", "filename", "extension"])
         
@@ -100,7 +111,7 @@ class LibManager:
         Parameters:
         directory (opt): top-level directory for the code to work in. If
                          no directory is provided, then the standard_directory 
-                         (cf. self.std_dir) is used
+                         (cf. self.nf_dir) is used
         mode (opt. - str): Whether to replace or append to existing version of 
                            the self.file_df or dont change the self.file_df at 
                            all (default: replace)
@@ -120,7 +131,7 @@ class LibManager:
         
         #read the files (if no directory is provided, use the standard one)
         
-        file_df = self.read_files(directory = directory or self.std_dir,
+        file_df = self.read_files(directory = directory or self.nf_dir,
                                   excluded_folders = [""])
         
         #add additional columns for later
@@ -313,7 +324,7 @@ class LibManager:
                 fname = row.filename
             
             if mode == "metadata":
-                file_path = Path(self.std_dir, row["folder"], 
+                file_path = Path(self.nf_dir, row["folder"], 
                                  fname + row["extension"])
                 
                 #Extract the goal directory from the genre metadata
@@ -378,7 +389,7 @@ class LibManager:
                 fname = row.new_filename
             else:
                 fname = row.filename
-            file_path = Path(self.std_dir, row["folder"], fname + row["extension"])
+            file_path = Path(self.nf_dir, row["folder"], fname + row["extension"])
             
             #If a goal directory is specified
             if file_df.loc[index, "goal_dir"]:
@@ -459,8 +470,11 @@ class LibManager:
         
         file_df = self.read_tracks(directory)
         return self.change_MP3(file_df)
-        
-    def reset_search(self):
+    
+    def reset_goal_folder(self):
+        self.file_df = self.file_df.loc[:,"goal_dir"] = ""
+    
+    def reset_file_df(self):
         """Clears the entries in the self.file_df dataframe
         
         Parameters:
@@ -469,8 +483,23 @@ class LibManager:
         Returns:
         None
         """
-        self.file_df = pd.DataFrame(columns=["folder", "filename", 
-                                             "exceptions", "processed"])
+        self.file_df = pd.DataFrame(columns=["folder", "goal_dir", "filename",
+                                             "new_filename", "extension", 
+                                             "exceptions", "status", 
+                                             "create_missing_dir"])
+    def reset_file_df(self):
+        """Clears the entries in the self.file_df dataframe
+        
+        Parameters:
+        None
+            
+        Returns:
+        None
+        """
+        self.file_df = pd.DataFrame(columns=["folder", "goal_dir", "filename",
+                                             "new_filename", "extension", 
+                                             "exceptions", "status", 
+                                             "create_missing_dir"])
         
     def adjust_sample_rate(self, tracks=pd.DataFrame(), max_sr=48000, 
                            std_sr=44100, mode="new", insert_genre=True):
@@ -496,7 +525,7 @@ class LibManager:
         if type(tracks)==pd.core.frame.DataFrame:
             if mode =="new":
                 tracks = tracks if not tracks.empty else self.read_tracks(self, 
-                                                                       directory=self.std_dir, 
+                                                                       directory=self.nf_dir, 
                                                                        mode="independent")
             elif mode == "lib":
                 tracks = tracks if not tracks.empty else self.read_tracks(self, 
@@ -585,7 +614,7 @@ class LibManager:
             raise ValueError("filepath must be of type str or "
                              + f"pathlib.WindowsPath, not {type(filepath)}")
         
-        artist, title = filepath.stem.split("-", maxsplit=1)
+        artist, title = filepath.stem.split(" - ", maxsplit=1).strip()
         
         if genre or update_genre or only_genre:
             if not genre:
@@ -649,12 +678,12 @@ class LibManager:
             
         return df
 if __name__ == '__main__':
-    # std_dir = Path("C:/Users", os.environ.get("USERNAME"), "Downloads", "music")
+    # nf_dir = Path("C:/Users", os.environ.get("USERNAME"), "Downloads", "music")
     # path = Path("C:/Users/davis/00_data/04_Track_Library/00_Organization/00_New_files")
     
-    std_dir = r"C:\Users\davis\Downloads\SCDL test\00_General\new files"
+    nf_dir = r"C:\Users\davis\Downloads\SCDL test\00_General\new files"
     lib_dir = r"C:\Users\davis\Downloads\SCDL test"
-    MP3r = LibManager(lib_dir, std_dir)
+    MP3r = LibManager(lib_dir, nf_dir)
     lib_df = MP3r.read_dir()
     track_df = MP3r.read_tracks()
     file_df = MP3r.determine_goal_folder(mode="metadata")
