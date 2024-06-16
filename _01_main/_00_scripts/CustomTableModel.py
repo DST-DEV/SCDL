@@ -20,7 +20,8 @@ class CustomTableModel (QTC.QAbstractTableModel):
     """
 
     def __init__(self, data, parent=None):
-        super(CustomTableModel, self).__init__()
+        super().__init__()
+        # super(CustomTableModel, self).__init__()
         # QTC.QAbstractTableModel.__init__(self, parent)
         self._data = data
 
@@ -45,13 +46,15 @@ class CustomTableModel (QTC.QAbstractTableModel):
         if not index.isValid():
             return QTC.QVariant()
         
-        if role == QTC.Qt.ItemDataRole.DisplayRole:
+        if role == QTC.Qt.ItemDataRole.DisplayRole or role == QTC.Qt.ItemDataRole.EditRole:
             if index.column() == self.columnCount()-1:
                 return "Yes" if self._data.iloc[index.row(), index.column()] == True else "No"
             else:
                 return str(self._data.iloc[index.row(), index.column()])
         elif role == QTC.Qt.ItemDataRole.CheckStateRole and index.column() == self.columnCount()-1:
-            return QTC.Qt.Checked if self._data.iloc[index.row(), index.column()] else QTC.Qt.Unchecked
+            return QTC.Qt.CheckState.Checked \
+                    if self._data.iloc[index.row(), index.column()] \
+                    else QTC.Qt.CheckState.Unchecked
             
         
         return QTC.QVariant()
@@ -68,11 +71,11 @@ class CustomTableModel (QTC.QAbstractTableModel):
         Name of column with the index "col" or None if orientation is not 
           horizontal or role is not DisplayRole
         """
-        if orientation == QTC.Qt.Horizontal and role == QTC.Qt.ItemDataRole.DisplayRole:
+        if orientation == QTC.Qt.Orientation.Horizontal and role == QTC.Qt.ItemDataRole.DisplayRole:
             return self._data.columns[col]
         return None
 
-    def setData(self, index, value, role):
+    def setData(self, index, value, role=QTC.Qt.ItemDataRole.EditRole):
         """Sets the value in the _data at the specified index (Sets the role 
         data for the item at index to value)
         
@@ -87,29 +90,19 @@ class CustomTableModel (QTC.QAbstractTableModel):
         
         
         """
-        # if not index.isValid():
-        #     return False
-        # if role != QTC.Qt.EditRole:
-        #     return False
-        # row = index.row()
-        # if row < 0 or row >= len(self._data.values):
-        #     return False
-        # column = index.column()
-        # if column < 0 or column >= self._data.columns.size:
-        #     return False
-        # self._data.values[row][column] = value
-        # self.dataChanged.emit(index, index)
-        # return True
         
         if not index.isValid():
             return False
         
-        if role == QTC.Qt.EditRole:
+        if role == QTC.Qt.ItemDataRole.EditRole:
+            if index.column() == self.columnCount()-1:
+                value = True if value in ["Yes", "Y", "y"] else False
+            
             self._data.iat[index.row(),index.column()] = value
-            self.dataChanged.emit(index, index)
+            self.dataChanged.emit(index, index, [QTC.Qt.ItemDataRole.EditRole])
             return True
         if role == QTC.Qt.ItemDataRole.CheckStateRole and index.column() == self.columnCount()-1:
-            self._data.iat[index.row(),index.column()] = (value == QTC.Qt.Checked)
+            self._data.iat[index.row(),index.column()] = (value == QTC.Qt.CheckState.Checked)
             self.dataChanged.emit(index, index, [QTC.Qt.ItemDataRole.CheckStateRole])
             return True
         
@@ -142,12 +135,16 @@ class CustomTableModel (QTC.QAbstractTableModel):
     
     def flags(self, index):
         if not index.isValid():
-            return QTC.Qt.NoItemFlags
+            return QTC.Qt.ItemFlag.NoItemFlags
         
         if index.column() == self.columnCount()-1:
-            return QTC.Qt.ItemIsEnabled | QTC.Qt.ItemIsUserCheckable
+            # return QTC.Qt.ItemFlag.ItemIsEnabled | QTC.Qt.ItemFlag.ItemIsUserCheckable
+            return QTC.Qt.ItemFlag.ItemIsSelectable | QTC.Qt.ItemFlag.ItemIsEnabled \
+                | QTC.Qt.ItemFlag.ItemIsUserCheckable | QTC.Qt.ItemFlag.ItemIsEditable
+        
+            # return QTC.Qt.ItemFlag.ItemIsEnabled | QTC.Qt.ItemFlag.ItemIsUserCheckable
         else:
-            return super().flags(index) | QTC.Qt.ItemIsEditable
+            return super().flags(index) | QTC.Qt.ItemFlag.ItemIsEditable
 
     
     def change_data(self, data, insert_checkboxes = True):
@@ -162,13 +159,64 @@ class CustomTableModel (QTC.QAbstractTableModel):
         
         self.beginResetModel()
         if insert_checkboxes and "include" not in data.columns:
-            data = pd.concat([data, 
-                              pd.DataFrame({"include":
-                                            [False]*data.shape[0]})
-                              ])
+            data.insert(data.shape[1], "include", False)
         self._data = data.copy(deep=True)
         self.endResetModel()
  
+
+#%%
+
+class CustomTableView(QTW.QTableView):
+    selectionIndexChanged = QTC.pyqtSignal(QTC.QModelIndex)
+
+    def __init__(self):
+        super().__init__()
+        self.selectionModel().selectionChanged.connect(self.on_selection_changed)
+
+    def on_selection_changed(self, selected, deselected):
+        indexes = self.selectionModel().selectedIndexes()
+        if indexes:
+            self.selectionIndexChanged.emit(indexes[0])
+
+#%% Class for implementation of Checkboxes (apparently needed to make them user-checkable)
+
+class CheckBoxDelegate(QTW.QStyledItemDelegate):
+    def paint(self, painter, option, index):
+        if index.column() == index.model().columnCount() - 1:
+            value = index.model().data(index, QTC.Qt.ItemDataRole.CheckStateRole)
+            check_box_style_option = QTW.QStyleOptionButton()
+            check_box_style_option.state |= QTW.QStyle.StateFlag.State_Enabled
+            if value == QTC.Qt.CheckState.Checked:
+                check_box_style_option.state |= QTW.QStyle.StateFlag.State_On
+            else:
+                check_box_style_option.state |= QTW.QStyle.StateFlag.State_Off
+
+            check_box_rect = QTW.QApplication.style().subElementRect(
+                QTW.QStyle.SubElement.SE_CheckBoxIndicator, 
+                check_box_style_option, 
+                None)
+            check_box_style_option.rect = check_box_rect
+            check_box_style_option.rect.moveCenter(option.rect.center())
+
+            QTW.QApplication.style().drawControl(QTW.QStyle.ControlElement.CE_CheckBox, 
+                                                 check_box_style_option, 
+                                                 painter)
+        else:
+            super().paint(painter, option, index)
+
+    def editorEvent(self, event, model, option, index):
+        if index.column() == model.columnCount() - 1 \
+            and event.type() == QTC.QEvent.Type.MouseButtonRelease:
+                
+            if event.button() == QTC.Qt.MouseButton.LeftButton:
+                model.setData(index, QTC.Qt.CheckState.Checked
+                              if model.data(index,QTC.Qt.ItemDataRole.CheckStateRole) \
+                                  == QTC.Qt.CheckState.Unchecked 
+                              else QTC.Qt.CheckState.Unchecked, 
+                                   QTC.Qt.ItemDataRole.CheckStateRole)
+                return True
+        return super().editorEvent(event, model, option, index)
+
 
 #%%
 
@@ -189,11 +237,14 @@ class MainWindow(QTW.QMainWindow):
                            'c': [False, False, False]})
         self.df2 = pd.DataFrame({"col1":[0,0,0,0], "col2":[1,2,3,4]})
         
-        
+        # self.view = CustomTableView()
         self.view = QTW.QTableView()
         self.pm = CustomTableModel(self.df1)
         self.view.setModel(self.pm)
         # self.pm._data = self.df1
+        
+        delegate = CheckBoxDelegate(self.view)
+        self.view.setItemDelegate(delegate)
         
         self.btn1 = QTW.QPushButton("Add row")
         self.btn1.clicked.connect(self.add_row)
@@ -203,6 +254,12 @@ class MainWindow(QTW.QMainWindow):
         
         self.btn3 = QTW.QPushButton("Print")
         self.btn3.clicked.connect(self.print_df)
+        
+        #Connect a change in the selction of the table to a function
+        #Note: currently this function is just a placeholder. in the future this 
+        #should trigger the content of another table to change
+        self.selectionModel = self.view.selectionModel() 
+        self.selectionModel.selectionChanged.connect(self.print_change)
 
         self.main_layout.addWidget(self.view)
         self.main_layout.addWidget(self.btn1)
@@ -211,6 +268,8 @@ class MainWindow(QTW.QMainWindow):
         
         #Set the main Layout
         self.cw.setLayout(self.main_layout)
+        
+        
     
     def print_df(self):
         print(self.pm._data)
@@ -237,20 +296,13 @@ class MainWindow(QTW.QMainWindow):
         else:
             TableWidget.insertRows(TableWidget.rowCount(), 1)
     
-    # def del_rows(self):
-    #     rows = sorted(set(index.row() for index in
-    #                   self.view.selectedIndexes()), reverse=True)
-    #     if rows:
-    #         for row in rows:
-    #             self.pm.removeRow(row)
-    
-    # def add_row(self):
-    #     rows = sorted(set(index.row() for index in
-    #                   self.view.selectedIndexes()))
-    #     if rows and rows[0]<self.pm.rowCount():
-    #         self.pm.insertRows(rows[0]+1, 1)
-    #     else:
-    #         self.pm.insertRows(self.pm.rowCount(), 1)
+    def print_change(self, selected, deselected):
+        if len(selected.indexes())>0:
+            row = selected.indexes()[0].row()
+            print(row)
+
+
+
 
 #%%
 

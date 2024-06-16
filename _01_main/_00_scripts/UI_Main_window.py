@@ -7,6 +7,9 @@
 
 
 from PyQt6 import QtCore, QtGui, QtWidgets
+import PyQt6.QtWidgets as QTW
+import pandas as pd
+from CustomTableModel import CustomTableModel, CustomTableView, CheckBoxDelegate
 
 
 class Ui_MainWindow(object):
@@ -32,11 +35,24 @@ class Ui_MainWindow(object):
         self.btn_cancel_left = QtWidgets.QPushButton(parent=self.gridLayoutWidget_5)
         self.btn_cancel_left.setObjectName("btn_cancel_left")
         self.grid_left.addWidget(self.btn_cancel_left, 3, 1, 1, 1)
-        self.tbl_left = QtWidgets.QTableWidget(parent=self.gridLayoutWidget_5)
-        self.tbl_left.setObjectName("tbl_left")
-        self.tbl_left.setColumnCount(0)
-        self.tbl_left.setRowCount(0)
-        self.grid_left.addWidget(self.tbl_left, 0, 0, 1, 2)
+        
+        
+        #Insert left table
+        self.tbl_view_left = QTW.QTableView()
+        self.tbl_left = CustomTableModel(pd.DataFrame())
+        self.tbl_view_left.setModel(self.tbl_left)
+        self.delegate_left = CheckBoxDelegate(self.tbl_view_left)
+        self.tbl_view_left.setItemDelegate(self.delegate_left)
+        self.grid_left.addWidget(self.tbl_view_left, 0, 0, 1, 2)
+        
+        # self.tbl_left = QtWidgets.QTableWidget(parent=self.gridLayoutWidget_5)
+        # self.tbl_left.setObjectName("tbl_left")
+        # self.tbl_left.setColumnCount(0)
+        # self.tbl_left.setRowCount(0)
+        # self.grid_left.addWidget(self.tbl_left, 0, 0, 1, 2)
+        
+        
+        
         self.btn_addrow_left = QtWidgets.QPushButton(parent=self.gridLayoutWidget_5)
         self.btn_addrow_left.setObjectName("btn_addrow_left")
         self.grid_left.addWidget(self.btn_addrow_left, 1, 0, 1, 1)
@@ -57,11 +73,22 @@ class Ui_MainWindow(object):
         self.btn_save_right = QtWidgets.QPushButton(parent=self.gridLayoutWidget_5)
         self.btn_save_right.setObjectName("btn_save_right")
         self.grid_right.addWidget(self.btn_save_right, 3, 0, 1, 1)
-        self.tbl_right = QtWidgets.QTableWidget(parent=self.gridLayoutWidget_5)
-        self.tbl_right.setObjectName("tbl_right")
-        self.tbl_right.setColumnCount(0)
-        self.tbl_right.setRowCount(0)
-        self.grid_right.addWidget(self.tbl_right, 0, 0, 1, 2)
+        
+        #Insert table right
+        self.tbl_view_right = QTW.QTableView()
+        self.tbl_right = CustomTableModel(pd.DataFrame())
+        self.tbl_view_right.setModel(self.tbl_right)
+        self.delegate_right = CheckBoxDelegate(self.tbl_view_right)
+        self.tbl_view_right.setItemDelegate(self.delegate_right)
+        self.grid_right.addWidget(self.tbl_view_right, 0, 0, 1, 2)
+        
+        # self.tbl_right = QtWidgets.QTableWidget(parent=self.gridLayoutWidget_5)
+        # self.tbl_right.setObjectName("tbl_right")
+        # self.tbl_right.setColumnCount(0)
+        # self.tbl_right.setRowCount(0)
+        # self.grid_right.addWidget(self.tbl_right, 0, 0, 1, 2)
+        
+        
         self.btn_cancel_right = QtWidgets.QPushButton(parent=self.gridLayoutWidget_5)
         self.btn_cancel_right.setObjectName("btn_cancel_right")
         self.grid_right.addWidget(self.btn_cancel_right, 3, 1, 1, 1)
