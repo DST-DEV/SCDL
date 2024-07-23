@@ -123,8 +123,12 @@ class SoundcloudMP3Downloader:
         #Add track to tracklist
         if track_link not in self.tracklist.link.values:
             self.tracklist.loc[len(self.tracklist)] = ["", track_link, ""]
-        
-        
+            track_index = len(self.tracklist)
+        else:
+            track_index = self.tracklist.loc[self.tracklist.link == track_link
+                                             ].index.to_list()[0]
+            self.tracklist.loc[track_index, "exceptions"] =""
+            
         #Open Download website
         self.driver.get('https://soundcloudmp3.org/de')
         
@@ -143,10 +147,12 @@ class SoundcloudMP3Downloader:
         except TimeoutException:
             print ("\nEntry field: Loading took too much time!")
             self.add_exception(track_link, "Entry field loading timeout")
+            return self.tracklist.loc[track_index]
         except Exception as e:
             print(f"\nEntry field: {e}")
             self.add_exception(track_link, 
                                "Entry field loading exception: " + str(e))
+            return self.tracklist.loc[track_index]
 
         # Insert the link of the track and start conversion
         url_box = self.driver.find_element(By.XPATH, 
@@ -189,18 +195,19 @@ class SoundcloudMP3Downloader:
         except TimeoutException:
             #If timeout of the dl-button occured, then try again (for maximum of 3 times)         
             if iteration <=2:
-                self.download_track(track_link, iteration = iteration+1)
+                self.tracklist.loc[track_index] = self.download_track(track_link, iteration = iteration+1)
+                return self.tracklist.loc[track_index]
             else:
                 print ("\nDL-Button: Loading took too much time!")
                 self.add_exception(track_link, "DL-Button loading timeout")
                 self.return_og_window()
-                return self.tracklist.iloc[-1]
+                return self.tracklist.loc[track_index]
         except Exception as e:
             print(f"\nDL-Button: {e}")
             self.add_exception(track_link, "DL-Button exception: " + str(e))
             self.return_og_window()
-            return self.tracklist.iloc[-1]
-        else:
+            return self.tracklist.loc[track_index]
+        else: 
             repl_dict = {" : ": " ", " :": " ", ": ": " ", ":": " ", 
                          "/":"", "*":" ", 
                          " | ":" ", "|":""}                                    #Reserved characters in windows and their respective replacement
@@ -214,7 +221,7 @@ class SoundcloudMP3Downloader:
             self.driver.find_element(By.ID, 'download-btn').click()
             self.return_og_window()
         
-            return self.tracklist.iloc[-1]
+            return self.tracklist.loc[track_index]
     
     def reset(self):
         """Resets the tracklist and returns the webdriver to the initial download page

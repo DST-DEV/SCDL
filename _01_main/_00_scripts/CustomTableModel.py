@@ -3,6 +3,7 @@ import pandas as pd
 import PyQt6.QtWidgets as QTW
 import PyQt6.QtCore as QTC
 import PyQt6.QtGui as QTG
+from abc import ABC, abstractmethod
 
 class CustomTableModel (QTC.QAbstractTableModel):
     """
@@ -159,7 +160,7 @@ class CustomTableModel (QTC.QAbstractTableModel):
         
         self.beginResetModel()
         if insert_checkboxes and "include" not in data.columns:
-            data.insert(data.shape[1], "include", False)
+            data.insert(data.shape[1], "include", True)
         self._data = data.copy(deep=True)
         self.endResetModel()
  
@@ -300,6 +301,31 @@ class MainWindow(QTW.QMainWindow):
         if len(selected.indexes())>0:
             row = selected.indexes()[0].row()
             print(row)
+
+
+#%%
+
+class TblBlueprint():
+    def del_rows(self, view, TableWidget):
+        rows = sorted(set(index.row() for index in
+                      view.selectedIndexes()), reverse=True)
+        if rows:
+            for row in rows:
+                TableWidget.removeRow(row)
+    
+    def add_rows(self, view, TableWidget):
+        rows = sorted(set(index.row() for index in
+                      view.selectedIndexes()))
+        if rows and rows[0]<TableWidget.rowCount():
+            TableWidget.insertRows(rows[0]+1, 1)
+        else:
+            TableWidget.insertRows(TableWidget.rowCount(), 1)
+    
+    # @abstractmethod
+    # def print_change(self, selected, deselected):
+    #     if len(selected.indexes())>0:
+    #         row = selected.indexes()[0].row()
+    #         print(row)
 
 
 

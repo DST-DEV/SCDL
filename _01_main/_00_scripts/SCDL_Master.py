@@ -15,24 +15,26 @@ class Soundclouddownloader:
                  sc_account = "user-727245698-705348285",
                  nf_dir = None, 
                  doc = None, track_df = None,
+                 hist_file="",
                  **kwargs):
         
         self.driver_choice = driver_choice
         self.sc_account = sc_account
         
-        #Determine doc DataFrame
-        if type(doc)==pd.core.frame.DataFrame and not doc.empty:
-            self.doc = doc 
-        else: 
-            self.doc = pd.DataFrame(columns=["title", "link", "exceptions", 
-                                    "genre", "uploader"])
+        # #Determine doc DataFrame
+        # if type(doc)==pd.core.frame.DataFrame and not doc.empty:
+        #     self.doc = doc 
+        # else: 
+        #     self.doc = pd.DataFrame(columns=["playlist", "title", "link", "uploader", "exceptions", 
+        #                             "downloaded"])
         
         #Determine track_df DataFrame
         if type(track_df)==pd.core.frame.DataFrame and not track_df.empty:
             self.track_df = track_df 
         else: 
-            self.track_df = pd.DataFrame(columns=["playlist", "link", "uploader", 
-                                        "downloaded"])
+            self.track_df = pd.DataFrame(columns=["playlist", "title", 
+                                                  "link", "uploader",
+                                                  "exceptions", "downloaded"])
        
        #Determine new file directory
         if type(nf_dir)==type(None):
@@ -50,11 +52,16 @@ class Soundclouddownloader:
                              + "str or pathlib.WindowsPath, not "
                              + f"{type(nf_dir)}")
         
-        self.history_file = os.path.join(os.getcwd(), 
+        if type(hist_file) in [str, pathlib.WindowsPath] and hist_file:
+            self.history_file = Path(hist_file)
+        else: 
+            self.history_file = os.path.join(os.getcwd(), 
                                   '_01_rsc\\Download_history.txt')
         
         
-        self.LibMan = LibManager(nf_dir = nf_dir, **kwargs)
+        self.LibMan = LibManager(nf_dir = nf_dir, 
+                                 hist_file = self.history_file,
+                                 **kwargs)
         self.LinkExt = PlaylistLinkExtractor(driver_choice=self.driver_choice,
                                              sc_account = self.sc_account,
                                              hist_file = self.history_file)
@@ -86,11 +93,21 @@ class Soundclouddownloader:
     def extr_tracks(self, playlists = pd.DataFrame(), mode="new", 
                     autosave=True, reextract=False):
         if reextract or self.track_df.empty:
-            self.track_df = self.LinkExt.extr_links(playlists = self.playlists, 
-                                                    mode=mode, 
-                                                    autosave=autosave)
-            self.track_df.insert(len(self.track_df.columns), "downloaded", False)
+            if not type(playlists) == pd.core.frame.DataFrame:
+                raise TypeError("Playlists variable is not a pandas DataFrame")
+            elif type(playlists) == pd.core.frame.DataFrame and playlists.empty:
+                if self.LinkExt.playlists.empty:
+                    raise ValueError ("No playlists found to extract tracks from")
+                else:
+                    playlists = self.LinkExt.playlists
+            if reextract: #Reset track_df
+                self.LinkExt.track_df = self.LinkExt.track_df.iloc[0:0]
             
+            self.track_df, self.playlists = self.LinkExt.extr_links(
+                                                playlists = playlists, 
+                                                mode=mode, 
+                                                autosave=autosave)
+            # self.track_df.insert(len(self.track_df.columns), "downloaded", False)
             return self.track_df
         else:
             print("\nPlaylists already extracted, continuing with existing data\n")
@@ -123,7 +140,8 @@ class Soundclouddownloader:
         
         #Download the songs
         print (f"\nDownloading {len(tracks_tbd)} new tracks from {pl_len} playlists")
-        MP3DL = SoundcloudMP3Downloader(driver=self.driver_choice)
+        MP3DL = SoundcloudMP3Downloader(driver=self.driver_choice,
+                                        new_files_folder = self.nf_dir)
  
         for index, pl_name in playlists.items():
             curr_tracks = tracks_tbd.loc[tracks_tbd.playlist==pl_name]
@@ -136,18 +154,14 @@ class Soundclouddownloader:
                 #Update status of track in track_df and add to documentation
                 self.track_df.loc[
                     (self.track_df.link==track.link) & (self.track_df.playlist==pl_name), 
-                    "downloaded"]= True
-                self.doc.loc[len(self.doc)] = [dl_doc.title,
-                                               track.link,
-                                               dl_doc.exceptions,
-                                               pl_name, 
-                                               track.uploader]
+                    "downloaded"]= dl_doc.exceptions==""
+                
                 try: 
                     #Insert genre
                     time.sleep(.3)          #Apparently needed in order for the MP3 function to work reliably
                    
                     if Path(self.nf_dir, dl_doc.title + ".mp3").exists():
-                        filepath = Path(self.nf_dir, dl_doc.title, + ".mp3")
+                        filepath = Path(self.nf_dir, dl_doc.title + ".mp3")
                     elif Path(self.nf_dir, dl_doc.title +".wav").exists():
                         filepath = Path(self.nf_dir, dl_doc.title + ".wav")
                         
@@ -155,8 +169,8 @@ class Soundclouddownloader:
                     
                     #If no artist is specified in the filename, then add the name of the uploader
                     if " - " not in dl_doc.title:
-                        artist = self.doc.loc[
-                            self.doc.link == track.link, "uploader"].to_list()[0]
+                        artist = self.track_df.loc[
+                            self.track_df.link == track.link, "uploader"].to_list()[0]
                         
                         os.replace(filepath, 
                                    Path(self.nf_dir, 
@@ -165,15 +179,15 @@ class Soundclouddownloader:
                 except Exception as e:
                     # print("\n" + str(e))
                     
-                    #Add exception to fhb documentation and self.doc
+                    #Add exception to fhb documentation and self.track_df
                     MP3DL.add_exception(link = track.link, 
                                       exception = f"Metadata exception: {e}")
                     
-                    if self.doc.loc[self.doc.index[-1], "exceptions"]:           
-                        self.doc.loc[self.doc.index[-1], "exceptions"] += \
+                    if self.track_df.loc[self.track_df.index[-1], "exceptions"]:           
+                        self.track_df.loc[self.track_df.index[-1], "exceptions"] += \
                         " | " + f"Metadata exception: {e}"
                     else:
-                        self.doc.loc[self.doc.index[-1], "exceptions"] = \
+                        self.track_df.loc[self.track_df.index[-1], "exceptions"] = \
                             f"Metadata exception: {e}"
 
                 #Update dl_history for last downloaded track
@@ -184,10 +198,10 @@ class Soundclouddownloader:
             with open(self.history_file, 'w') as f:
                 f.write(history)   
                 
-            MP3DL.reset() 
+            # MP3DL.reset() 
         MP3DL.finish() 
         
-        return self.doc
+        return self.track_df
     
     def download_all (self):
         """Extract all tracks and download them
@@ -206,14 +220,15 @@ class Soundclouddownloader:
         
         # rename_doc = self.MP3r.process_directory()
         
-        # return self.doc, rename_doc
+        # return self.track_df, rename_doc
         
-        return self.doc
+        return self.track_df
     
     
 if __name__ == '__main__':
 
-    scdl = Soundclouddownloader()
+    scdl = Soundclouddownloader(hist_file="C:\\Users\\davis\\00_data\\01_Projects\\Personal\\SCDL\\_01_main\\_01_rsc\\Download_history.txt")
+    scdl.LibMan.read_tracks(r"C:\Users\davis\Downloads\SC DL", mode="replace")
     # scdl.download_all()
     
     # track_df, pl_status = scdl.extr_playlists(reextract = True)

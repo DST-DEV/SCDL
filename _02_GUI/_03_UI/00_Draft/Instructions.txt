@@ -9,3 +9,7 @@ Step 3: Convert the .ui File to a .py file
 For instructions see the "Qt Designer for PyQt6.htm" file
 - Note: instead of "pyuic6" the command might be "py -3.11 -m PyQt6.uic.pyuic"
 - Note: Full Command is "py -3.11 -m PyQt6.uic.pyuic -x your_ui_file.ui -o output_py_file.py"
+
+
+py -3.11 -m PyQt6.uic.pyuic -x Main.ui -o Main.py
+py -3.11 -m PyQt6.uic.pyuic -x Settings.ui -o UI_Settings_window.py

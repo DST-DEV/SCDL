@@ -1,3 +1,4 @@
+import re
 import pandas as pd
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -16,14 +17,17 @@ class PlaylistLinkExtractor:
                  hist_file = "./_01_rsc/Download_history.txt",
                  driver_choice = "Firefox",
                  sc_account = "user-727245698-705348285"):
-        self.track_df = pd.DataFrame(columns = ["playlist", "link", "uploader"])
-        self.playlists = pd.DataFrame(columns=["name", "link", "last_track", "status"])
+        self.track_df = pd.DataFrame(columns = ["playlist", "title", "link", 
+                                                "uploader", 
+                                                "exceptions", "downloaded"])
+        self.playlists = pd.DataFrame(columns=["name", "link", 
+                                               "last_track", "status"])
         self.history_file = hist_file
         self.cookies_removed = False
         self.driver_choice = driver_choice
         self.sc_account = sc_account
         
-    def extr_playlists(self, search_key=[], search_type="all", 
+    def extr_playlists(self, search_key=[], search_type="all", use_cache=True,
                        sc_account = "user-727245698-705348285"):
         """Extract the links to the playlists from the soundcloud playlist 
         website for my account (user-727245698-705348285). Results can be 
@@ -31,71 +35,81 @@ class PlaylistLinkExtractor:
         string contained in the playlists
         
         Parameters: 
-        search_key: List of strings containing the strings to search for in the
-                    playlist names
-        search_type: String which specifies the search mode. Available search 
-                     types:
-                     - "all": Extract all playlists (no filtering)
-                     - "exact": Only include playlists whose names are contained
-                                in the search_key list (full name needed, 
-                                capitalisation irrelevant)
-                     - "key": Include playlists, whose name contains one of the 
-                              keywords specified in the search_key
-        
+            search_key (list): 
+                The strings to search for in the playlist names
+            search_type (str): 
+                String which specifies the search mode. Available search types:
+                    - "all": Extract all playlists (no filtering)
+                    - "exact": Only include playlists whose names are contained
+                               in the search_key list (full name needed, 
+                               capitalisation irrelevant)
+                    - "key": Include playlists, whose name contains one of the 
+                             keywords specified in the search_key
+            use_cache (bool):
+                Whether to use the cached playlist data (if available). 
+                If set to False, playlists are extracted from the soundcloud 
+                profile
+            sc_account (str):
+                soundcloud profile from which the playlists should be extracted
+            
+            
         Returns:
         self.playlists: a list of links to the playlists
         """
-        
-        #Check the driver
-        self.check_driver()
-        
-        #Load webpage
-        print("Extracting playlists from Soundcloud")
-        self.driver.get("https://soundcloud.com/" + sc_account + "/sets")
-        
-        #If this is the time opening soundcloud of the session, then reject cookies
-        if not self.cookies_removed:
-            self.reject_cookies()
-            self.cookies_removed = True
-
-        
-        #Scroll down until all tracks are loaded
-        while not self.check_existence():
-            self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight)")
-        
-        #Extract links to tracks
-        try:
-            WebDriverWait(self.driver, self.timeout).until(
-                EC.presence_of_element_located((
-                    By.XPATH, 
-                    "(//li[@class='soundList__item'])[last()]"
-                    + "/div/div"
-                    + "/div[@class='sound__artwork sc-mr-1x']"
-                    + "/a[@class='sound__coverArt']")))
-        except TimeoutException:
-            print ("\n Playlist page loading timeout")
-        except Exception as e:
-            print(f"\nPlaylist extraction error: {e}")
-  
-        playlists = pd.DataFrame(columns=["name", "link", "last_track", "status"])
-        for i in range(len(self.driver.find_elements(By.CLASS_NAME, "sound__coverArt"))):
-            link = self.driver.find_element(
-                By.XPATH, 
-                f"//li[@class='soundList__item'][{i+1}]"
-                + "/div/div/div[@class='sound__artwork sc-mr-1x']/a"
-                ).get_attribute("href")
+        if self.playlists.empty:
+            #Check the driver
+            self.check_driver()
             
-            name = self.driver.find_element(
-                By.XPATH, 
-                f"//li[@class='soundList__item'][{i+1}]"
-                +"/div/div/div[@class='sound__content']/"
-                + "div[@class='sound__header sc-mb-1.5x sc-px-2x']/div/div"
-                + "/div[@class='soundTitle__usernameTitleContainer sc-mb-0.5x']"
-                + "/a[@class='sc-link-primary soundTitle__title sc-link-dark "
-                + "sc-text-h4']/span"
-                ).text
-            playlists.loc[-1]=[name, link, "", ""]
-            playlists = playlists.reset_index(drop=True)
+            #Load webpage
+            print("Extracting playlists from Soundcloud")
+            self.driver.get("https://soundcloud.com/" + sc_account + "/sets")
+            
+            #If this is the time opening soundcloud of the session, then reject cookies
+            if not self.cookies_removed:
+                self.reject_cookies()
+                self.cookies_removed = True
+        
+            
+            #Scroll down until all tracks are loaded
+            while not self.check_existence():
+                self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight)")
+            
+            #Extract links to playlists
+            try:
+                WebDriverWait(self.driver, self.timeout).until(
+                    EC.presence_of_element_located((
+                        By.XPATH, 
+                        "(//li[@class='soundList__item'])[last()]"
+                        + "/div/div"
+                        + "/div[@class='sound__artwork sc-mr-1x']"
+                        + "/a[@class='sound__coverArt']")))
+            except TimeoutException:
+                print ("\n Playlist page loading timeout")
+            except Exception as e:
+                print(f"\nPlaylist extraction error: {e}")
+          
+            playlists = pd.DataFrame(columns=["name", "link", "last_track", "status"])
+            for i in range(len(self.driver.find_elements(By.CLASS_NAME, "sound__coverArt"))):
+                link = self.driver.find_element(
+                    By.XPATH, 
+                    f"//li[@class='soundList__item'][{i+1}]"
+                    + "/div/div/div[@class='sound__artwork sc-mr-1x']/a"
+                    ).get_attribute("href")
+                
+                name = self.driver.find_element(
+                    By.XPATH, 
+                    f"//li[@class='soundList__item'][{i+1}]"
+                    +"/div/div/div[@class='sound__content']/"
+                    + "div[@class='sound__header sc-mb-1.5x sc-px-2x']/div/div"
+                    + "/div[@class='soundTitle__usernameTitleContainer sc-mb-0.5x']"
+                    + "/a[@class='sc-link-primary soundTitle__title sc-link-dark "
+                    + "sc-text-h4']/span"
+                    ).text
+                playlists.loc[-1]=[name, link, "", ""]
+                playlists = playlists.reset_index(drop=True)
+        else:
+            playlists = self.playlists.copy(deep=True)
+        
         
         if search_type=="all":
             self.playlists = playlists
@@ -105,20 +119,30 @@ class PlaylistLinkExtractor:
                                  + f'"{search_type}"')
             
             if search_type == "key":
-                search_key = '|'.join(r"\b{}\b".format(x.title()) 
-                                      for x in search_key)
+                search_key = r'(?=.*\b' \
+                            + r'\b)(?=.*\b'.join(map(re.escape, 
+                                                     search_key)) \
+                            + r'\b)'
+
                 
+                #Old code (basically an "Or" query instead of an and)
+                # search_key = '|'.join(r"\b{}\b".format(x) 
+                #                       for xs in search_key_enriched
+                #                       for x in xs)
+                
+                #Filter the dataframe (case insensitive)
                 self.playlists = playlists.loc[
-                    playlists["name"].str.contains(search_key)
+                    playlists["name"].str.contains(pat = search_key,
+                                                   flags = re.IGNORECASE)
                     ]
             if search_type == "exact":    
-                search_key = [s.title() for s in search_key]
+                # search_key = [s.title() for s in search_key]
                 
                 self.playlists = playlists.loc[
                         playlists["name"].isin(search_key)
                         ]
         
-        print (f"Extracted {playlists.shape[0]} playlists")
+        print (f"Extracted {self.playlists.shape[0]} playlists")
         return self.playlists
     
     def extr_track(self, index):
@@ -153,14 +177,20 @@ class PlaylistLinkExtractor:
         except:
             pass
         
-        #find child element which contains the track link
+        #find element which contains the track link
         link = self.driver.find_element(By.XPATH,
             base_path
             +"/a[@class='trackItem__trackTitle sc-link-dark "
             + "sc-link-primary sc-font-light']").get_attribute(
                 "href").split("in=user")[0]
+        
+        #Get the title of the track
+        title = self.driver.find_element(By.XPATH,
+            base_path
+            +"/a[@class='trackItem__trackTitle sc-link-dark "
+            + "sc-link-primary sc-font-light']").text
                 
-        #find child element which contaions the uploader name
+        #find element which contaions the uploader name
         uploader = self.convert_to_alphanumeric(
             self.driver.find_element(By.XPATH,
                                base_path
@@ -170,7 +200,7 @@ class PlaylistLinkExtractor:
                                ).text
             )
             
-        return link, uploader   
+        return link, title, uploader   
     
     
     def extr_links(self, playlists = pd.DataFrame(), mode="new", autosave=True):
@@ -195,11 +225,15 @@ class PlaylistLinkExtractor:
         #Check the driver
         self.check_driver()
         
-        if playlists.empty:       #If playlists is empty
-            if self.playlists.empty:  #If self.playlists is empty
+        if not type(playlists) == pd.core.frame.DataFrame:
+            return self.track_df  #Note: might be empty
+        elif playlists.empty:       
+            if self.playlists.empty:  
                 return self.track_df  #Note: might be empty
             else:
-                playlists = self.playlists
+                playlists = self.playlists.copy (deep=True)
+        else: 
+            playlists = playlists.copy (deep=True)
         
         print("Extracting tracks from playlists")
         
@@ -207,9 +241,15 @@ class PlaylistLinkExtractor:
             history = json.loads(f.read())
             
         #Prepare Track Dataframe
-        tracks = pd.DataFrame(columns=["playlist", "link", 'uploader'])
+        tracks = pd.DataFrame(columns=["playlist", "title", "link", 
+                                       "uploader",
+                                       "exceptions", "downloaded"])
         
-        #Process all playlists, which didn't run successfully already 
+        #Process all playlists, which didn't run successfully already and which
+        # were chosen to be included
+        if "include" in playlists.columns:
+            playlists = playlists.loc[playlists.include == True]
+        
         if mode =="new":
             pls = playlists.loc[
                      (~playlists.status.str.contains("new tracks found")) 
@@ -232,6 +272,7 @@ class PlaylistLinkExtractor:
             #if the current playlist is not yet in self.playlists, then add it 
             if pl.link not in self.playlists.link.values:
                 self.playlists.loc[-1] = pl.values[0]
+                self.playlists.reset_index(inplace=True)
             
             try:
                 #Wait for track container to load
@@ -250,7 +291,8 @@ class PlaylistLinkExtractor:
                 self.playlists = self.add_exception(self.playlists, 
                                                     col="status",
                                                     msg=f"Playlist loading exception : {e}", 
-                                                    index = index)
+                                                    key = pl.link, 
+                                                    search_col="link")
                 continue
             
             #Check if playlist is empty and if so, skip it
@@ -285,26 +327,30 @@ class PlaylistLinkExtractor:
                 self.playlists = self.add_exception(self.playlists, 
                                                     col="status", 
                                                     msg="Track loading timeout", 
-                                                    index = index)
+                                                    key = pl.link, 
+                                                    search_col="link")
                 continue
             except Exception as e:
                 #print (f"Track loading exception for playlist {pl_name}: {e}")
                 self.playlists = self.add_exception(self.playlists, 
                                                     col="status",
                                                     msg=f"Track loading exception : {e}", 
-                                                    index = index)
+                                                    key = pl.link, 
+                                                    search_col="link")
                 continue
             
             #Extract the tracks based on the selected mode
-            curr_tracks = pd.DataFrame(columns=["playlist", "link", 'uploader'])
+            curr_tracks = pd.DataFrame(columns=["playlist", "title", "link",
+                                                "uploader"])
             
             if mode == "last":
                 index = len(self.driver.find_elements(
                         By.CLASS_NAME, 
                         "trackList__item.sc-border-light-bottom.sc-px-2x"))-1
-                    
-                track, uploader = self.extr_track(index)
-                tracks.loc[len(tracks)] = [pl["name"], track, uploader]
+                
+                track_link, title, uploader = self.extr_track(index)
+                tracks.loc[len(tracks)] = [pl["name"], title, track_link, 
+                                           uploader, "", False]
                 if autosave: self.track_df = pd.concat ([self.track_df, tracks])
                     
             else:    
@@ -330,9 +376,12 @@ class PlaylistLinkExtractor:
                         By.CLASS_NAME, 
                         "trackList__item.sc-border-light-bottom.sc-px-2x"))):
                     
-                        track, uploader = self.extr_track(i)
+                        track_link, title, uploader = self.extr_track(i)
                         
-                        curr_tracks.loc[len(curr_tracks)] = [pl["name"], track, uploader]
+                        curr_tracks.loc[len(curr_tracks)] = [pl["name"], 
+                                                             title,
+                                                             track_link,
+                                                             uploader]
                         
                     if (mode == "new" 
                         and history.get(pl["name"]) 
@@ -346,6 +395,10 @@ class PlaylistLinkExtractor:
                             ).to_list()[0]+1:len(curr_tracks)]
                             
                     #Save tracks
+                    # curr_tracks.insert (1, "title", "")
+                    curr_tracks.insert (4, "exceptions", "")
+                    curr_tracks.insert (5, "downloaded", False)
+                    
                     tracks = pd.concat ([tracks, curr_tracks])
                     self.playlists.loc[index, "last_track"] = curr_tracks.iloc[-1].link
                     if autosave: self.track_df = pd.concat ([self.track_df, curr_tracks])
@@ -355,42 +408,47 @@ class PlaylistLinkExtractor:
         
         return tracks, self.playlists
     
-    def add_exception(self, df, col, msg="", index = -1, key = "", search_col=" "):
-        if index >=0 & index<len(df):
-            if df.loc[index, col]:
-                df.loc[index, col] += " | " + msg
-            else:
-                df.loc[index, col] =  msg
-        elif key and (search_col in df.columns):
-            if key in df[search_col].values:
-                index = df.loc[df[search_col] == key].index.values[0]
-                df.loc[index, col] += " | " +  msg
-            else:
-                df.loc[-1] = [""]*len(df.column)
-                df.loc[-1, col]=msg
-                df.loc[-1, search_col]=key
-                df = df.reset_index(drop=True)
-        else:
-            raise ValueError("no valid index or search key and search column provided")
-            
-        return df
-    
-    def update_dl_history(self, mode="set_finished"):
+    def update_dl_history(self, mode="set_finished", pl=pd.DataFrame()):
         """Updates the last tracks in the download history.
         
         Parameters:
-        mode (str - optional): either 'add_new' or 'set_finished'
-            - 'add_new': Adds all playlists which are not yet in the Download 
-                        history file and inserts the last track of the playlist
-            - 'set_finished': sets all playlists in the Download history file 
-                              to fully downloaded (by inserting the last track 
-                              of each playlist into it (including new playlists))
+            mode (str - optional): 
+                either 'add_new' or 'set_finished'
+                - 'add_new': Adds all playlists which are not yet in the Download 
+                            history file and inserts the last track of the playlist
+                - 'set_finished': sets all playlists in the Download history file 
+                                  to fully downloaded (by inserting the last track 
+                                  of each playlist into it (including new playlists))
+            pl (pandas DataFrame or str):
+                Playlists to consider for the update. can be either a dataframe 
+                containing the name and link to the playlist or a string of 
+                value "current" or "all"
+                - "current": Only the playlists in the self.playlists dataframe
+                             are considered
+                - "all": Playlists are reextracted and all found playlists are
+                         considered
                               
         Returns:
         None
         """
-        pl = self.extr_playlists()
         
+        if type(pl)==str:
+            if pl == "current":
+                pl = self.playlists
+                if pl.empty:
+                    raise ValueError("No playlists found. Extract playlists" 
+                                     +"first or choose mode 'all'")
+            elif pl == "all":
+                pl = self.extr_playlists(search_type="all", use_cache=False)
+            else:
+                raise ValueError("pl must be a string of value 'current' or "
+                                 + "'all' or a pandas DataFrame")
+        elif not type(pl)==pd.core.frame.DataFrame:
+            raise TypeError("pl must be a string of value 'current' or "
+                             + "'all' or a pandas DataFrame")
+        elif pl.empty:
+            raise ValueError("pl dataframe is empty")
+            
         with open(self.history_file, "r") as f:
             history = json.loads(f.read())
         
@@ -405,6 +463,10 @@ class PlaylistLinkExtractor:
         
         for index, row in tracks.iterrows:
             history[row.playlist] = row.link
+        
+        history = json.dumps(self.dl_history)                                           #Prepare the dict for the export
+        with open(self.history_file, 'w') as f:
+            f.write(history)
         
     def reject_cookies(self):
         """Rejects all Cookies of the https://www.forhub.io/soundcloud/en/ 
@@ -473,15 +535,60 @@ class PlaylistLinkExtractor:
                
            self.cookies_removed = False
     
+    def convert_to_alphanumeric(self, input_string):
+        """Convert an arbitrary string to its closest alphanumeric representation 
+        in standard ascii characters (remove non ascii characters and convert 
+                                      diacritics to standard characters)
+        
+        Parameters:
+        input_string: the string to be converted
+        
+        Returns:
+        alphanumeric_string: the alphanumeric ascii representation of the string
+        """
+        
+        # Normalize the string to ensure compatibility with ASCII characters
+        normalized_string = unicodedata.normalize(
+            'NFKD', input_string).encode('ascii', 'ignore').decode('ascii')
+        
+        # Remove non-alphanumeric characters
+        alphanumeric_string = ''.join(char for char in normalized_string 
+                                      if char.isalnum() or char.isspace() 
+                                      or char =='-' or char =='.')
+        
+        return alphanumeric_string
+    
     def extr_all(self):
         _ = self.extr_playlists()
         _, _ = self.extr_links()
         return self.track_df, self.playlists
 
+    def add_exception(self, df, col, msg="", index = -1, key = "", search_col=""):
+        if index >=0 & index<len(df):
+            if df.loc[index, col]:
+                df.loc[index, col] += " | " + msg
+            else:
+                df.loc[index, col] =  msg
+        elif key and (search_col in df.columns):
+            if key in df[search_col].values:
+                index = df.loc[df[search_col] == key].index.values[0]
+                df.loc[index, col] += " | " +  msg
+            else:
+                df.loc[-1] = [""]*len(df.column)
+                df.loc[-1, col]=msg
+                df.loc[-1, search_col]=key
+                df = df.reset_index(drop=True)
+        else:
+            raise ValueError("no valid index or search key and search column provided")
+            
+        return df
+
 if __name__ == '__main__':
-    ple = PlaylistLinkExtractor()
+    ple = PlaylistLinkExtractor(hist_file = r"C:\Users\davis\00_data\01_Projects\Personal\SCDL\_01_main\_01_rsc\Download_history.txt")
+    
+    pl_list = ple.extr_playlists(search_key=['Trance'], search_type="key")
     # # pl_list = ple.extr_playlists()
-    # tracklist = ple.extr_links(["https://soundcloud.com/user-727245698-705348285/sets/hard-tekk-1"])
+    tracklist = ple.extr_links()
     # track_df, pl_status = ple.extr_all()
     
 
@@ -490,7 +597,7 @@ if __name__ == '__main__':
     
     
     
-    test = pd.DataFrame(columns=["name", "link", "status"])
+    # test = pd.DataFrame(columns=["name", "link", "status"])
 
-    test.loc[0] = [ "Techno - Blunt - Low Energy - Vocal", "https://soundcloud.com/user-727245698-705348285/sets/techno-blunt-low-energy-vocal", ""]
+    # test.loc[0] = [ "Techno - Blunt - Low Energy - Vocal", "https://soundcloud.com/user-727245698-705348285/sets/techno-blunt-low-energy-vocal", ""]
     # track_df_2, pl_status_2 = ple.extr_links(test)

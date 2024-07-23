@@ -1,6 +1,6 @@
 from Link_Extractor import PlaylistLinkExtractor
 from SoundCloudMP3_Downloader import SoundcloudMP3Downloader
-from Library_Manager import LibManager
+from Library_Manager.LibManager import set_metadata
 from mutagen.easyid3 import EasyID3
 from mutagen.mp3 import MP3
 from pathlib import Path
@@ -44,7 +44,7 @@ class Soundclouddownloader:
                              + f"{type(new_files_folder)}")
         
         
-        self.LibMan = LibManager()
+        # self.LibMan = LibManager()
         self.LinkExt = PlaylistLinkExtractor(
             driver=self.driver,
             sc_account = self.sc_account,
@@ -135,7 +135,7 @@ class Soundclouddownloader:
                     elif Path(self.new_files_folder, dl_doc.title +".wav").exists():
                         filepath = Path(self.new_files_folder, dl_doc.title + ".wav")
                         
-                    self.LibMan.set_metadata(filepath, genre=pl_name)
+                    set_metadata(filepath, genre=pl_name)
                     
                     #If no artist is specified in the filename, then add the name of the uploader
                     if " - " not in dl_doc.title:
