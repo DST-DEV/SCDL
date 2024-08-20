@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>499</width>
-    <height>471</height>
+    <height>464</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -38,7 +38,7 @@
      <height>424</height>
     </rect>
    </property>
-   <layout class="QVBoxLayout" name="verticalLayout" stretch="1,5,1,1,10,0">
+   <layout class="QVBoxLayout" name="verticalLayout" stretch="1,5,1,1,10,0,0">
     <item>
      <widget class="QLabel" name="lbl_settings">
       <property name="font">
@@ -329,16 +329,21 @@
      </layout>
     </item>
     <item>
-     <layout class="QGridLayout" name="gridLayout_dl_hist" rowstretch="1,1,1,1" columnstretch="1,40,1">
-      <item row="3" column="1">
-       <widget class="QRadioButton" name="rbtn_all_pl">
-        <property name="text">
-         <string>All playlists</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="0" rowspan="2">
-       <spacer name="hSpacer_dl1">
+     <widget class="QLabel" name="lbl_appearance">
+      <property name="font">
+       <font>
+        <pointsize>11</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>Appearance</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="hLayout_appearance" stretch="1,10,30">
+      <item>
+       <spacer name="spacer_darkmode_2">
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
         </property>
@@ -350,18 +355,18 @@
         </property>
        </spacer>
       </item>
-      <item row="2" column="1">
-       <widget class="QRadioButton" name="rbtn_curr_pl">
-        <property name="text">
-         <string>Current playlists</string>
+      <item>
+       <widget class="QCheckBox" name="cb_darkmode">
+        <property name="layoutDirection">
+         <enum>Qt::LeftToRight</enum>
         </property>
-        <property name="checked">
-         <bool>true</bool>
+        <property name="text">
+         <string>Dark Mode</string>
         </property>
        </widget>
       </item>
-      <item row="2" column="2" rowspan="2">
-       <spacer name="hSpacer_dl2">
+      <item>
+       <spacer name="spacer_darkmode">
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
         </property>
@@ -372,25 +377,6 @@
          </size>
         </property>
        </spacer>
-      </item>
-      <item row="1" column="0" colspan="3">
-       <widget class="QPushButton" name="btn_dl_hist_up">
-        <property name="text">
-         <string>Update DL History</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="0" colspan="3">
-       <widget class="QLabel" name="lbl_DL_history">
-        <property name="font">
-         <font>
-          <pointsize>11</pointsize>
-         </font>
-        </property>
-        <property name="text">
-         <string>Download History</string>
-        </property>
-       </widget>
       </item>
      </layout>
     </item>

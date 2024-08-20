@@ -9,6 +9,8 @@ from PyQt6.QtCore import QFile
 import PyQt6.QtWidgets as QTW
 import PyQt6.QtGui as QTG
 import PyQt6.QtCore as QTC
+import qdarktheme
+import darkdetect
 import sys
 import win32con    # part of the pywin32 package
 import win32gui    # part of the pywin32 package 
@@ -29,6 +31,16 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
         self.setupUi(self)
+        # qdarktheme.setup_theme("auto",
+        #                         custom_colors={"[dark]": {"primary": "#75A4FF"},
+        #                                       "[light]": {"primary": "#2469B2"}}
+        #                         )
+        # if darkdetect.isLight():
+        #     self.setStyleSheet("""QPushButton {color: #000000}""")
+        # else:
+        #     self.setStyleSheet("""QPushButton {color: #000000}""")
+        #     #self.setStyleSheet("""QPushButton {color: #FFFFFF}""")
+        #     pass
         
         #Retrieve and check settings from settings file
         self.settings_path = Path(os.getcwd(),"_01_rsc","Settings.txt")
@@ -39,6 +51,10 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         else:        
             with open(self.settings_path) as f:
                 self.settings = json.loads(f.read())
+                
+                #Convert dark_mode boolean value to boolean (is read as a string from the txt file)
+                if "dark_mode" in self.settings.keys():
+                    self.settings["dark_mode"] = eval(self.settings["dark_mode"])
         self.check_settings()
 
         #Playlist extraction variables
@@ -53,7 +69,8 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         self.tbl_right_variable = ""
         
         #Create instance of Soundcloud Downloader
-        self.SCDL = Soundclouddownloader(**self.settings)
+        self.SCDL = Soundclouddownloader(pl_dir = Path(os.getcwd(),"_01_rsc"),
+                                         **self.settings)
         
         self.lineEdit_nf_dir_1.placeholderText = self.settings.get("nf_dir")
         # self.btn_pl_search.clicked.connect(self.GUI_extr_playlists)
@@ -65,7 +82,9 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         # self.Dialog = QTW.QDialog()
         # self.SettingsDialog = UI_SettingsDialog()
         # self.SettingsDialog.setupUi(self.Dialog)
+        self.change_lightmode()
         
+        #Setup Connections of Widgets Signals
         self.setup_connections()
         
     def setup_connections(self):
@@ -77,6 +96,7 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         self.btn_pl_search.clicked.connect(self.GUI_extr_playlists)
         self.btn_track_ext.clicked.connect(self.GUI_extr_tracks)
         self.btn_track_dl.clicked.connect(self.GUI_download_tracks)
+        self.btn_dl_hist_up.clicked.connect(self.GUI_update_dl_history)
         
         #Table buttons
         self.btn_addrow_left.clicked.connect(self.add_row_left)
@@ -88,6 +108,12 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         self.btn_save_left.clicked.connect(self.save_tbl_left)
         self.btn_save_right.clicked.connect(self.save_tbl_right)
         
+        self.cb_red_view_tbl_left.stateChanged.connect(self.red_tbl_view_left)
+        self.cb_red_view_tbl_right.stateChanged.connect(self.red_tbl_view_right)
+        
+        self.comboBox_tbl_left.currentTextChanged.connect(self.tbl_sel_left)
+        self.comboBox_tbl_right.currentTextChanged.connect(self.tbl_sel_right)
+        
         #Table selected index Button
         self.selectionModel = self.tbl_view_left.selectionModel() 
         self.selectionModel.selectionChanged.connect(self.update_content_right)
@@ -96,19 +122,21 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         self.btn_read_lib_1.clicked.connect(self.GUI_read_dir)
         self.btn_read_nf_1.clicked.connect(self.GUI_read_nf_1)
         self.btn_file_uni.clicked.connect(self.GUI_prep_files)
-        # self.btn_sync_music.clicked.connect(self.#########################################)  #Function doesn't exist yet
+        self.btn_sync_music.clicked.connect(self.SCDL.LibMan.sync_music_lib)
         
         #LibUpdater Buttons
         self.btn_read_lib_2.clicked.connect(self.GUI_read_dir)
         self.btn_read_nf_2.clicked.connect(self.GUI_read_nf_2)
         self.btn_goalfld_search.clicked.connect(self.GUI_find_goal_fld)
-        self.btn_reset_goalfld.clicked.connect(self.SCDL.LibMan.reset_goal_folder)
-        self.btn_move_files.clicked.connect(self.SCDL.LibMan.move_to_library)
+        self.btn_del_ex_files.clicked.connect(self.GUI_del_doubles_lib)
+        self.btn_reset_goalfld.clicked.connect(self.GUI_reset_goal_fld)
+        self.btn_move_files.clicked.connect(self.GUI_move_files)
         
         #Settings
         self.SettingsChange.triggered.connect(self.open_settings)
         self.SettingsImport.triggered.connect(self.import_settings)
         self.SettingsDialog.buttonBox.accepted.connect(self.check_dialog_settings)
+        self.SettingsDialog.cb_darkmode.stateChanged.connect(self.change_lightmode)
     
     def validate_settings(self, new_settings):
         """Verifies a dict of settings and transfers all valid new settings to 
@@ -124,10 +152,12 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         
         self.check_settings()
         
-        for key,value in self.settings.items():
-            new_value = new_settings.get(key)
-            if not new_value: 
-                #i.e. if key is not in the new settings dict or value of key is empty
+        for key,new_value in new_settings.items():
+            # if not key in self.settings.keys():
+            #     continue
+            if type(new_value)==type(None) \
+                or (type(new_value)==str and new_value==""): 
+                #i.e. if value of key is empty
                 continue
             
             if key == "sc_account" and type(new_value) == str:
@@ -135,20 +165,22 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
             if key == "driver_choice" and new_value in ["Firefox", "Chrome"]:
                 self.settings[key] = new_value
             if key in ["lib_dir", "nf_dir", "music_dir"] \
-                and type(new_value) in [str, pathlib.WindowsPath] \
+                and type(new_value) in [str, type(Path())] \
                 and Path(new_value).exists():
                 self.settings[key] = Path(new_value)
                 
                 self.lineEdit_nf_dir_1.setPlaceholderText(str(self.settings["nf_dir"]))
                 self.lineEdit_nf_dir_2.setPlaceholderText(str(self.settings["nf_dir"]))
-            if key == "dl_dir" and type(new_value) in [str, pathlib.WindowsPath]: 
+            if key == "dl_dir" and type(new_value) in [str, type(Path())]: 
                 self.settings[key] = Path(new_value)
             if key == "excl_lib_folders" and type(new_value) == list \
-                and all(type(s) in [str, pathlib.WindowsPath] for s in new_value):
+                and all(type(s) in [str, type(Path())] for s in new_value):
                     if type(new_value) == str:
                         self.settings[key] = [new_value]
                     else:
                         self.settings[key] = [str(val) for val in new_value]
+            if key == "dark_mode" and type (new_value) == bool:
+                self.settings[key] = new_value             
         
     def check_settings(self):
         """Checks if all settings are present in the current settings dict and
@@ -177,10 +209,14 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
                             dl_dir = Path("C:/Users",
                                           os.environ.get("USERNAME"), 
                                           "Downloads/Souncloud Download"),
-                            excl_lib_folders = ["00_General"])
+                            excl_lib_folders = ["00_Organization"],
+                            dark_mode = darkdetect.isDark())
+        
+        #Set standard settings if no settings are saved for each setting
         for key,value in std_settings.items():
             curr_value = self.settings.get(key)
-            if not curr_value: 
+            if type(curr_value)==type(None) \
+                or (type(curr_value)==str and curr_value==""):
                 #i.e. if key is not in settings dict or value of key is empty
                 self.settings[key] = value
             elif key == "sc_account" and not type(curr_value) == str:
@@ -190,9 +226,13 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
             elif key in ["lib_dir", "nf_dir", "music_dir"]:
                 if type(curr_value) == str and Path(curr_value).exists():
                     self.settings[key] = Path(curr_value)
-                elif (not type(curr_value) in [str, pathlib.WindowsPath] \
+                elif (not type(curr_value) in [str, type(Path())] \
                 or not Path(curr_value).exists()):
                     self.settings[key] = value
+            elif key == "dark_mode" and not (key in self.settings.keys() 
+                                             or self.settings[key]==type(None)):
+                self.settings[key] = value
+                
                     
         self.lineEdit_nf_dir_1.setPlaceholderText(str(self.settings["nf_dir"]))
         self.lineEdit_nf_dir_2.setPlaceholderText(str(self.settings["nf_dir"]))
@@ -217,6 +257,13 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
             # should be transferred to the main class
             self.SCDL.LinkExt.playlists = self.SCDL.playlists
         elif self.tbl_left_variable == "track_links":
+            #Convert the downloaded column to bool (if values were changed by the
+            #user, they are of type str instead of bool)
+            self.tbl_left._data.downloaded = list(
+                map(lambda bool_str: bool_str.lower().capitalize() == "True", 
+                    self.tbl_left._data.downloaded.astype(str))
+                )
+            
             self.SCDL.track_df = self.tbl_left._data.copy(deep=True)
             self.SCDL.LinkExt.track_df = self.SCDL.track_df
         elif self.tbl_left_variable == "library":
@@ -232,6 +279,13 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
             # should be transferred to the main class
             self.SCDL.LinkExt.playlists = self.SCDL.playlists
         elif self.tbl_right_variable == "track_links":
+            #Convert the downloaded column to bool (if values were changed by the
+            #user, they are of type str instead of bool)
+            self.tbl_right._data.downloaded = list(
+                map(lambda bool_str: bool_str.lower().capitalize() == "True", 
+                    self.tbl_right._data.downloaded.astype(str))
+                )
+            
             self.SCDL.track_df = self.tbl_right._data.copy(deep=True)
             self.SCDL.LinkExt.track_df = self.SCDL.track_df
         elif self.tbl_right_variable == "library":
@@ -274,6 +328,132 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         else:
             TableWidget.insertRows(TableWidget.rowCount(), 1)
     
+    def tbl_sel_left (self, new_value=""):
+        self.tbl_sel(lr="left", sel=new_value)
+    
+    def tbl_sel_right (self, new_value=""):
+        self.tbl_sel(lr="right", sel=new_value)
+    
+    def tbl_sel(self, lr, sel=""):
+        """Adjusts the displayed dataframe in the specified table based on a 
+        selection keyword
+        
+        Parameters:
+            lr (str):
+                Selection of the table ("left" or "right")
+            sel (str):
+                Selection of the dataframe to display in the table.
+                Possible inputs:
+                - 'Soundcloud Playlists'
+                - 'Soundcloud Tracks'
+                - 'Library Files'
+                - 'New Files'
+        
+        Returns:
+            None
+        """
+        
+        if sel:
+            if sel == "Soundcloud Playlists":
+                self.GUI_change_tbl_data(self.SCDL.LinkExt.playlists, 
+                                          lr=lr, 
+                                          variable="playlists")
+            elif sel == "Soundcloud Tracks":
+                self.GUI_change_tbl_data(data = self.SCDL.track_df, 
+                                          lr=lr,
+                                          variable = "track_links")
+            elif sel == "Library Files":
+                self.GUI_change_tbl_data (data = self.SCDL.LibMan.lib_df, 
+                                          lr=lr,
+                                          variable = "library")
+            elif sel == "New Files":
+                self.GUI_change_tbl_data (data = self.SCDL.LibMan.file_df, 
+                                          lr=lr,
+                                          variable = "new_files")
+    
+    def GUI_change_tbl_data(self, data, lr, variable):
+        """Changes the data of a specified table widget and updates the 
+        corresponding class variables
+        
+        Args:
+            data (pandas DataFrame):
+                The data to be displayed in the table
+            lr (str):
+                Whether the data should be displayed in the left table 
+                (lr = "left" or "l") or the right table (lr = "right" or "r")
+            variable (str):
+                the name of the variable/dataframe
+            
+        Returns:
+            None
+        """
+
+        if not type(data)==pd.core.frame.DataFrame:
+            return
+        
+        if lr == "left" or lr == "l":
+            self.tbl_left.change_data (data, insert_checkboxes=True)
+            self.tbl_data_left = self.tbl_left._data.copy(deep=True)
+            self.tbl_left_variable = variable
+        if lr == "right" or lr == "r":
+            self.tbl_right.change_data (data, insert_checkboxes=True)
+            self.tbl_data_right = self.tbl_right._data.copy(deep=True)
+            self.tbl_right_variable = variable
+        
+        #Hide / unhide columns based on selection of "reduced view"
+        self.red_tbl_view(lr)
+    
+    def red_tbl_view_left (self):
+        self.red_tbl_view(lr="left")
+        
+    def red_tbl_view_right (self):
+        self.red_tbl_view(lr="right")
+    
+    def red_tbl_view (self, lr):
+        """Hides non-essential columns for a given table based on the currently
+        displayed data
+        
+        Parameters:
+            lr (str):
+                Whether to adjust the left or right table
+        
+        Returns:
+            None
+        """
+        
+        #Get selected table data
+        if lr == "left" or lr == "l":
+            variable = self.tbl_left_variable
+            tbl_view = self.tbl_view_left
+            cols = self.tbl_left._data.columns
+            red_view = self.cb_red_view_tbl_left.isChecked()
+        elif lr == "right" or lr == "r":
+            variable = self.tbl_right_variable
+            tbl_view = self.tbl_view_right
+            cols = self.tbl_right._data.columns
+            red_view = self.cb_red_view_tbl_right.isChecked()
+        else:
+            return
+        
+        if red_view:
+            #Hide non-essential columns
+            if variable == "playlists":
+                for col_ind in cols.get_indexer(['status', "last_track"]):
+                    tbl_view.hideColumn(col_ind)
+            elif variable == "track_links":
+                for col_ind in cols.get_indexer(['link', "uploader", 
+                                                         "exceptions"]):
+                    tbl_view.hideColumn(col_ind)
+            elif variable == "new_files":
+                for col_ind in cols.get_indexer(['folder', "old_filename", 
+                                                         "extension", "status", 
+                                                         "create_missing_dir"]):
+                    tbl_view.hideColumn(col_ind)
+        else:
+            #Unhide all columns (some might be hidden from earlier calls of this function)
+            for col_ind in range(len(cols)):
+                tbl_view.showColumn(col_ind)
+    
     def update_content_right(self, selected, deselected):
         """Updates the content in the right table widget based on the selected 
         row in the left table.
@@ -293,18 +473,14 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         else: 
             return
         
-        if self.tbl_left_variable == "playlists":
+        if self.tbl_left_variable == "playlists" \
+            and self.tbl_right_variable == "track_links":
             pl = self.tbl_left._data.iloc[row]["name"]
             
-            if not self.SCDL.track_df.empty:
-                tracks = self.SCDL.track_df.loc[self.SCDL.track_df.playlist==pl]
-            else:
-                return
-            
-            if not tracks.empty:
-                self.GUI_change_tbl_data (data = tracks, 
-                                          lr="right",
-                                          variable = "track_links")
+            tracks = self.SCDL.track_df.loc[self.SCDL.track_df.playlist==pl]
+            self.GUI_change_tbl_data (data = tracks, 
+                                      lr="right",
+                                      variable = "track_links")
         if self.tbl_left_variable == "whatever i want to use for file df of tracks for search engine":
             pass
             
@@ -319,6 +495,8 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
             None
         """
         
+        use_cache = self.cb_use_cached.isChecked()
+        
         if self.rbtn_pl_all.isChecked():
             self.pl_extr_mode = "all"
         elif self.rbtn_pl_search_name.isChecked():
@@ -329,13 +507,17 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         search_key = self.TxtEdit_pl_search.toPlainText()
         if search_key: search_key = search_key.split(", ")
         
+        
         self.SCDL.extr_playlists(search_key=search_key, 
                                  search_type=self.pl_extr_mode, 
-                                 sc_account = self.settings["sc_account"])
+                                 sc_account = self.settings["sc_account"],
+                                 use_cache=use_cache)
         
         self.GUI_change_tbl_data (data = self.SCDL.LinkExt.playlists, 
                                   lr="left", 
                                   variable="playlists")
+        
+        self.comboBox_tbl_left.setCurrentText("Soundcloud Playlists")
         
     def GUI_extr_tracks(self):
         """Extracts the links of the tracks from the extracted soundcloud 
@@ -347,14 +529,18 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         Returns:
             None
         """
-        
-        self.SCDL.extr_tracks(mode="new", 
-                              autosave=True, 
-                              reextract=True)
+        if not self.SCDL.LinkExt.playlists.empty:
+            self.SCDL.extr_tracks(mode="new", 
+                                  autosave=True, 
+                                  reextract=True)
+        else:
+            print("No Playlists to extract tracks from found")
         
         self.GUI_change_tbl_data (data = self.SCDL.track_df, 
                                   lr="right",
                                   variable = "track_links")
+        
+        self.comboBox_tbl_right.setCurrentText("Soundcloud Tracks")
         
     def GUI_download_tracks(self):
         try:
@@ -365,42 +551,31 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
             self.GUI_change_tbl_data (data = self.SCDL.track_df, 
                                       lr="right",
                                       variable = "track_links")
+            self.comboBox_tbl_right.setCurrentText("Soundcloud Tracks")
+    
+    def GUI_update_dl_history(self):
+        """Updates the Download history file with the last tracks from either
+        the currently extracted playlists, or all playlists from the soundcloud
+        profile
         
-    def GUI_change_tbl_data(self, data, lr, variable):
-        """Changes the data of a specified table widget and updates the 
-        corresponding class variables
+        Parameters:
+            None
         
-        Args:
-            data (pandas DataFrame):
-                The data to be displayed in the table
-            lr (str):
-                Whether the data should be displayed in the left table 
-                (lr = "left" or "l") or the right table (lr = "right" or "r")
-            variable (str):
-                the name of the variable/dataframe
-            
         Returns:
             None
         """
         
+        pl_mode = "current" if self.rbtn_curr_pl.isChecked() else "all"
         
-        if not type(data)==pd.core.frame.DataFrame:
-            return
-        
-        if lr == "left" or lr == "l":
-            self.tbl_left.change_data (data, insert_checkboxes=True)
-            self.tbl_data_left = self.tbl_left._data.copy(deep=True)
-            self.tbl_left_variable = variable
-        if lr == "right" or lr == "r":
-            self.tbl_right.change_data (data, insert_checkboxes=True)
-            self.tbl_data_right = self.tbl_right._data.copy(deep=True)
-            self.tbl_right_variable = variable
+        self.SCDL.LinkExt.update_dl_history(pl=pl_mode)
+    
     
     def GUI_read_dir (self):
         self.SCDL.LibMan.read_dir()
         self.GUI_change_tbl_data (data = self.SCDL.LibMan.lib_df, 
                                   lr="left",
                                   variable = "library")
+        self.comboBox_tbl_left.setCurrentText("Library Files")
     
     def GUI_read_nf_1(self):
         if self.lineEdit_nf_dir_1.text():
@@ -413,6 +588,7 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         self.GUI_change_tbl_data (data = self.SCDL.LibMan.file_df, 
                                   lr="right",
                                   variable = "new_files")
+        self.comboBox_tbl_right.setCurrentText("New Files")
     
     def GUI_read_nf_2(self):
         if self.lineEdit_nf_dir_2.text():
@@ -425,6 +601,7 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         self.GUI_change_tbl_data (data = self.SCDL.LibMan.file_df, 
                                   lr="right",
                                   variable = "new_files")
+        self.comboBox_tbl_right.setCurrentText("New Files")
     
     def GUI_prep_files(self):
         """Preps the files in either the new file directory or the track library.
@@ -471,9 +648,44 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         file_df = self.SCDL.LibMan.determine_goal_folder(mode=mode)
         
         self.GUI_change_tbl_data (data = file_df, 
-                                  lr="left", 
-                                  variable="goal_fld")
-
+                                  lr="right", 
+                                  variable="new_files")
+        self.comboBox_tbl_right.setCurrentText("New Files")
+    
+    def GUI_move_files(self):
+        self.SCDL.LibMan.move_to_library()
+        
+        if self.lineEdit_nf_dir_2.text():
+            self.SCDL.LibMan.read_tracks(directory=self.lineEdit_nf_dir_2.text(), 
+                                    mode="replace")
+        elif self.lineEdit_nf_dir_1.text():
+            self.SCDL.LibMan.read_tracks(directory=self.lineEdit_nf_dir_1.text(), 
+                                    mode="replace")
+        else:
+            self.SCDL.LibMan.read_tracks(directory=self.settings["nf_dir"],
+                                         mode="replace")
+        
+        self.GUI_change_tbl_data (data = self.SCDL.LibMan.file_df, 
+                                  lr="right",
+                                  variable = "new_files")
+        self.comboBox_tbl_right.setCurrentText("New Files")
+    
+    def GUI_del_doubles_lib(self):
+        self.SCDL.LibMan.del_doubles()
+        
+        self.GUI_change_tbl_data (data = self.SCDL.LibMan.file_df, 
+                                  lr="right",
+                                  variable = "new_files")
+        self.comboBox_tbl_right.setCurrentText("New Files")
+    
+    def GUI_reset_goal_fld (self):
+        self.SCDL.LibMan.reset_goal_folder()
+        
+        self.GUI_change_tbl_data (data = self.SCDL.LibMan.file_df, 
+                                  lr="right",
+                                  variable = "new_files")
+        self.comboBox_tbl_right.setCurrentText("New Files")
+    
     def open_settings(self):
         self.SettingsDialog.changed_settings = dict()
         self.SettingsDialog.exec()
@@ -551,6 +763,21 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
             
         self.update_settings()
 
+    def change_lightmode (self):
+        """Changes the lighting mode """
+        
+        if self.SettingsDialog.cb_darkmode.isChecked():
+            qdarktheme.setup_theme("dark",
+                                    custom_colors={"[dark]": {"primary": "#75A4FF"}}
+                                    )
+            self.setStyleSheet("""QPushButton {color: #FFFFFF}""")
+        else:
+            qdarktheme.setup_theme("light",
+                                    custom_colors={"[light]": {"primary": "#2469B2"}}
+                                    )
+            self.setStyleSheet("""QPushButton {color: #000000}""")
+        
+        
 #%% OutputLogger    
 
 class OutputLogger:
@@ -578,7 +805,8 @@ class SettingsWindow (QTW.QDialog, UI_SettingsDialog):
                                      nf_dir="lineEdit_nf_fld",
                                      music_dir="lineEdit_music_lib",
                                      dl_dir="lineEdit_dl_folder",
-                                     excl_lib_folders="textEdit_excl_fld")
+                                     excl_lib_folders="textEdit_excl_fld",
+                                     dark_mode="cb_darkmode")
         
         self.settings_mapping_inv = {val:key for key,val in 
                                      self.settings_mapping.items()}
@@ -603,9 +831,10 @@ class SettingsWindow (QTW.QDialog, UI_SettingsDialog):
         self.lineEdit_music_lib.textChanged.connect(self.music_lib_changed)
         self.lineEdit_nf_fld.textChanged.connect(self.nff_changed)
         self.textEdit_excl_fld.textChanged.connect(self.excl_fld_changed)
+        self.cb_darkmode.stateChanged.connect(self.dark_mode_changed)
         
     def change_entries(self, settings):
-        """Changes the entries in teh setting dialog entry fields.
+        """Changes the entries in the setting dialog entry fields.
         
         Args:
             settings (dict):
@@ -638,6 +867,15 @@ class SettingsWindow (QTW.QDialog, UI_SettingsDialog):
                                  in range(webdriver_cb.count())]
                         
                         if value in items: webdriver_cb.setCurrentText(value)
+                elif ui_obj.startswith("cb_"):
+                    if not type(self.__dict__.get(ui_obj)) == type(None):
+                        if value:
+                            self.__dict__.get(ui_obj).setCheckState(
+                                QTC.Qt.CheckState.Checked)
+                        else:
+                            self.__dict__.get(ui_obj).setCheckState(
+                                QTC.Qt.CheckState.Unchecked)
+                        
     
     def retrieve_entries (self, setting_names):
         """Retrieves the entries in the settings dialog entry fields
@@ -670,6 +908,9 @@ class SettingsWindow (QTW.QDialog, UI_SettingsDialog):
                 elif ui_obj.startswith("comboBox"):
                     if not type(self.__dict__.get(ui_obj)) == type(None):
                         settings[name] = self.__dict__.get(ui_obj).currentText()
+                elif ui_obj.startswith("cb_"):
+                    if not type(self.__dict__.get(ui_obj)) == type(None):
+                        settings[name] = self.__dict__.get(ui_obj).isChecked()
         return settings
     
     def retrieve_entries_all(self):
@@ -712,14 +953,17 @@ class SettingsWindow (QTW.QDialog, UI_SettingsDialog):
     def nff_changed (self, new_value=""):
         if new_value:
             self.changed_settings["nf_dir"] = Path(new_value)
-        
+    
     def excl_fld_changed (self):
         new_value = self.textEdit_excl_fld.toPlainText()
         
         self.changed_settings[
             "excl_lib_folders"] = [fld.replace('"', '') for fld 
                                    in new_value.split(', ')]
-        
+                                   
+    def dark_mode_changed (self):
+        self.changed_settings[
+            "dark_mode"] = self.cb_darkmode.isChecked()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

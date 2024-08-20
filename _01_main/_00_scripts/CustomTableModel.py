@@ -130,6 +130,7 @@ class CustomTableModel (QTC.QAbstractTableModel):
         if 0 <= row < self.rowCount(None):
             self.beginRemoveRows(parent, row, row)
             self._data.drop(index=row, inplace=True)
+            self._data.reset_index(inplace=True, drop=True)
             self.endRemoveRows()
             return True
         return False
@@ -240,7 +241,8 @@ class MainWindow(QTW.QMainWindow):
         
         # self.view = CustomTableView()
         self.view = QTW.QTableView()
-        self.pm = CustomTableModel(self.df1)
+        # self.pm = CustomTableModel(self.df1)
+        self.pm = CustomTableModel(pd.DataFrame())
         self.view.setModel(self.pm)
         # self.pm._data = self.df1
         

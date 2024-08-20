@@ -8,6 +8,7 @@ import music_tag
 import soundfile
 import unicodedata
 from scipy.signal import resample
+import pyaudacity as audacity       #Audacity API
 
 #File Handling imports
 import os
@@ -22,7 +23,7 @@ class LibManager:
                "Free DL", "FreeDL", "exclusive", "|", "preview", "sindex", 
                "motz", "OUTNOW"]        #common obsolete strings
     
-    def __init__(self, lib_dir = None, nf_dir = None, 
+    def __init__(self, lib_dir = None, nf_dir = None, music_dir = None,
                  excl_lib_folders=["00_Organization"], **kwargs):
         #set the standard directory for the code to work in (if none is provided
         # by the user, use the downloads folder)
@@ -31,6 +32,12 @@ class LibManager:
         elif type(lib_dir)==type(None) or type(lib_dir)==type(Path()):
             self.lib_dir = lib_dir or Path("C:/Users/davis/00_data/04_Track_Library")
         
+        if (type(music_dir)==str or type(music_dir)==type(Path())) \
+            and os.path.exists(Path(music_dir)):
+            self.music_dir = Path(music_dir) 
+        else:
+            self.music_dir = None
+
         if type(nf_dir)==str:
             self.nf_dir = Path(nf_dir) 
         elif type(nf_dir)==type(None) or type(nf_dir)==type(Path()):
@@ -39,8 +46,8 @@ class LibManager:
         
         self.excl_lib_folders = excl_lib_folders
         
-        self.file_df = pd.DataFrame(columns=["folder", "goal_dir", "filename",
-                                             "old_filename", "extension", 
+        self.file_df = pd.DataFrame(columns=["folder", "filename", "old_filename", 
+                                             "goal_dir", "goal_name", "extension", 
                                              "exceptions", "status", 
                                              "create_missing_dir"])
         self.lib_df = pd.DataFrame(columns=["folder", "filename", "extension"])
@@ -136,13 +143,14 @@ class LibManager:
         #add additional columns for later
         n_files = len(file_df.index)
         file_df = file_df.assign(goal_dir=[""]*n_files,
+                                 goal_name=[""]*n_files,
                                  old_filename = [""]*n_files,
                                  exceptions=[""]*n_files,
                                  status=[""]*n_files,
                                  create_missing_dir=[False]*n_files)
-        file_df.reindex(columns=["folder", "goal_dir", "filename",
-                                 "old_filename", "extension", "exceptions", 
-                                 "status", "create_missing_dir"])
+        file_df.reindex(columns=["folder", "filename", "old_filename", 
+                                 "goal_dir", "goal_name", "extension", 
+                                 "exceptions", "status", "create_missing_dir"])
         
         if mode == "append":
             self.file_df = pd.concat([self.file_df, file_df])
@@ -282,13 +290,16 @@ class LibManager:
         
         #Replace lowercase and uppercase variants of "Remix", "Edit", and 
         # "Mashup" by the title form
-        new_filename = re.sub(r"(remix|REMIX|edit|EDIT|mashup|MASHUP)", 
+        new_filename = re.sub(r"(remix|edit|mashup)", 
                               lambda match: match.group(1).title(), 
-                              new_filename)
+                              new_filename,
+                              flags=re.IGNORECASE)
         
-        #Remove all content within square brackets
-        new_filename = re.sub(r"\s*\[.*?\]\s*", '', 
-                              new_filename)
+        #Remove all content within square brackets (except for the ones which 
+        # include the words 'Remix', 'Edit' or 'Mashup')
+        new_filename = re.sub(r'\[(.*?(?:(?!Remix|Edit|Mashup).)*?)\]', '', 
+                              new_filename,
+                              flags=re.IGNORECASE)
         
         #Replace square  brackets around "Remix", "Edit", or "Mashup"
         # by round brackets
@@ -296,8 +307,10 @@ class LibManager:
         # not necessary, since they were replaced by the title version in a 
         # previous step
         new_filename = re.sub(r"\s*\[(.*?(?:Remix|Edit|Mashup).*?)\]\s*", 
-                              lambda match: '(' + match.group(1) + ')', 
+                              lambda match: ' (' + match.group(1) + ')', 
                               new_filename)
+        
+        
         
         #Remove all round brackets which contain the words 'ft', 'prod', 'feat', or 'records'
         excl = "|".join(np.array([[x.lower(),x.upper(),x.title()] 
@@ -394,7 +407,7 @@ class LibManager:
         else:
             raise ValueError("Invalid File Format: tracks must be a pandas "
                              +"Dataframe, a string containing a filepath or a "
-                             +"pathlib.WindowsPath object")
+                             +"type(Path()) object")
         
         #Note: in case of a single file to process, the function automatically
         #processes it and returns. The following code is therefore only executed
@@ -422,7 +435,7 @@ class LibManager:
         Note: standard resolution is 16 bit
         
         Parameters:
-        filepath (str or pathlib.WindowsPath): filepath to the track to be processed
+        filepath (str or type(Path())): filepath to the track to be processed
         max_sr (opt. - int): maximum allowed sample rate (default: 48000 Hz)
         std_sr (opt. - int): standard sample rate to which files with a sample
                              rate higher than max_sr should be converted
@@ -453,20 +466,32 @@ class LibManager:
                 self.set_metadata (filepath, **metadata)
     
     def set_metadata_auto (self, filepath, genre = "", 
-                           adj_genre=False, adj_art_tit=True):
+                           adj_genre=False, adj_art_tit=True,
+                           exp_wav=False):
         """Automatically sets the artist, title and genre metadata of the file
         provided via the filepath to the values provided via the filename and 
         folderpath
         
         Paramters:
-        filepath (str or pathlib.WindowsPath): absolute path to the file to be 
-                                               edited
-        genre (str): genre of the file (possible to specify manually)
-        adj_genre (bool): Whether the genre should be updated (default: False)
-                           Note: if a genre is specified manually via the 'genre'
-                           parameter, then the genre is updated according to its 
-                           value
-        adj_art_tit (bool): Whether The Artist and Title should be updated
+            filepath (str or type(Path())): 
+                absolute path to the file to be edited
+            genre (str): 
+                genre of the file (possible to specify manually)
+            adj_genre (bool): 
+                Whether the genre should be updated (default: False)
+                Note: if a genre is specified manually via the 'genre'
+                parameter, then the genre is updated according to its value
+            adj_art_tit (bool): 
+                Whether The Artist and Title should be updated
+            exp_wav (bool):
+                Whether the track should be imported and exported in Audacity.
+                This option is only relevant for .wav files as their metadata
+                is not correctly displayed in the Windows Explorer and Recordbox
+                after the adjustment via the music_tag package.
+                
+                Note: For this feature, Audacity must be opened and the 
+                "mod-script-pipe" option in the Edit->Preferences->Modules must 
+                be enabled
         
         Return:
         None"""
@@ -475,7 +500,7 @@ class LibManager:
             filepath=Path(filepath)
         elif type(filepath)!=type(Path()):
             raise ValueError("filepath must be of type str or "
-                             + f"pathlib.WindowsPath, not {type(filepath)}")
+                             + f"type(Path()), not {type(filepath)}")
         
         artist, title = [t.strip() for t in
                          filepath.stem.split(" - ", maxsplit=1)]
@@ -494,13 +519,23 @@ class LibManager:
             self.set_metadata(filepath, artist=artist, title=title)
 
         
-    def set_metadata(self, filepath, **kwargs):
+    def set_metadata(self, filepath, exp_wav=False, **kwargs):
         """Writes the metadata provided via the **kwargs parameter into the 
             file provided by the filename
             Note: Supported file formats: .mp3, .wav, .aiff
         
         Parameters:
-        filepath (str or pathlib.WindowsPath): absolute path to the file to be edited
+        filepath (str or type(Path())): 
+            absolute path to the file to be edited
+        exp_wav (bool):
+            Whether the track should be imported and exported in Audacity.
+            This option is only relevant for .wav files as their metadata
+            is not correctly displayed in the Windows Explorer and Recordbox
+            after the adjustment via the music_tag package.
+            
+            Note: For this feature, Audacity must be opened and the 
+            "mod-script-pipe" option in the Edit->Preferences->Modules must 
+            be enabled
         **kwargs: metadata to be edited
             
         Returns:
@@ -510,9 +545,11 @@ class LibManager:
             filepath=Path(filepath)
         elif type(filepath)!=type(Path()):
             raise ValueError("filepath must be of type str or "
-                             + f"pathlib.WindowsPath, not {type(filepath)}")
+                             + f"type(Path()), not {type(filepath)}")
         
-        
+        if not filepath.exists():
+            raise FileNotFoundError(f"File with path {filepath} doesn't exist")
+
         if filepath.suffix in [".mp3", ".wav", ".aiff"]:
             file = music_tag.load_file(filepath)   
         else: 
@@ -521,7 +558,27 @@ class LibManager:
         for key in kwargs.keys():
             file[key] = kwargs[key]
         file.save()
-    
+            
+        if exp_wav and filepath.suffix == ".wav":
+            file = music_tag.load_file(filepath)
+            if not (file["title"] and file["artist"] and file["genre"]):
+                return
+                #Note: If the track has no metadata and another track was opened
+                # in Audacity previously, then Audacity keeps the metadata from
+                # the previous track and also inserts it in the track which has
+                # no metadata. Therefore the code for the Audacity API is only
+                # executed, if the title, artist and genre metadata is filled
+                # out in the current file
+            
+            try:
+                #Note: Audacity must be opened and the "mod-script-pipe" option 
+                # in the Edit->Preferences->Modules must be enabled
+                audacity.do(f'Import2: Filename="{filepath}"')
+                audacity.do(f'Export2: Filename="{filepath}" NumChannels=2')
+                audacity.do('TrackClose')
+            except:
+                pass
+
     def convert_to_alphanumeric(self, input_string):
         """Convert an arbitrary string to its closest alphanumeric representation 
         in standard ascii characters (remove non ascii characters and convert 
@@ -576,8 +633,7 @@ class LibManager:
             
         for index, row in file_df.iterrows():
             if mode == "metadata":
-                file_path = Path(self.nf_dir, row["folder"], 
-                                 row.filename + row["extension"])
+                file_path = Path(row["folder"], row.filename + row["extension"])
                 
                 #Extract the goal directory from the genre metadata
                 try:
@@ -599,9 +655,11 @@ class LibManager:
                     res = lib_df.loc[lib_df.filename==closest_match[0]]
                     
                     #Only use first match
-                    res = res.folder.to_list()[0] + "/"\
-                        + res.filename.to_list()[0]\
-                        + res.extension.to_list()[0]
+                    res_dir = res.folder.to_list()[0]
+                    res_name = res.filename.to_list()[0]\
+                               + res.extension.to_list()[0]
+                    
+                    res_dir = res_dir.replace(str(self.lib_dir) + "\\", "")
                     
                     #Use all matches that were found
                     # if res.shape[0]==1:
@@ -614,7 +672,8 @@ class LibManager:
                     #                      + row.extension
                     #                      for i,row in res.iterrows()])
                                
-                    file_df.loc[index, "goal_dir"] = res
+                    file_df.loc[index, "goal_dir"] = res_dir
+                    file_df.loc[index, "goal_name"] = res_name
             else:
                 raise ValueError("mode must me either 'metadata' or 'namesearch,"
                                  f" not {mode}")
@@ -622,18 +681,47 @@ class LibManager:
         self.file_df = file_df
         return file_df
     
-    def move_to_library(self, file_df=None):
+    def del_doubles (self, file_df=None):
+        """Deletes the files in the file_df for which a corresponding file in 
+        the library was found
+        
+        Parameters:
+            file_df (None or pandas DataFrame):
+                files to process
+        
+        Returns:
+            None
+        """
+        
+        #Check inputs
+        if type(file_df) != pd.core.frame.DataFrame or file_df.empty:
+            file_df = self.file_df
+            
+        if file_df.empty:
+            return
+        
+        for i, row in file_df.loc[file_df.goal_name!=""].iterrows():
+            filepath = Path(row.folder, row.filename + row.extension)
+            if os.path.exists(filepath):
+                os.remove(filepath)
+                file_df.drop(index=i, inplace=True)
+                #Note: since the file_df and self.file_df are still linked (no
+                #copy(deep=True) used), the row is also deleted in the self.file_df
+    
+    def move_to_library(self, file_df=None, replace_doubles = False):
         """Moves the Tracks in the file_df in their respective folder based on 
         the entries in the goal folder column of the file_df
         
         Parameters:
-        file_df (pd.DataFrame, optional): 
-            Dataframe containing information on the folder and filename of all 
-            files to be processed as well as the goal directory
+            file_df (pd.DataFrame, optional): 
+                Dataframe containing information on the folder and filename of all 
+                files to be processed as well as the goal directory
+            replace_doubles (bool):
+                Whether new files which already exist in the library should be replaced
             
         Returns:
-        file_df: updated version of the dataframe with information on occured 
-                 exceptions
+            file_df: updated version of the dataframe with information on occured 
+                     exceptions
         """
         
         #Check inputs
@@ -651,70 +739,70 @@ class LibManager:
                              row["filename"] + row["extension"])
             
             #If a goal directory is specified
-            if file_df.loc[index, "goal_dir"]:
-                #Retrieve all goal directories (there might be multiple)
-                goal_dir = file_df.loc[index, "goal_dir"].split(" | ")
-                 
-                for gd in goal_dir:
-                    gd = Path(gd)
-                    
-                    if gd.suffix:
-                        #If the goal directory is a file, replace the file with 
-                        #the new file
-                        try:
-                            os.replace(file_path, 
-                                       Path(self.lib_dir,
-                                            gd.with_suffix(''),
-                                            row["extension"])
-                                       )
+            if row.goal_dir:
+                if row.goal_name:
+                    #If the goal directory is a file, replace the file with 
+                    #the new file
+                    if not replace_doubles:
+                        continue
+                    try:
+                        #Move the new file to the library
+                        os.replace(file_path, 
+                                   Path(self.lib_dir,
+                                        row.goal_dir,
+                                        Path(row.goal_name).with_suffix("") 
+                                        + row["extension"])
+                                   )
+                        
+                        #If the old file in the library had a different 
+                        # extension than the new file, delete the old file
+                        if not Path(row.goal_name).suffix == row["extension"]:
+                            os.remove(Path(self.lib_dir,
+                                           row.goal_dir,
+                                           row.goal_name))
                             
-                            #If the old file in the library had a different 
-                            # extension than the new file, delete the old file
-                            if not gd.suffix == row["extension"]:
-                                os.remove(Path(self.lib_dir, gd))
-                                
+                    except Exception as e:
+                        self.file_df = self.add_exception(
+                            self.file_df, col = "exceptions",
+                            msg=f"Copying error for goal directory {row.goal_dir}: "
+                                + f"{e.__class__} : {e}", 
+                            index = index)
+                    else:
+                        self.file_df = self.add_exception(
+                            self.file_df, col = "status",
+                            msg=f"Moved to {row.goal_dir}", 
+                            index = index)
+                else:
+                    #If the goal directory is a folder, then move the file 
+                    # to this folder (Note: if there is already a file with
+                    #the same name in the goal folder, then it is replaced)
+                    
+                    #Check if goal directory exists and whether it should be 
+                    #created if it doesn't exist
+                    if (row.create_missing_dir 
+                        or os.path.isdir (Path(self.lib_dir, row.goal_dir))):
+                        
+                        try:
+                            if not os.path.isdir (Path(self.lib_dir, row.goal_dir)):
+                                os.mkdir(self.lib_dir, row.goal_dir)
+                            
+                            os.replace(file_path, 
+                                       Path(self.lib_dir, 
+                                            row.goal_dir, 
+                                            file_path.name))
                         except Exception as e:
                             self.file_df = self.add_exception(
                                 self.file_df, col = "exceptions",
-                                msg=f"Copying error for goal directory {gd}: "
+                                msg=f"Copying error for goal directory {row.goal_dir}: "
                                     + f"{e.__class__} : {e}", 
                                 index = index)
                         else:
                             self.file_df = self.add_exception(
                                 self.file_df, col = "status",
-                                msg=f"Moved to {gd}", 
+                                msg=f"Moved to {row.goal_dir}", 
                                 index = index)
                     else:
-                        #If the goal directory is a folder, then move the file 
-                        # to this folder (Note: if there is already a file with
-                        #the same name in the goal folder, then it is replaced)
-                        
-                        #Check if goal directory exists and whether it should be 
-                        #created if it doesn't exist
-                        if (row.create_missing_dir 
-                            or os.path.isdir (Path(self.lib_dir, gd))):
-                            
-                            try:
-                                if not os.path.isdir (Path(self.lib_dir, gd)):
-                                    os.mkdir(self.lib_dir, gd)
-                                
-                                os.replace(file_path, 
-                                           Path(self.lib_dir, 
-                                                gd, 
-                                                file_path.name))
-                            except Exception as e:
-                                self.file_df = self.add_exception(
-                                    self.file_df, col = "exceptions",
-                                    msg=f"Copying error for goal directory {gd}: "
-                                        + f"{e.__class__} : {e}", 
-                                    index = index)
-                            else:
-                                self.file_df = self.add_exception(
-                                    self.file_df, col = "status",
-                                    msg=f"Moved to {gd}", 
-                                    index = index)
-                        else:
-                            self.file_df.loc[index, "status"] = "Goal directory not found"
+                        self.file_df.loc[index, "status"] = "Goal directory not found"
             else:
                 self.file_df = self.add_exception(
                     self.file_df, col = "exceptions",
@@ -723,8 +811,24 @@ class LibManager:
                 
         return self.file_df
     
+    def sync_music_lib(self, music_dir=None):
+        if (not music_dir or not os.path.exists(Path(music_dir))):
+            if self.music_dir:
+                music_dir = self.music_dir
+            else:
+                return
+
+        files = self.lib_df if not self.lib_df.empty else self.read_dir()
+        
+        files = files.loc[files.extension==".mp3"]
+        
+        for i, file in files.iterrows():
+            shutil.copy2(Path(file.folder, file.filename + ".mp3"),
+                         Path(file.folder, file.filename + ".mp3"))
+    
     def reset_goal_folder(self):
-        self.file_df = self.file_df.loc[:,"goal_dir"] = ""
+        self.file_df.loc[:,"goal_dir"] = ""
+        self.file_df.loc[:,"goal_name"] = ""
     
     def reset_lib_df(self):
         """Clears the entries in the self.lib_df dataframe

@@ -14,25 +14,25 @@ import pathlib
 import os
 
 class SoundcloudMP3Downloader:
-    def __init__(self, driver = "Firefox", new_files_folder = None):
+    def __init__(self, driver = "Firefox", dl_folder = None):
         self.cookies_removed = False
         self.tracklist = pd.DataFrame(columns=["title", "link", "exceptions"])
         self.timeout = 15 # seconds
         
-        if type(new_files_folder)==type(None):
-            self.new_files_folder = Path("C:/Users", 
+        if type(dl_folder)==type(None):
+            self.dl_folder = Path("C:/Users", 
                                          os.environ.get("USERNAME"), 
                                          "Downloads/Souncloud Download")
-            if not self.new_files_folder.exists():
-                os.mkdir(self.new_files_folder)
-        elif type(new_files_folder)==str:
-            self.new_files_folder = Path(new_files_folder)
-        elif type(new_files_folder)==pathlib.WindowsPath:
-            self.new_files_folder = new_files_folder
+            if not self.dl_folder.exists():
+                os.mkdir(self.dl_folder)
+        elif type(dl_folder)==str:
+            self.dl_folder = Path(dl_folder)
+        elif type(dl_folder)==type(Path()):
+            self.dl_folder = dl_folder
         else:
             raise ValueError("Filepath for new files folder must be of type "
-                             + "str or pathlib.WindowsPath, not "
-                             + f"{type(new_files_folder)}")
+                             + "str or type(Path()), not "
+                             + f"{type(dl_folder)}")
         
         
         if driver =="Firefox":
@@ -43,7 +43,7 @@ class SoundcloudMP3Downloader:
             profile.set_preference('browser.download.folderList', 2)  # Use custom download path
             profile.set_preference('browser.download.manager.showWhenStarting', False)
             profile.set_preference('browser.download.dir', 
-                                   str(self.new_files_folder))
+                                   str(self.dl_folder)+"\\tmp")
             profile.set_preference('browser.helperApps.neverAsk.saveToDisk', 
                                    'application/pdf')
             options.profile = profile
@@ -54,7 +54,7 @@ class SoundcloudMP3Downloader:
         elif driver == "Chrome":
             options = webdriver.ChromeOptions()  
             prefs = {"download.default_directory" : 
-                     str(self.new_files_folder).replace("\\", "/")}
+                     str(self.dl_folder).replace("\\", "/")}
             options.add_experimental_option("prefs", prefs)
             self.driver = webdriver.Chrome(executable_path='./chromedriver', 
                                            chrome_options=options)
@@ -123,7 +123,7 @@ class SoundcloudMP3Downloader:
         #Add track to tracklist
         if track_link not in self.tracklist.link.values:
             self.tracklist.loc[len(self.tracklist)] = ["", track_link, ""]
-            track_index = len(self.tracklist)
+            track_index = len(self.tracklist)-1
         else:
             track_index = self.tracklist.loc[self.tracklist.link == track_link
                                              ].index.to_list()[0]
@@ -208,14 +208,14 @@ class SoundcloudMP3Downloader:
             self.return_og_window()
             return self.tracklist.loc[track_index]
         else: 
-            repl_dict = {" : ": " ", " :": " ", ": ": " ", ":": " ", 
-                         "/":"", "*":" ", 
-                         " | ":" ", "|":""}                                    #Reserved characters in windows and their respective replacement
-            title = reduce(lambda x, y: x.replace(y, repl_dict[y]), 
-                           repl_dict, 
-                           track_title.text).removeprefix('Title').strip()      #Title of the track (= filename)
+            # repl_dict = {" : ": " _ ", " :": " :", ": ": "_ ", ":": "_", 
+            #              "/":"", "*":" ", 
+            #              " | ":" ", "|":""}                                    #Reserved characters in windows and their respective replacement
+            # title = reduce(lambda x, y: x.replace(y, repl_dict[y]), 
+            #                repl_dict, 
+            #                track_title.text).removeprefix('Title').strip()      #Title of the track (= filename)
             
-            self.add_tracklist_info (track_link, dict(title = title))
+            # self.add_tracklist_info (track_link, dict(title = title))
 
             #Download the song
             self.driver.find_element(By.ID, 'download-btn').click()
