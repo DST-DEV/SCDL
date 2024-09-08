@@ -86,21 +86,19 @@ class SoundcloudMP3Downloader:
     def reject_cookies(self):
         """Rejects all Cookies of the download website"""
         
-        xpath_reject = "//button[@class='fc-button fc-cta-do-not-consent "\
-        + "fc-secondary-button']/p[@class='fc-button-label']"
-        
         #Wait until cookie window appears
         try:
             WebDriverWait(self.driver, self.timeout).until(
-                EC.presence_of_element_located(
-                    (By.XPATH, xpath_reject)))
+                EC.presence_of_element_located((By.CLASS_NAME,"css-5a47r")))
         except TimeoutException:
             print ("Loading took too much time!")
         except Exception as e:
             print (e)
             
         try:
-            self.driver.find_element(By.XPATH, xpath_reject).click()
+            self.driver.find_element(By.CLASS_NAME, "css-5a47r").click()
+            # driver.find_element(By.CLASS_NAME, "css-6hteb1").click()          #Reject all button (not necessary)
+            self.driver.find_element(By.XPATH, '//div[@class="qc-cmp2-buttons-desktop"]/button').click()
             self.return_og_window()
         except Exception as e: 
             print(e)
@@ -132,7 +130,7 @@ class SoundcloudMP3Downloader:
             self.tracklist.loc[track_index, "exceptions"] =""
             
         #Open Download website
-        self.driver.get('https://soundcloudtomp3.biz/')
+        self.driver.get('https://soundcloudmp3.org/de')
         
         #If this is the first track of the session, then reject cookies
         if not self.cookies_removed:
@@ -144,7 +142,8 @@ class SoundcloudMP3Downloader:
             WebDriverWait(self.driver, self.timeout).until(
                 EC.presence_of_element_located(
                     (By.XPATH,
-                     "//input[@class='form-control form-control-lg']")))
+                     "//div[@class='input-group input-group-lg']" 
+                     + "/input[@class='form-control']")))
         except TimeoutException:
             print ("\nEntry field: Loading took too much time!")
             self.add_exception(track_link, "Entry field loading timeout")
@@ -155,44 +154,42 @@ class SoundcloudMP3Downloader:
                                "Entry field loading exception: " + str(e))
             return self.tracklist.loc[track_index]
 
-        #Set Download quality to high
-        dl_quality_sel = self.driver.find_element(By.XPATH, 
-                              "//p[@style='margin-bottom:25px']"
-                              + "/input[@value=320]")
-        #Scroll button into view
-        # self.driver.execute_script("arguments[0].scrollIntoView();", dl_quality_sel)
-        
-        #Select high bitrate mode
-        self.driver.execute_script("arguments[0].click();", dl_quality_sel)
-        # dl_quality_sel.click()
-        
         # Insert the link of the track and start conversion
         url_box = self.driver.find_element(By.XPATH, 
-                              "//input[@class='form-control form-control-lg']")
-        
-        # self.driver.execute_script("arguments[0].scrollIntoView();", url_box)
-        self.driver.execute_script(f"arguments[0].value='{track_link}';", url_box)
-        
-        conv_btn = self.driver.find_element(By.XPATH, 
-                              "//button[@class='btn btn-primary']")
-        # self.driver.execute_script("arguments[0].scrollIntoView();", conv_btn)
-        self.driver.execute_script(f"arguments[0].click();", conv_btn)
-        
-        
-        # url_box.clear()
-        # url_box.send_keys(track_link)
-        # url_box.send_keys(Keys.ENTER)
+                              "//div[@class='input-group input-group-lg']"
+                              + "/input[@class='form-control']")
+        url_box.clear()
+        url_box.send_keys(track_link)
+        url_box.send_keys(Keys.ENTER)
         self.return_og_window()
+
 
         # Wait for the Site (more specifically the track information & DL button)
         try:
             WebDriverWait(self.driver, self.timeout).until(
-                EC.presence_of_element_located(
-                    (By.XPATH, "//a[@class='btn btn-success']"))
+                EC.text_to_be_present_in_element(
+                    (By.XPATH, "//div[@id='ready-group']/h4"), 
+                    'Fertig sind, klicken Sie hier, um Ihre MP3-Download!')
                 )
             
+            track_title = WebDriverWait(self.driver, self.timeout).until(
+                EC.presence_of_element_located(
+                    (By.XPATH, 
+                    "//div[@class='info clearfix']/p[1]")
+                    )
+                )
+            # WebDriverWait(self.driver, self.timeout).until(
+            #     EC.visibility_of_element_located(
+            #         (By.ID, 'download-btn'))
+            #     )
+            
+            # WebDriverWait(self.driver, self.timeout).until(
+            #     EC.element_to_be_clickable(
+            #         (By.ID, 'download-btn'))
+            #     )
+            
             #Scroll down to DL button
-            # self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight)")
+            self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight)")
 
         #Add Track to tracklist (incl. exceptions/errors)
         except TimeoutException:
@@ -211,52 +208,18 @@ class SoundcloudMP3Downloader:
             self.return_og_window()
             return self.tracklist.loc[track_index]
         else: 
-            #Download the song
-            dl_btn = self.driver.find_element(By.XPATH, "//a[@class='btn btn-success']")
-            # self.driver.execute_script("arguments[0].scrollIntoView();", dl_btn)
+            # repl_dict = {" : ": " _ ", " :": " :", ": ": "_ ", ":": "_", 
+            #              "/":"", "*":" ", 
+            #              " | ":" ", "|":""}                                    #Reserved characters in windows and their respective replacement
+            # title = reduce(lambda x, y: x.replace(y, repl_dict[y]), 
+            #                repl_dict, 
+            #                track_title.text).removeprefix('Title').strip()      #Title of the track (= filename)
             
-            self.driver.execute_script("arguments[0].click();", dl_btn)
-            # dl_btn.click()
-            self.return_og_window()
-            
+            # self.add_tracklist_info (track_link, dict(title = title))
 
-            #Close the advertisement pop-up if there is one
-            # Notes on the code: The advertisement is within an iframe and can
-            # therefore not accessed by selenium directly. Selenium first has to
-            # switch to the iframe and can then search for the dismiss button. 
-            # There are multiple advertisement iframes (all with "aswift_" + a 
-            # number in their id) of which only one is active. Since I am unable 
-            # to determine, which one is active, all of them are searched and 
-            # opened and the subsequent steps are put within a try-except 
-            # statement.
-            # Within the aswift iframes, there is sometimes a second iframe 
-            # layer with the id "ad_iframe". Before being able to search for 
-            # the dismiss button, this iframe has to be opened as well
-            
-            iframes = self.driver.find_elements(By.XPATH, "//iframe[contains(@id, 'aswift')]")
-            
-            if iframes:
-                for iframe in iframes:
-                    try:
-                        print(iframe.get_attribute('id'))
-                        self.driver.switch_to.frame(iframe)
-                        
-                        try:
-                            dismiss_btn = self.driver.find_element(
-                                By.XPATH, "//div[@id='dismiss-button']")
-                        except:
-                            ad_iframe = self.driver.find_element(
-                                By.XPATH, "//iframe[@id='ad_iframe']")
-                            self.driver.switch_to.frame(ad_iframe)
-                            dismiss_btn = self.driver.find_element(
-                                By.XPATH, "//div[@id='dismiss-button']")
-                        finally:
-                            self.driver.execute_script("arguments[0].click();", 
-                                                       dismiss_btn)
-                    except:
-                        pass
-                    finally:
-                        self.driver.switch_to.default_content()         
+            #Download the song
+            self.driver.find_element(By.ID, 'download-btn').click()
+            self.return_og_window()
         
             return self.tracklist.loc[track_index]
     

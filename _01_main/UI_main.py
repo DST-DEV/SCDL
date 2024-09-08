@@ -6,6 +6,7 @@ from _00_scripts.UI_Main_window import Ui_MainWindow
 from _00_scripts.UI_Settings_window import Ui_Dialog as UI_SettingsDialog
 from PyQt6.QtWidgets import QApplication, QMainWindow
 from PyQt6.QtCore import QFile
+from PyQt5.QtCore import pyqtSlot
 import PyQt6.QtWidgets as QTW
 import PyQt6.QtGui as QTG
 import PyQt6.QtCore as QTC
@@ -31,16 +32,6 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
         self.setupUi(self)
-        # qdarktheme.setup_theme("auto",
-        #                         custom_colors={"[dark]": {"primary": "#75A4FF"},
-        #                                       "[light]": {"primary": "#2469B2"}}
-        #                         )
-        # if darkdetect.isLight():
-        #     self.setStyleSheet("""QPushButton {color: #000000}""")
-        # else:
-        #     self.setStyleSheet("""QPushButton {color: #000000}""")
-        #     #self.setStyleSheet("""QPushButton {color: #FFFFFF}""")
-        #     pass
         
         #Retrieve and check settings from settings file
         self.settings_path = Path(os.getcwd(),"_01_rsc","Settings.txt")
@@ -78,14 +69,22 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         
         #Settings Window
         self.SettingsDialog = SettingsWindow(self.settings)
-        #  Alternative way:
-        # self.Dialog = QTW.QDialog()
-        # self.SettingsDialog = UI_SettingsDialog()
-        # self.SettingsDialog.setupUi(self.Dialog)
-        self.change_lightmode()
+        
+        #Setup the Threadpool
+        self.threadpool = QTC.QThreadPool()
         
         #Setup Connections of Widgets Signals
         self.setup_connections()
+        
+        #Set light or dark mode
+        self.change_lightmode()
+        
+        # Set the title
+        self.setWindowTitle("Soundcloud Downloader")
+        
+        # Set the custom icon for the application
+        icon = QTG.QIcon(r"C:\Users\davis\00_data\05_BA_safety_copy\05_ScalingApp\01_version01-PyQt5\_01_rsc\00_icons\W-TUSCIN_Icon.ico")  # Replace with the actual path to your icon file
+        self.setWindowIcon(icon)
         
     def setup_connections(self):
         # Redirect stdout and stderr
@@ -93,10 +92,10 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         sys.stderr = OutputLogger(self.txtedit_messages)
         
         #SCDL buttons
-        self.btn_pl_search.clicked.connect(self.GUI_extr_playlists)
-        self.btn_track_ext.clicked.connect(self.GUI_extr_tracks)
+        self.btn_pl_search.clicked.connect(self.run_fcn_thread(self.GUI_extr_playlists))
+        self.btn_track_ext.clicked.connect(self.run_fcn_thread(self.GUI_extr_tracks))
         self.btn_track_dl.clicked.connect(self.GUI_download_tracks)
-        self.btn_dl_hist_up.clicked.connect(self.GUI_update_dl_history)
+        self.btn_dl_hist_up.clicked.connect(self.run_fcn_thread(self.GUI_update_dl_history))
         
         #Table buttons
         self.btn_addrow_left.clicked.connect(self.add_row_left)
@@ -119,18 +118,18 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         self.selectionModel.selectionChanged.connect(self.update_content_right)
         
         #LibManager Buttons
-        self.btn_read_lib_1.clicked.connect(self.GUI_read_dir)
-        self.btn_read_nf_1.clicked.connect(self.GUI_read_nf_1)
-        self.btn_file_uni.clicked.connect(self.GUI_prep_files)
-        self.btn_sync_music.clicked.connect(self.SCDL.LibMan.sync_music_lib)
+        self.btn_read_lib_1.clicked.connect(self.run_fcn_thread(self.GUI_read_dir))
+        self.btn_read_nf_1.clicked.connect(self.run_fcn_thread(self.GUI_read_nf_1))
+        self.btn_file_uni.clicked.connect(self.run_fcn_thread(self.GUI_prep_files))
+        self.btn_sync_music.clicked.connect(self.run_fcn_thread(self.SCDL.LibMan.sync_music_lib))
         
         #LibUpdater Buttons
-        self.btn_read_lib_2.clicked.connect(self.GUI_read_dir)
-        self.btn_read_nf_2.clicked.connect(self.GUI_read_nf_2)
-        self.btn_goalfld_search.clicked.connect(self.GUI_find_goal_fld)
-        self.btn_del_ex_files.clicked.connect(self.GUI_del_doubles_lib)
-        self.btn_reset_goalfld.clicked.connect(self.GUI_reset_goal_fld)
-        self.btn_move_files.clicked.connect(self.GUI_move_files)
+        self.btn_read_lib_2.clicked.connect(self.run_fcn_thread(self.GUI_read_dir))
+        self.btn_read_nf_2.clicked.connect(self.run_fcn_thread(self.GUI_read_nf_2))
+        self.btn_goalfld_search.clicked.connect(self.run_fcn_thread(self.GUI_find_goal_fld))
+        self.btn_del_ex_files.clicked.connect(self.run_fcn_thread(self.GUI_del_doubles_lib))
+        self.btn_reset_goalfld.clicked.connect(self.run_fcn_thread(self.GUI_reset_goal_fld))
+        self.btn_move_files.clicked.connect(self.run_fcn_thread(self.GUI_move_files))
         
         #Settings
         self.SettingsChange.triggered.connect(self.open_settings)
@@ -358,6 +357,26 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
                 self.GUI_change_tbl_data(self.SCDL.LinkExt.playlists, 
                                           lr=lr, 
                                           variable="playlists")
+                
+                header = self.tbl_view_left.horizontalHeader()    
+                
+                header.setDefaultSectionSize()(0, QTW.QHeaderView.ResizeMode.ResizeToContents)
+                header.setSectionResizeMode(0, QTW.QHeaderView.ResizeMode.ResizeToContents)
+                header.setSectionResizeMode(1, QTW.QHeaderView.ResizeMode.Stretch)
+                header.setSectionResizeMode(2, QTW.QHeaderView.ResizeMode.Fixed)
+                self.tbl_view_left.setColumnWidth(2, 10)
+                header.setSectionResizeMode(3, QTW.QHeaderView.ResizeMode.Fixed)
+                self.tbl_view_left.setColumnWidth(3, 10)
+                header.setSectionResizeMode(4, QTW.QHeaderView.ResizeMode.ResizeToContents)
+                
+                # header = self.tbl_view_left.horizontalHeader()       
+                # header.setSectionResizeMode(0, QTW.QHeaderView.ResizeMode.ResizeToContents)
+                # header.setSectionResizeMode(1, QTW.QHeaderView.ResizeMode.Stretch)
+                # header.setSectionResizeMode(2, QTW.QHeaderView.ResizeMode.Fixed)
+                # self.tbl_view_left.setColumnWidth(2, 10)
+                # header.setSectionResizeMode(3, QTW.QHeaderView.ResizeMode.Fixed)
+                # self.tbl_view_left.setColumnWidth(3, 10)
+                # header.setSectionResizeMode(4, QTW.QHeaderView.ResizeMode.ResizeToContents)
             elif sel == "Soundcloud Tracks":
                 self.GUI_change_tbl_data(data = self.SCDL.track_df, 
                                           lr=lr,
@@ -518,7 +537,7 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
                                   variable="playlists")
         
         self.comboBox_tbl_left.setCurrentText("Soundcloud Playlists")
-        
+
     def GUI_extr_tracks(self):
         """Extracts the links of the tracks from the extracted soundcloud 
         playlists and displays the results in the right table widget
@@ -776,20 +795,16 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
                                     custom_colors={"[light]": {"primary": "#2469B2"}}
                                     )
             self.setStyleSheet("""QPushButton {color: #000000}""")
+    
+    def run_fcn_thread (self, fcn):
+        threadpool = self.threadpool
         
-        
-#%% OutputLogger    
-
-class OutputLogger:
-    def __init__(self, text_edit_widget):
-        self.text_edit_widget = text_edit_widget
-
-    def write(self, message):
-        self.text_edit_widget.append(message)
-
-    def flush(self):
-        pass  # No need to implement this for a QTextEdit
-
+        def run_thread(self):
+            worker = Worker(fcn) # Any other args, kwargs are passed to the run function
+            
+            # Execute
+            threadpool.start(worker)
+        return run_thread
 
 #%% SettingsWindow
 
@@ -965,7 +980,59 @@ class SettingsWindow (QTW.QDialog, UI_SettingsDialog):
         self.changed_settings[
             "dark_mode"] = self.cb_darkmode.isChecked()
 
+#%% OutputLogger    
+
+class OutputLogger:
+    def __init__(self, text_edit_widget):
+        self.text_edit_widget = text_edit_widget
+
+    def write(self, message):
+        self.text_edit_widget.append(message)
+
+    def flush(self):
+        pass  # No need to implement this for a QTextEdit
+
+#%% Worker 
+
+class Worker(QTC.QRunnable):
+    '''
+    Worker thread
+
+    Inherits from QRunnable to handler worker thread setup, signals and wrap-up.
+
+    :param callback: The function callback to run on this worker thread. Supplied args and
+                     kwargs will be passed through to the runner.
+    :type callback: function
+    :param args: Arguments to pass to the callback function
+    :param kwargs: Keywords to pass to the callback function
+
+    '''
+
+    def __init__(self, fn, *args, **kwargs):
+        super(Worker, self).__init__()
+        # Store constructor arguments (re-used for processing)
+        self.fn = fn
+        self.args = args
+        self.kwargs = kwargs
+
+    @pyqtSlot()
+    def run(self):
+        '''
+        Initialise the runner function with passed args, kwargs.
+        '''
+        self.fn(*self.args, **self.kwargs)
+
+#%% Main
+
 if __name__ == "__main__":
+    if sys.platform == 'win32':
+        import ctypes
+        app_id = 'SC DL'  # Replace with a unique identifier for your app
+
+        # Set the taskbar icon for Windows
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(app_id)
+    
+    
     app = QApplication(sys.argv)
 
     window = MainWindow()

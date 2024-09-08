@@ -164,10 +164,14 @@ class PlaylistLinkExtractor:
                                  + f'"{search_type}"')
             
             if search_type == "key":
-                search_key = r'(?=.*\b' \
-                            + r'\b)(?=.*\b'.join(map(re.escape, 
+                # search_key = r'(?=.*\b' \
+                #             + r'\b)(?=.*\b'.join(map(re.escape, 
+                #                                      search_key)) \
+                #             + r'\b)'
+                search_key = r'(?=.*' \
+                            + r')(?=.*'.join(map(re.escape, 
                                                      search_key)) \
-                            + r'\b)'
+                            + r')'
 
                 
                 #Old code (basically an "Or" query instead of an and)

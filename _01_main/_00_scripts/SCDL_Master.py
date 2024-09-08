@@ -9,6 +9,7 @@ import pathlib
 import time
 import json
 import os
+import re
 
 class Soundclouddownloader:
     def __init__(self, 
@@ -153,6 +154,12 @@ class Soundclouddownloader:
  
         for index, pl_name in playlists.items():
             curr_tracks = tracks_tbd.loc[tracks_tbd.playlist==pl_name]
+            
+            #Add a column to curr_tracks for the dl name & file extension 
+            #(needed for file name adjustment later)
+            curr_tracks["dl_name"] = ""
+            curr_tracks["ext"] = ""
+            
             for index, track in tqdm(curr_tracks.iterrows(), 
                                      desc = f"Downloading playlist {pl_name} "
                                             + f"({index+1}/{pl_len}): ",
@@ -167,23 +174,50 @@ class Soundclouddownloader:
                 try: 
                     #Insert genre
                     time.sleep(.3)          #Apparently needed in order for the MP3 function to work reliably
-                   
-                    if Path(self.dl_dir, "tmp", track.title + ".mp3").exists():
-                        filepath = Path(self.dl_dir, "tmp", track.title + ".mp3")
-                    elif Path(self.dl_dir, "tmp", track.title +".wav").exists():
-                        filepath = Path(self.dl_dir, "tmp", track.title + ".wav")
-                        
-                    self.LibMan.set_metadata(filepath, genre=pl_name)
                     
-                    #If no artist is specified in the filename, then add the name of the uploader
-                    if " - " not in track.title:
-                        artist = self.track_df.loc[
-                            self.track_df.link == track.link, "uploader"].to_list()[0]
-                        
-                        os.replace(filepath, 
-                                   Path(self.dl_dir, "tmp", 
-                                        artist + " - " + track.title + filepath.suffix)
-                                   )
+                    #Determine download name (the Download websites removes & replaces certain characters)
+                    # Note on rem_chars: These are the characters to be removed.
+                    # Since some of them are special characters in a Regex, they 
+                    # need to be escaped with a backslash
+                    rem_chars = [",", r"\(", r"\)", r"\[", r"\]", r"\$", "&", 
+                                 "~", "'", r"\.", r"\?", r"\^", r"\+", r"\*"]
+                    pattern1 = " " + r' | '.join(rem_chars) + " "
+                    pattern2 = r'|'.join(rem_chars)
+                    dl_title = re.sub(pattern1, lambda m: " ", track.title)
+                    dl_title = re.sub(pattern2, lambda m: "", dl_title).\
+                        replace(" ", "_")
+                    
+                    #Determine the file type 
+                    if Path(self.dl_dir, "tmp", dl_title + ".mp3").exists():
+                        curr_tracks.loc[index, "ext"] = ".mp3"
+                    elif Path(self.dl_dir, "tmp", dl_title +".wav").exists():
+                        curr_tracks.loc[index, "ext"] = ".wav"
+                    
+                    #Change the filename to the correct format
+                    # (If no artist is specified in the filename, then add the 
+                    # name of the uploader)
+                    correct_fname = track.title if " - "  in track.title \
+                        else track.artist + " - " +  track.title
+                    
+                    #Save the names for later
+                    # Note: the renaming of the files to the correct filenames
+                    # and the insertion of the genre takes place after all files
+                    # are downloaded. Else the code would have to wait for each 
+                    # file to be downloaded before continuing with the next track
+                    curr_tracks.loc[index, "title"] = correct_fname
+                    curr_tracks.loc[index, "dl_name"] = dl_title
+                    
+# =============================================================================
+#                     os.replace(Path(self.dl_dir, "tmp", adj_title + ext), 
+#                                Path(self.dl_dir, "tmp", correct_fname)
+#                                ) 
+#                     
+#                     #Insert the genre metadata
+#                     self.LibMan.set_metadata(Path(self.dl_dir, "tmp", 
+#                                                   correct_fname), 
+#                                              genre=pl_name)
+# =============================================================================
+
                 except Exception as e:
                     # print("\n" + str(e))
                     
@@ -222,9 +256,19 @@ class Soundclouddownloader:
                             )
                     except:
                         pass
-           
-            #Insert genre (again. to be sure) and move all files from the tmp 
-            # folder to the dl folder
+            
+            #Rename the files with their correct filenames and insert the genre
+            for index, track in curr_tracks.iterrows():
+                os.replace(Path(self.dl_dir, "tmp", track.dl_title + track.ext), 
+                           Path(self.dl_dir, "tmp", track.title + track.ext)
+                           ) 
+            
+            #Insert the genre metadata
+            self.LibMan.set_metadata(Path(self.dl_dir, "tmp", 
+                                          track.title + track.ext), 
+                                     genre=pl_name)
+            
+            #Move all files in the "tmp" folder to the dl folder
             files = [f for f in os.listdir(Path(self.dl_dir, "tmp")) 
                      if os.path.isfile(Path(self.dl_dir, "tmp", f))]
             for file in files:
