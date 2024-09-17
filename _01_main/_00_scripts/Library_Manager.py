@@ -53,7 +53,7 @@ class LibManager:
         self.lib_df = pd.DataFrame(columns=["folder", "filename", "extension"])
 
 
-    def read_dir (self):
+    def read_dir (self, update_progress_callback):
         """Finds all mp3 & wav files within the library directory and its 
         substructure.
         
@@ -91,6 +91,7 @@ class LibManager:
         
         doc = pd.DataFrame(columns=["folder", "filename", "extension"])
         
+
         #Search for all mp3 & wav files in the directory, including subdirectories
         for root, _, files in os.walk(directory):
             #Exclude the excluded folders:

@@ -197,7 +197,7 @@ class Soundclouddownloader:
                     # (If no artist is specified in the filename, then add the 
                     # name of the uploader)
                     correct_fname = track.title if " - "  in track.title \
-                        else track.artist + " - " +  track.title
+                        else track.uploader + " - " +  track.title
                     
                     #Save the names for later
                     # Note: the renaming of the files to the correct filenames
@@ -259,7 +259,7 @@ class Soundclouddownloader:
             
             #Rename the files with their correct filenames and insert the genre
             for index, track in curr_tracks.iterrows():
-                os.replace(Path(self.dl_dir, "tmp", track.dl_title + track.ext), 
+                os.replace(Path(self.dl_dir, "tmp", track.dl_name + track.ext), 
                            Path(self.dl_dir, "tmp", track.title + track.ext)
                            ) 
             

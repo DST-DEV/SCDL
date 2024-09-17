@@ -590,7 +590,6 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
     
     
     def GUI_read_dir (self):
-        self.SCDL.LibMan.read_dir()
         self.GUI_change_tbl_data (data = self.SCDL.LibMan.lib_df, 
                                   lr="left",
                                   variable = "library")
@@ -1007,7 +1006,7 @@ class Worker(QTC.QRunnable):
     :param kwargs: Keywords to pass to the callback function
 
     '''
-
+    
     def __init__(self, fn, *args, **kwargs):
         super(Worker, self).__init__()
         # Store constructor arguments (re-used for processing)
