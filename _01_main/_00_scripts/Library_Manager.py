@@ -16,6 +16,7 @@ import shutil
 import difflib
 import pathlib
 from pathlib import Path
+import time
 
 #%%
 class LibManager:
@@ -67,7 +68,12 @@ class LibManager:
         self.lib_df = self.read_files(self.lib_dir)
         return self.lib_df
     
-    
+    def long_running_task(self, update_progress_callback):
+        """Simulates a long-running task and updates progress."""
+        for i in range(101):
+            time.sleep(0.05)  # Simulate long task
+            update_progress_callback(i)  # Report progress
+            
     def read_files(self, directory, excluded_folders = []):
         """Finds all mp3 & wav files within a directory and its substructure.
         

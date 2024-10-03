@@ -118,7 +118,8 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         self.selectionModel.selectionChanged.connect(self.update_content_right)
         
         #LibManager Buttons
-        self.btn_read_lib_1.clicked.connect(self.run_fcn_thread(self.GUI_read_dir))
+        This is how all functions which should run as threads need to be called:
+        self.btn_read_lib_1.clicked.connect(lambda: self.run_fcn_thread(self.SCDL.LibMan.long_running_task))
         self.btn_read_nf_1.clicked.connect(self.run_fcn_thread(self.GUI_read_nf_1))
         self.btn_file_uni.clicked.connect(self.run_fcn_thread(self.GUI_prep_files))
         self.btn_sync_music.clicked.connect(self.run_fcn_thread(self.SCDL.LibMan.sync_music_lib))
@@ -795,15 +796,15 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
                                     )
             self.setStyleSheet("""QPushButton {color: #000000}""")
     
-    def run_fcn_thread (self, fcn):
-        threadpool = self.threadpool
-        
-        def run_thread(self):
-            worker = Worker(fcn) # Any other args, kwargs are passed to the run function
-            
-            # Execute
-            threadpool.start(worker)
-        return run_thread
+    def run_fcn_thread(self, fcn):
+        """Start the worker to run 'long_running_task' from SomeClass."""
+        worker = Worker(fcn)
+        worker.signals.progress_updated.connect(self.update_progress)
+        self.threadpool.start(worker)
+    
+    def update_progress(self, value):
+        """Update the progress bar with the current progress value."""
+        self.progressBar.setValue(value)
 
 #%% SettingsWindow
 
@@ -993,6 +994,10 @@ class OutputLogger:
 
 #%% Worker 
 
+# A class for emitting signals (since QRunnable does not support signals directly)
+class WorkerSignals(QTC.QObject):
+    progress_updated = QTC.pyqtSignal(int)  # Signal to update progress bar
+
 class Worker(QTC.QRunnable):
     '''
     Worker thread
@@ -1013,13 +1018,17 @@ class Worker(QTC.QRunnable):
         self.fn = fn
         self.args = args
         self.kwargs = kwargs
+        self.signals = WorkerSignals()  # Use a separate object to handle signals
 
     @pyqtSlot()
     def run(self):
-        '''
-        Initialise the runner function with passed args, kwargs.
-        '''
-        self.fn(*self.args, **self.kwargs)
+        """Run the function with the provided arguments."""
+        # Execute the function with the provided arguments
+        self.fn(self.emit_progress, *self.args, **self.kwargs)
+
+    def emit_progress(self, value):
+        """Emit progress signal to update progress bar."""
+        self.signals.progress_updated.emit(value)
 
 #%% Main
 
