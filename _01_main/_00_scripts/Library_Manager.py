@@ -54,7 +54,7 @@ class LibManager:
         self.lib_df = pd.DataFrame(columns=["folder", "filename", "extension"])
 
 
-    def read_dir (self, update_progress_callback):
+    def read_dir (self, update_progress_callback=None):
         """Finds all mp3 & wav files within the library directory and its 
         substructure.
         
@@ -65,7 +65,8 @@ class LibManager:
         self.lib_df: Dataframe with information on the filename, file extension and 
                      folder of all found files
         """
-        self.lib_df = self.read_files(self.lib_dir)
+        self.lib_df = self.read_files(self.lib_dir,
+                                      update_progress_callback = update_progress_callback)
         return self.lib_df
     
     def long_running_task(self, update_progress_callback):
@@ -74,7 +75,8 @@ class LibManager:
             time.sleep(0.05)  # Simulate long task
             update_progress_callback(i)  # Report progress
             
-    def read_files(self, directory, excluded_folders = []):
+    def read_files(self, directory, update_progress_callback=None, 
+                   excluded_folders = []):
         """Finds all mp3 & wav files within a directory and its substructure.
         
         Parameters:
@@ -97,8 +99,13 @@ class LibManager:
         
         doc = pd.DataFrame(columns=["folder", "filename", "extension"])
         
-
+        n_files = 0
+        for root, _, files in os.walk(directory):
+            n_files+=1
+        
         #Search for all mp3 & wav files in the directory, including subdirectories
+        i = 0
+        prog = 0
         for root, _, files in os.walk(directory):
             #Exclude the excluded folders:
             if not any(excl in root for excl in excluded_folders if excl!=""):        
@@ -116,9 +123,17 @@ class LibManager:
                                         )
                                    )
                                ])
+            #Update progress bar
+            if not type(update_progress_callback) == type(None):
+                i +=1
+                if i>=.0499*n_files:
+                    prog +=5
+                    i=0
+                    update_progress_callback(prog)
         return doc.reset_index(drop=True)    
     
-    def read_tracks(self, directory=None, mode="replace"):
+    def read_tracks(self, update_progress_callback=None, 
+                    directory=None, mode="replace"):
         """Finds all mp3, wav and aiff files within a directory and its substructure.
         
         Parameters:
@@ -145,7 +160,9 @@ class LibManager:
         #read the files (if no directory is provided, use the standard one)
         
         file_df = self.read_files(directory = directory or self.nf_dir,
-                                  excluded_folders = [""])
+                                  excluded_folders = [""],
+                                  update_progress_callback = 
+                                      update_progress_callback)
         
         #add additional columns for later
         n_files = len(file_df.index)

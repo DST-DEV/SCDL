@@ -20,6 +20,7 @@ import win32gui    # part of the pywin32 package
 # from mutagen.easyid3 import EasyID3
 # from mutagen.mp3 import MP3
 from pathlib import Path
+import warnings
 # from tqdm import tqdm
 import pandas as pd
 import pathlib
@@ -92,10 +93,10 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         sys.stderr = OutputLogger(self.txtedit_messages)
         
         #SCDL buttons
-        self.btn_pl_search.clicked.connect(self.run_fcn_thread(self.GUI_extr_playlists))
-        self.btn_track_ext.clicked.connect(self.run_fcn_thread(self.GUI_extr_tracks))
+        self.btn_pl_search.clicked.connect(self.GUI_extr_playlists)
+        self.btn_track_ext.clicked.connect(self.GUI_extr_tracks)
         self.btn_track_dl.clicked.connect(self.GUI_download_tracks)
-        self.btn_dl_hist_up.clicked.connect(self.run_fcn_thread(self.GUI_update_dl_history))
+        self.btn_dl_hist_up.clicked.connect(self.GUI_update_dl_history)
         
         #Table buttons
         self.btn_addrow_left.clicked.connect(self.add_row_left)
@@ -118,19 +119,19 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         self.selectionModel.selectionChanged.connect(self.update_content_right)
         
         #LibManager Buttons
-        This is how all functions which should run as threads need to be called:
-        self.btn_read_lib_1.clicked.connect(lambda: self.run_fcn_thread(self.SCDL.LibMan.long_running_task))
-        self.btn_read_nf_1.clicked.connect(self.run_fcn_thread(self.GUI_read_nf_1))
-        self.btn_file_uni.clicked.connect(self.run_fcn_thread(self.GUI_prep_files))
-        self.btn_sync_music.clicked.connect(self.run_fcn_thread(self.SCDL.LibMan.sync_music_lib))
+        # This is how all functions which should run as threads need to be called:
+        self.btn_read_lib_1.clicked.connect(lambda: self.run_fcn_thread(self.GUI_read_dir))
+        self.btn_read_nf_1.clicked.connect(self.GUI_read_nf_1)
+        self.btn_file_uni.clicked.connect(self.GUI_prep_files)
+        self.btn_sync_music.clicked.connect(self.SCDL.LibMan.sync_music_lib)
         
         #LibUpdater Buttons
-        self.btn_read_lib_2.clicked.connect(self.run_fcn_thread(self.GUI_read_dir))
-        self.btn_read_nf_2.clicked.connect(self.run_fcn_thread(self.GUI_read_nf_2))
-        self.btn_goalfld_search.clicked.connect(self.run_fcn_thread(self.GUI_find_goal_fld))
-        self.btn_del_ex_files.clicked.connect(self.run_fcn_thread(self.GUI_del_doubles_lib))
-        self.btn_reset_goalfld.clicked.connect(self.run_fcn_thread(self.GUI_reset_goal_fld))
-        self.btn_move_files.clicked.connect(self.run_fcn_thread(self.GUI_move_files))
+        self.btn_read_lib_2.clicked.connect(self.GUI_read_dir)
+        self.btn_read_nf_2.clicked.connect(self.GUI_read_nf_2)
+        self.btn_goalfld_search.clicked.connect(self.GUI_find_goal_fld)
+        self.btn_del_ex_files.clicked.connect(self.GUI_del_doubles_lib)
+        self.btn_reset_goalfld.clicked.connect(self.GUI_reset_goal_fld)
+        self.btn_move_files.clicked.connect(self.GUI_move_files)
         
         #Settings
         self.SettingsChange.triggered.connect(self.open_settings)
@@ -590,7 +591,10 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         self.SCDL.LinkExt.update_dl_history(pl=pl_mode)
     
     
-    def GUI_read_dir (self):
+    def GUI_read_dir (self, update_progress_callback):
+        update_progress_callback(0)
+        self.SCDL.LibMan.read_dir(update_progress_callback)
+        #update_progress_callback(0)
         self.GUI_change_tbl_data (data = self.SCDL.LibMan.lib_df, 
                                   lr="left",
                                   variable = "library")
@@ -802,9 +806,15 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         worker.signals.progress_updated.connect(self.update_progress)
         self.threadpool.start(worker)
     
+    def test_task(self, update_progress_callback):
+        self.SCDL.LibMan.long_running_task(update_progress_callback)
     def update_progress(self, value):
         """Update the progress bar with the current progress value."""
-        self.progressBar.setValue(value)
+        if value > 100:
+            value = 100
+        if value < 0:
+            value = 0
+        self.progressBar.setValue(round(value))
 
 #%% SettingsWindow
 
@@ -1018,7 +1028,9 @@ class Worker(QTC.QRunnable):
         self.fn = fn
         self.args = args
         self.kwargs = kwargs
-        self.signals = WorkerSignals()  # Use a separate object to handle signals
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            self.signals = WorkerSignals()  # Use a separate object to handle signals
 
     @pyqtSlot()
     def run(self):
