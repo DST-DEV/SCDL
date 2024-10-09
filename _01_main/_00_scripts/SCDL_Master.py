@@ -78,14 +78,36 @@ class Soundclouddownloader:
                        use_cache = True,
                        sc_account = None,
                        update_progress_callback=False):
-        """Extract the playlists and track links from the soundcloud account 
+        """Extract the links to the playlists from the soundcloud playlist 
+        website for a specified soundcloud account. Results can be 
+        filtered using the search_key via the full name of the playlists or a 
+        string contained in the playlists
         
-        Parameters:
-        reextract: Reextract the tracks even if the pll variable is not empty
+        Parameters: 
+            search_key (list): 
+                The strings to search for in the playlist names
+            search_type (str): 
+                String which specifies the search mode. Available search types:
+                - "all": Extract all playlists (no filtering)
+                - "exact": Only include playlists whose names are contained
+                           in the search_key list (full name needed, 
+                           capitalisation irrelevant)
+                - "key": Include playlists, whose name contains one of the 
+                         keywords specified in the search_key
+            use_cache (bool):
+                Whether to use the cached playlist data (if available). 
+                If set to False, playlists are extracted from the soundcloud 
+                profile
+            sc_account (str):
+                soundcloud profile from which the playlists should be extracted
+            update_progress_callback (function handle - optional):
+                Function handle to return the progress (Intended for usage in 
+                conjunction with PyQt6 signals). 
             
-        Return:
-        pll: Dataframe containing the links to the tracks for each playlist as 
-        well as the uploader
+            
+        Returns:
+            self.playlists (pandas DataFrame): 
+                Dataframe with information on the found playlists
         """
         
         self.playlists = self.LinkExt.extr_playlists(search_key=search_key,
@@ -100,6 +122,29 @@ class Soundclouddownloader:
     def extr_tracks(self, playlists = pd.DataFrame(), mode="new", 
                     autosave=True, reextract=False,
                     update_progress_callback=False):
+        """Extract the links to the tracks within the specified playlists
+        
+        Parameters: 
+            playlists (pandas DataFrame - optional): 
+                Dataframe with information on the soundcloud playlists to be 
+                evaluated (optional, default is the self.playlists dataframe)
+            mode (str - optional): 
+                Select the Extraction mode
+                - "new": Extracts all new songs (compared to dl history)
+                - "last": Extracts only the last song
+                - "all": Extracts all songs
+            autosave (bool - optional): 
+                whether the results should automatically be saved to the 
+                self.track_df (default: yes)
+            update_progress_callback (function handle - optional):
+                Function handle to return the progress (Intended for usage in 
+                conjunction with PyQt6 signals). 
+        
+        Returns:
+            self.track_df (pandas DataFrame): 
+                Dataframe with information on the tracks found in each playlist        
+        """
+        
         if reextract or self.track_df.empty:
             if not type(playlists) == pd.core.frame.DataFrame:
                 raise TypeError("Playlists variable is not a pandas DataFrame")
@@ -129,10 +174,12 @@ class Soundclouddownloader:
         """Downloads the tracks from the links in the track_df dataframe
         
         Parameters:
-        None
+            None
             
-        Return:
-        doc: documentation of the downloaded files including error messages
+        Returns:
+            self.track_df (pandas DataFrame):
+                The track Dataframe with updated information on the status of 
+                the  download
         """
        
         
@@ -297,13 +344,16 @@ class Soundclouddownloader:
         return self.track_df
     
     def download_all (self):
-        """Extract all tracks and download them
+        """Extract all tracks from the playlists in self.playlists and 
+        download them
         
         Parameters:
-        None
+            None
         
         Returns:
-        doc: documentation of the downloaded files including error messages
+            self.track_df (pandas DataFrame):
+                Dataframe containing information on all found tracks including 
+                the status of the download
         """
         
         _ = self.extr_playlists(reextract = True)

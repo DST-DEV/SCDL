@@ -68,10 +68,10 @@ class SoundcloudMP3Downloader:
         the 'og window'
         
         Parameters:
-        None
+            None
         
         returns:
-        Nothing 
+            None 
         """
         
         if len(self.driver.window_handles)>1:
@@ -81,10 +81,17 @@ class SoundcloudMP3Downloader:
                 self.driver.switch_to.window(handle)
                 self.driver.close()
             self.driver.switch_to.window(self.og_window)
-        return
         
     def reject_cookies(self):
-        """Rejects all Cookies of the download website"""
+        """Rejects all Cookies of the download website (Website needs to be 
+        opened with the selenium webbrowser API)
+        
+        Parameters:
+            None
+        
+        returns:
+            None 
+        """
         
         xpath_reject = "//button[@class='fc-button fc-cta-do-not-consent "\
         + "fc-secondary-button']/p[@class='fc-button-label']"
@@ -104,22 +111,25 @@ class SoundcloudMP3Downloader:
             self.return_og_window()
         except Exception as e: 
             print(e)
-            
-        return
 
     def download_track(self, track_link, iteration=0):
         """Download track from soundcloud provided via the track_link
         
         Parameters: 
-        track_link: a web link to the track on soundcloud
-        iteration: when a timeout exception for the DL button occurs, the function
-                   tries again for up to 2 more times (recursive function call).
-                   The current iteration count is provided with the iteration
-                   parameter
+            track_link (str): 
+                Link to the track on soundcloud
+            iteration (int): 
+                Current iteration of the download.
+                Explanation: When a timeout exception for the DL button occurs, 
+                the function tries again for up to 2 more times  via a 
+                recursive function call.
+                The current iteration count is provided with the iteration
+                parameter
         
         Returns:
-        The documentation of the downloaded track (title, link and occured 
-        exceptions)
+            pandas Series:
+                The row from the self.tracklist dataframe updated with the 
+                status of the download
         """
         
         #Add track to tracklist
@@ -261,29 +271,33 @@ class SoundcloudMP3Downloader:
             return self.tracklist.loc[track_index]
     
     def reset(self):
-        """Resets the tracklist and returns the webdriver to the initial download page
+        """Resets the tracklist and returns the webdriver to the initial 
+        download page
         
-        Attributes:
-        None
+        Parameters:
+            None
             
         Return:
-        None
+            None
         """
         self.tracklist = pd.DataFrame(columns=["title", "link", "exceptions"])
         self.return_og_window()
         self.driver.get('https://soundcloudmp3.org/de')
     
     def add_tracklist_info (self, link:str, content:dict):
-        """Adds a specified exception to the tracklist for the track specified 
-        via the link
+        """Adds a information provided in the content parameter to the
+        self.tracklist dataframe for the track specified via the link
         
         Attributes:
-        link: soundcloud link to the track (cf. column "link" in the tracklist)
-        content: dictionary with the columns where text should be inserted as the
-        keys and the text to be inserted as the value (in string format)
+            link (str): 
+                Link to the track on soundcloud 
+            content (dict): 
+                Dictionary with the columns where text should be inserted as 
+                the keys and the text to be inserted as the value (in string 
+                format)
             
         Return:
-        None
+            None
         """
         
         #test if link is in tracklist
@@ -316,11 +330,13 @@ class SoundcloudMP3Downloader:
         via the link
         
         Attributes:
-        link: soundcloud link to the track (cf. column "link" in the tracklist)
-        exception: String containing the exception text
+            link (str): 
+                Link to the track on soundcloud 
+            exception (str): 
+                Exception text
             
         Return:
-        None
+            None
         """
         self.add_tracklist_info(link, dict(exceptions=exception))
      

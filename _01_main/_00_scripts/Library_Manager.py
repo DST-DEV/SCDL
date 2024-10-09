@@ -1,3 +1,4 @@
+#%% Imports
 #General imports
 import re
 import numpy as np
@@ -18,7 +19,7 @@ import pathlib
 from pathlib import Path
 import time
 
-#%%
+#%% LibManager Class
 class LibManager:
     ob_strs = ["premiere", "P R E M I E R E", "free download", "free dl", 
                "Free DL", "FreeDL", "exclusive", "|", "preview", "sindex", 
@@ -59,33 +60,36 @@ class LibManager:
         substructure.
         
         Parameters:
-        None
+            update_progress_callback (function handle - optional):
+                Function handle to return the progress (Intended for usage in 
+                conjunction with PyQt6 signals). 
         
         Returns:
-        self.lib_df: Dataframe with information on the filename, file extension and 
-                     folder of all found files
+            self.lib_df (pandas DataFrame): 
+                Dataframe with information on the filename, file extension and 
+                folder of all found files
         """
         self.lib_df = self.read_files(self.lib_dir,
                                       update_progress_callback = update_progress_callback)
         return self.lib_df
-    
-    def long_running_task(self, update_progress_callback):
-        """Simulates a long-running task and updates progress."""
-        for i in range(101):
-            time.sleep(0.05)  # Simulate long task
-            update_progress_callback(i)  # Report progress
             
     def read_files(self, directory, update_progress_callback=False, 
                    excluded_folders = []):
         """Finds all mp3 & wav files within a directory and its substructure.
         
         Parameters:
-        directory: top-level directory for the code to work in
-        excluded_folders [list of str]: folders to exclude (default: '00_General')
+            directory (folderpath as str or path-like object): 
+                top-level directory for the code to work in
+            excluded_folders [list of str]: 
+                folders to exclude (default: '00_General')
+            update_progress_callback (function handle - optional):
+                Function handle to return the progress (Intended for usage in 
+                conjunction with PyQt6 signals). 
         
         Returns:
-        doc: Dataframe with information on the filename, file extension and 
-             folder of all found files
+            doc (pandas DataFrame): 
+                Dataframe with information on the filename, file extension and 
+                folder of all found files
         """
         
         #Check inputs:
@@ -137,19 +141,26 @@ class LibManager:
         """Finds all mp3, wav and aiff files within a directory and its substructure.
         
         Parameters:
-        directory (opt): top-level directory for the code to work in. If
-                         no directory is provided, then the standard_directory 
-                         (cf. self.nf_dir) is used
-        mode (opt. - str): Whether to replace or append to existing version of 
-                           the self.file_df or dont change the self.file_df at 
-                           all (default: replace)
-                           -"replace": Replace the current self.file_df
-                           - "append": Append to the current self.file_df
-                           - "independent": dont interact with the self.file_df
+            directory (opt): 
+                top-level directory for the code to work in. If no directory 
+                is provided, then the standard_directory (cf. self.nf_dir) is 
+                used
+            mode (opt. - str): 
+                Whether to replace or append to existing version of the 
+                self.file_df or dont change the self.file_df at all 
+                (default: replace)
+                -"replace": Replace the current self.file_df
+                - "append": Append to the current self.file_df
+                - "independent": dont interact with the self.file_df
+            update_progress_callback (function handle - optional):
+                Function handle to return the progress (Intended for usage in 
+                conjunction with PyQt6 signals). 
+                           
         
         Returns:
-        file_df: a Dataframe containing information on the found mp3 and wav 
-                 files in the directory and its substructure
+            file_df (pandas DataFrame):  
+                a Dataframe containing information on the found mp3 and wav 
+                files in the directory and its substructure
         """
         
         if mode not in ["replace", "append", "independent"]:
@@ -186,14 +197,34 @@ class LibManager:
             return file_df
     
     def prepare_new_files(self, update_progress_callback=False):
-        "Runs the prepare files function for the new files dataframe"
+        """Runs the prepare files function for the new files dataframe
+        
+        Parameters:
+            update_progress_callback (function handle - optional):
+                Function handle to return the progress (Intended for usage in 
+                conjunction with PyQt6 signals). 
+                
+        Returns:
+            self.file_df (pandas DataFrame): 
+                Pandas Dataframe with the updated files
+        """
         
         self.file_df = self.prepare_files(self.file_df.copy(deep=True), 
                                           update_progress_callback)
         return self.file_df
     
     def prepare_lib_files (self, update_progress_callback=False):
-        "Runs the prepare files function for the library files dataframe"
+        """Runs the prepare files function for the library files dataframe
+        
+        Parameters:
+            update_progress_callback (function handle - optional):
+                Function handle to return the progress (Intended for usage in 
+                conjunction with PyQt6 signals). 
+                
+        Returns:
+            self.lib_df (pandas DataFrame): 
+                Pandas Dataframe with the updated files
+        """
         
         self.lib_df = self.prepare_files(self.lib_df.copy(deep=True), 
                                          update_progress_callback)
@@ -225,9 +256,15 @@ class LibManager:
                 Whether to automatically insert the artist and title metadata
             adj_genre (bool):
                 Whether to automatically insert the genre  metadata
+            update_progress_callback (function handle - optional):
+                Function handle to return the progress (Intended for usage in 
+                conjunction with PyQt6 signals). 
+            prog_bounds (list or tuple - optional):
+                lower and upper bound in which to change the progress bar
             
         Returns:
-        file_df: updated version of the file_df dataframe
+            file_df (pandas DataFrame):  
+                updated version of the file_df dataframe
         
         """
         if type(df_sel)==str:
@@ -307,11 +344,14 @@ class LibManager:
         new filename
         
         Parameters: 
-        filename: name of the file to be processed
-        folder_path: path of the folder in which the file is saved
+            filename (str): 
+                Name of the file to be processed
+            folder_path (folderpath as str or path-like object): 
+                path of the folder in which the file is saved
         
         Returns:
-        new_filename: Adjusted filename
+            new_filename (str): 
+                Adjusted filename
         """
         new_filename, extension = os.path.splitext(filename)
         
@@ -382,23 +422,29 @@ class LibManager:
         Note: standard resolution is 16 bit
         
         Parameters:
-        tracks (opt. - pd.Dataframe): 
-            Dataframe with paths to the tracks to be processed
-        max_sr (opt. - int): 
-            maximum allowed sample rate (default: 48000 Hz)
-        std_sr (opt. - int): 
-            standard sample rate to which files with a sample rate higher than 
-            max_sr should be converted
-        mode (opt. - str): 
-            which directory should be considered.
-            - "nf": only consider the files in self.base_dir
-            - "lib": only consider the files in the track library
-        auto_genre (opt.): 
-            Whether the genre should be inserted based on the folder path 
-            (default: False). Else the old genre value will be kept
+            tracks (opt. - pd.Dataframe): 
+                Dataframe with paths to the tracks to be processed
+            max_sr (opt. - int): 
+                maximum allowed sample rate (default: 48000 Hz)
+            std_sr (opt. - int): 
+                standard sample rate to which files with a sample rate higher than 
+                max_sr should be converted
+            mode (opt. - str): 
+                which directory should be considered.
+                - "nf": only consider the files in self.base_dir
+                - "lib": only consider the files in the track library
+            auto_genre (opt.): 
+                Whether the genre should be inserted based on the folder path 
+                (default: False). Else the old genre value will be kept
+            update_progress_callback (function handle - optional):
+                Function handle to return the progress (Intended for usage in 
+                conjunction with PyQt6 signals). 
+            prog_bounds (list or tuple - optional):
+                lower and upper bound in which to change the progress bar
             
         Returns:
-        doc: documentation of wave files and whether they were changed
+            doc (pandas DataFrame): 
+                documentation of wave files and whether they were changed
         """
         #If tracks is a str but it is empty, the track_df or lib_df are used 
         # (if a mode is specified)
@@ -494,16 +540,19 @@ class LibManager:
         Note: standard resolution is 16 bit
         
         Parameters:
-        filepath (str or type(Path())): filepath to the track to be processed
-        max_sr (opt. - int): maximum allowed sample rate (default: 48000 Hz)
-        std_sr (opt. - int): standard sample rate to which files with a sample
-                             rate higher than max_sr should be converted
-        auto_genre (opt.): whether the genre should be inserted based on the 
-                           folder path (default: False). Else the old genre 
-                           value will be kept
+            filepath (str or type(Path())): 
+                filepath to the track to be processed
+            max_sr (opt. - int): 
+                maximum allowed sample rate (default: 48000 Hz)
+            std_sr (opt. - int): 
+                standard sample rate to which files with a sample rate higher 
+                than max_sr should be converted
+            auto_genre (opt.): 
+                whether the genre should be inserted based on the folder 
+                path (default: False). Else the old genre value will be kept
             
         Returns:
-        None
+            None
         """
         
         data, sr = soundfile.read(filepath)
@@ -553,7 +602,8 @@ class LibManager:
                 be enabled
         
         Return:
-        None"""
+            None
+        """
         
         if type(filepath)==str:
             filepath=Path(filepath)
@@ -584,21 +634,23 @@ class LibManager:
             Note: Supported file formats: .mp3, .wav, .aiff
         
         Parameters:
-        filepath (str or type(Path())): 
-            absolute path to the file to be edited
-        exp_wav (bool):
-            Whether the track should be imported and exported in Audacity.
-            This option is only relevant for .wav files as their metadata
-            is not correctly displayed in the Windows Explorer and Recordbox
-            after the adjustment via the music_tag package.
-            
-            Note: For this feature, Audacity must be opened and the 
-            "mod-script-pipe" option in the Edit->Preferences->Modules must 
-            be enabled
-        **kwargs: metadata to be edited
+            filepath (str or type(Path())): 
+                absolute path to the file to be edited
+            exp_wav (bool):
+                Whether the track should be imported and exported in Audacity.
+                This option is only relevant for .wav files as their metadata
+                is not correctly displayed in the Windows Explorer and Recordbox
+                after the adjustment via the music_tag package.
+                
+                Note: For this feature, Audacity must be opened and the 
+                "mod-script-pipe" option in the Edit->Preferences->Modules must 
+                be enabled
+            **kwargs: 
+                metadata to be edited
             
         Returns:
-        None"""
+            None
+        """
         
         if type(filepath)==str:
             filepath=Path(filepath)
@@ -639,15 +691,17 @@ class LibManager:
                 pass
 
     def convert_to_alphanumeric(self, input_string):
-        """Convert an arbitrary string to its closest alphanumeric representation 
-        in standard ascii characters (remove non ascii characters and convert 
-                                      diacritics to standard characters)
+        """Convert an arbitrary string to its closest alphanumeric 
+        representation  in standard ascii characters (remove non ascii 
+        characters and convert diacritics to standard characters)
         
         Parameters:
-        input_string: the string to be converted
+            input_string (str): 
+                the string to be converted
         
         Returns:
-        alphanumeric_string: the alphanumeric ascii representation of the string
+            alphanumeric_string (str): 
+                the alphanumeric ascii representation of the string
         """
         
         # Normalize the string to ensure compatibility with ASCII characters
@@ -666,20 +720,21 @@ class LibManager:
         the selected mode
         
         Parameters:
-        file_df (pd.DataFrame, optional): 
-            Dataframe containing information on the folder and filename of all 
-            files to be processed
-        mode (str):
-            Whether the genre metadata or the filename should be used to 
-            determine the goal directory for the file
-            Choices:
-                - 'metadata': Genre metadata is used as the goal folder 
-                - 'namesearch': Closest match of filename in the library is used
-                for the goal path
+            file_df (pd.DataFrame, optional): 
+                Dataframe containing information on the folder and filename of 
+                all  files to be processed
+            mode (str):
+                Whether the genre metadata or the filename should be used to 
+                determine the goal directory for the file
+                Choices:
+                    - 'metadata': Genre metadata is used as the goal folder 
+                    - 'namesearch': Closest match of filename in the library 
+                                    is used for the goal path
             
         Returns:
-        file_df: updated version of the dataframe with information on occured 
-                 exceptions and the goal folder
+            file_df (pandas DataFrame): 
+                updated version of the dataframe with information on occured 
+                exceptions and the goal folder
         """
         
         if type(file_df) != pd.core.frame.DataFrame or file_df.empty:
@@ -773,14 +828,16 @@ class LibManager:
         
         Parameters:
             file_df (pd.DataFrame, optional): 
-                Dataframe containing information on the folder and filename of all 
-                files to be processed as well as the goal directory
+                Dataframe containing information on the folder and filename of 
+                all files to be processed as well as the goal directory
             replace_doubles (bool):
-                Whether new files which already exist in the library should be replaced
+                Whether new files which already exist in the library should be 
+                replaced
             
         Returns:
-            file_df: updated version of the dataframe with information on occured 
-                     exceptions
+            file_df (pandas DataFrame):  
+                updated version of the dataframe with information on 
+                occured exceptions
         """
         
         #Check inputs
@@ -871,6 +928,16 @@ class LibManager:
         return self.file_df
     
     def sync_music_lib(self, music_dir=None):
+        """Copies all .mp3 files in the track library to a provided directory
+        
+        Parameters:
+            music_dir (folderpath as str or path-like object):
+                Folder in which to copy the files
+        
+        Returns:
+            None
+        """
+        
         if (not music_dir or not os.path.exists(Path(music_dir))):
             if self.music_dir:
                 music_dir = self.music_dir
@@ -886,6 +953,15 @@ class LibManager:
                          Path(file.folder, file.filename + ".mp3"))
     
     def reset_goal_folder(self):
+        """Resets the found goal directory and goal name
+        
+        Parameters:
+            None
+        
+        Returns:
+            None
+        """
+        
         self.file_df.loc[:,"goal_dir"] = ""
         self.file_df.loc[:,"goal_name"] = ""
     
@@ -893,10 +969,10 @@ class LibManager:
         """Clears the entries in the self.lib_df dataframe
         
         Parameters:
-        None
+            None
             
         Returns:
-        None
+            None
         """
         self.lib_df = pd.DataFrame(columns=["folder", "filename", "extension"])
         
@@ -904,17 +980,40 @@ class LibManager:
         """Clears the entries in the self.file_df dataframe
         
         Parameters:
-        None
+            None
             
         Returns:
-        None
+            None
         """
         self.file_df = pd.DataFrame(columns=["folder", "goal_dir", "filename",
                                              "old_filename", "extension", 
                                              "exceptions", "status", 
                                              "create_missing_dir"])    
         
-    def add_exception(self, df, col, msg="", index = -1, key = "", search_col=" "):
+    def add_exception(self, df, col, msg="", 
+                      index = -1, key = "", search_col=" "):
+        """Inserts an exception into a provided dataframe. The row can be
+        specified via the index or a search key in a search column
+        
+        Parameters:
+            df (pandas DataFrame): 
+                Dataframe in which to insert the message
+            col (str - optional):
+                Name of the column in which to insert the exception message
+            msg (str - optional):
+                exception message
+            index (int or Index object):
+                Index of the row where to insert the exception
+            key (str - optional):
+                Key to search for the key for in the search_col for the 
+                determination of the row where to insert the exception
+            search_col (str - optional):
+                In which column to search for the key for the determination of 
+                the row where to insert the exception
+        
+        Returns:
+            None
+        """
         if index >=0 & index<len(df):
             if df.loc[index, col]:
                 df.loc[index, col] += " | " + msg

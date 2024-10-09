@@ -68,7 +68,7 @@ class PlaylistLinkExtractor:
     def extr_playlists(self, search_key=[], search_type="all", use_cache=True,
                        sc_account = None, update_progress_callback=False):
         """Extract the links to the playlists from the soundcloud playlist 
-        website for my account (user-727245698-705348285). Results can be 
+        website for a specified soundcloud account. Results can be 
         filtered using the search_key via the full name of the playlists or a 
         string contained in the playlists
         
@@ -77,22 +77,26 @@ class PlaylistLinkExtractor:
                 The strings to search for in the playlist names
             search_type (str): 
                 String which specifies the search mode. Available search types:
-                    - "all": Extract all playlists (no filtering)
-                    - "exact": Only include playlists whose names are contained
-                               in the search_key list (full name needed, 
-                               capitalisation irrelevant)
-                    - "key": Include playlists, whose name contains one of the 
-                             keywords specified in the search_key
+                - "all": Extract all playlists (no filtering)
+                - "exact": Only include playlists whose names are contained
+                           in the search_key list (full name needed, 
+                           capitalisation irrelevant)
+                - "key": Include playlists, whose name contains one of the 
+                         keywords specified in the search_key
             use_cache (bool):
                 Whether to use the cached playlist data (if available). 
                 If set to False, playlists are extracted from the soundcloud 
                 profile
             sc_account (str):
                 soundcloud profile from which the playlists should be extracted
+            update_progress_callback (function handle - optional):
+                Function handle to return the progress (Intended for usage in 
+                conjunction with PyQt6 signals). 
             
             
         Returns:
-        self.playlists: a list of links to the playlists
+            self.playlists (pandas DataFrame): 
+                Dataframe with information on the found playlists
         """
         if not use_cache or self.playlists_cache.empty:
             #Check the sc-account input
@@ -233,11 +237,16 @@ class PlaylistLinkExtractor:
         webdriver
         
         Parameters: 
-        index (int): index of track in playlist
+            index (int): 
+                Index of track in playlist (zero-based)
         
         Returns:
-        link (str): link to the track 
-        uploader (str): name of the uploader of the track
+            link (str): 
+                link to the track 
+            title (str):
+                title of the track
+            uploader (str): 
+                name of the uploader of the track
         """
         
         #Check the driver
@@ -297,22 +306,27 @@ class PlaylistLinkExtractor:
     
     def extr_links(self, playlists = pd.DataFrame(), mode="new", autosave=True,
                    update_progress_callback=False):
-        """Extract the links to the tracks within the playlists specified in the
-        self.playlists list
+        """Extract the links to the tracks within the specified playlists
         
         Parameters: 
-        playlists: List containing the links to the soundcloud playlists to be 
-                   evaluated (optional, default is the self.playlists list)
-        mode (optional): Select the Extraction mode
-                        - "new": Extracts all new songs (compared to dl history)
-                        - "last": Extracts only the last song
-                        - "all": Extracts all songs
-        autosave (optional): whether the results should automatically be saved 
-                            to the self.track_df (default: yes)
+            playlists (pandas DataFrame - optional): 
+                Dataframe with information on the soundcloud playlists to be 
+                evaluated (optional, default is the self.playlists dataframe)
+            mode (str - optional): 
+                Select the Extraction mode
+                - "new": Extracts all new songs (compared to dl history)
+                - "last": Extracts only the last song
+                - "all": Extracts all songs
+            autosave (bool - optional): 
+                whether the results should automatically be saved to the 
+                self.track_df (default: yes)
+            update_progress_callback (function handle - optional):
+                Function handle to return the progress (Intended for usage in 
+                conjunction with PyQt6 signals). 
         
         Returns:
-        self.track_df: a dictionary with the playlist name as the key and a 
-        list of all links to the tracks as the value
+            self.track_df (pandas DataFrame): 
+                Dataframe with information on the tracks found in each playlist        
         """
         
         #Check the driver
@@ -457,6 +471,19 @@ class PlaylistLinkExtractor:
         return tracks, self.playlists
     
     def open_pl (self, pl, index):
+        """Opens the website of a soundcloud playlist and checks if the whole 
+        page was loaded. If the playlist is not yet in the self.playlists 
+        dataframe, it is added to it.
+        
+        Parameters:
+            pl (pandas Series):
+                Series with information on the playlist link. Should have the 
+                same structure as a row in the self.playlists dataframe
+            index (int or index-like object):
+                index of the row in the self.playlists dataframe
+        
+        """
+        
         url = pl.link
         
         #Open playlist
@@ -495,7 +522,7 @@ class PlaylistLinkExtractor:
         
         #Check if playlist is empty and if so, skip it
         try:
-            #Try to find a track element
+            #Try to find a tracklist element
             self.driver.find_element(By.XPATH, 
                                      "//li[@class='trackList__item "
                                      + "sc-border-light-bottom sc-px-2x']")
@@ -508,7 +535,8 @@ class PlaylistLinkExtractor:
         scroll_down = 0
         while not self.check_existence() and scroll_down<20:
             self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight)")
-            scroll_down+=1   #To prevent infinite looping (sometimes the website doesn't seem to load properly)
+            scroll_down+=1   #To prevent infinite looping (sometimes the 
+                             # website doesn't seem to load properly)
             time.sleep(.2)
         self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight)")
         
@@ -562,7 +590,7 @@ class PlaylistLinkExtractor:
                          considered
                               
         Returns:
-        None
+            None
         """
         
         if type(pl)==str:
@@ -606,10 +634,10 @@ class PlaylistLinkExtractor:
         website
         
         Parameters: 
-        None
+            None
         
         Returns:
-        None
+            None
         """
         
         try:
@@ -635,12 +663,15 @@ class PlaylistLinkExtractor:
         specified driver from the selenium package
         
         Parameters: 
-        locator_type: locator type for the search of the element (cf. 
-                      https://www.selenium.dev/documentation/webdriver/elements/locators/)
-        search_str: search string for the element for which existence should be checked
+            locator_type (str): 
+                locator type for the search of the element (cf. 
+                https://www.selenium.dev/documentation/webdriver/elements/locators/)
+            search_str: 
+                search string for the element for which existence should be 
+                checked
         
         Returns:
-        bool value
+            bool value
         """
     
         try:
@@ -651,7 +682,14 @@ class PlaylistLinkExtractor:
     
     def check_driver(self):
         """checks if the driver is still open and if not, opens a new window 
-        with the selected webdriver"""
+        with the selected webdriver
+        
+        Parameters:
+            None
+            
+        Returns:
+            None
+        """
         try:
            self.driver.current_url
         except:
@@ -669,15 +707,17 @@ class PlaylistLinkExtractor:
            self.cookies_removed = False
     
     def convert_to_alphanumeric(self, input_string):
-        """Convert an arbitrary string to its closest alphanumeric representation 
-        in standard ascii characters (remove non ascii characters and convert 
-                                      diacritics to standard characters)
+        """Convert an arbitrary string to its closest alphanumeric 
+        representation  in standard ascii characters (remove non ascii 
+        characters and convert diacritics to standard characters)
         
         Parameters:
-        input_string: the string to be converted
+            input_string (str): 
+                the string to be converted
         
         Returns:
-        alphanumeric_string: the alphanumeric ascii representation of the string
+            alphanumeric_string (str): 
+                the alphanumeric ascii representation of the string
         """
         
         # Normalize the string to ensure compatibility with ASCII characters
@@ -692,13 +732,29 @@ class PlaylistLinkExtractor:
         return alphanumeric_string
     
     def extr_all(self):
+        """Extract all playlists from the soundcloud profile
+        
+        Parameters:
+            None
+        
+        Returns:
+            None
+        """
         _ = self.extr_playlists()
         _, _ = self.extr_links()
         return self.track_df, self.playlists
     
     def save_playlists (self, playlists):
         """Combines the self.playlists dataframe and the playlists dataframe
-        into a updated version and saves it """
+        into a updated version and saves it as a feather file
+        
+        Parameters:
+            playlists (pandas DataFrame):
+                Dataframe to add to the self.playlists dataframe
+            
+        Returns:
+            None
+        """
         
         if not type (playlists) == pd.core.frame.DataFrame:
             raise TypeError("playlists parameter must be a pandas DataFrame,"
@@ -715,7 +771,30 @@ class PlaylistLinkExtractor:
         self.playlists_cache.to_feather(Path(self.pl_dir, "playlists.feather"))
         
         
-    def add_exception(self, df, col, msg="", index = -1, key = "", search_col=""):
+    def add_exception(self, df, col, msg="", 
+                      index = -1, key = "", search_col=""):
+        """Inserts an exception into a provided dataframe. The row can be
+        specified via the index or a search key in a search column
+        
+        Parameters:
+            df (pandas DataFrame): 
+                Dataframe in which to insert the message
+            col (str - optional):
+                Name of the column in which to insert the exception message
+            msg (str - optional):
+                exception message
+            index (int or Index object):
+                Index of the row where to insert the exception
+            key (str - optional):
+                Key to search for the key for in the search_col for the 
+                determination of the row where to insert the exception
+            search_col (str - optional):
+                In which column to search for the key for the determination of 
+                the row where to insert the exception
+        
+        Returns:
+            None
+        """
         if index >=0 & index<len(df):
             if df.loc[index, col]:
                 df.loc[index, col] += " | " + msg

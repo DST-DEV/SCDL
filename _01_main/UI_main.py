@@ -84,10 +84,19 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         self.setWindowTitle("Soundcloud Downloader")
         
         # Set the custom icon for the application
-        icon = QTG.QIcon(r"C:\Users\davis\00_data\05_BA_safety_copy\05_ScalingApp\01_version01-PyQt5\_01_rsc\00_icons\W-TUSCIN_Icon.ico")  # Replace with the actual path to your icon file
+        icon = QTG.QIcon(r"./_01_rsc/SCDLO_V1_icon.ico")  # Replace with the actual path to your icon file
         self.setWindowIcon(icon)
         
     def setup_connections(self):
+        """Setup of the connections of the Buttons in the GUI to the respective
+        functions
+        
+        Parameters:
+            None
+        
+        Returns:
+            None
+        """
         # Redirect stdout and stderr
         sys.stdout = OutputLogger(self.txtedit_messages)
         sys.stderr = OutputLogger(self.txtedit_messages)
@@ -101,17 +110,23 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         self.btn_dl_hist_up.clicked.connect(self.GUI_update_dl_history)
         
         #Table buttons
-        self.btn_addrow_left.clicked.connect(self.add_row_left)
-        self.btn_addrow_right.clicked.connect(self.add_row_right)
+        self.btn_addrow_left.clicked.connect(
+            lambda: self.add_row(self.tbl_view_left, self.tbl_left))
+        self.btn_addrow_right.clicked.connect(
+            lambda: self.add_row(self.tbl_view_right, self.tbl_right))
         
-        self.btn_delrow_left.clicked.connect(self.del_rows_left)
-        self.btn_delrow_right.clicked.connect(self.del_rows_right)
+        self.btn_delrow_left.clicked.connect(
+            lambda: self.del_rows(self.tbl_view_left, self.tbl_left))
+        self.btn_delrow_right.clicked.connect(
+            lambda: self.del_rows(self.tbl_view_right, self.tbl_right))
         
         self.btn_save_left.clicked.connect(self.save_tbl_left)
         self.btn_save_right.clicked.connect(self.save_tbl_right)
         
-        self.cb_red_view_tbl_left.stateChanged.connect(self.red_tbl_view_left)
-        self.cb_red_view_tbl_right.stateChanged.connect(self.red_tbl_view_right)
+        self.cb_red_view_tbl_left.stateChanged.connect(
+            lambda: self.red_tbl_view (lr="left"))
+        self.cb_red_view_tbl_right.stateChanged.connect(
+            lambda: self.red_tbl_view (lr="right"))
         
         self.comboBox_tbl_left.currentTextChanged.connect(self.tbl_sel_left)
         self.comboBox_tbl_right.currentTextChanged.connect(self.tbl_sel_right)
@@ -124,7 +139,9 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         self.btn_read_lib_1.clicked.connect(lambda: self.run_fcn_thread(
                                                         self.GUI_read_dir))
         self.btn_read_nf_1.clicked.connect(lambda: self.run_fcn_thread(
-                                                        self.GUI_read_nf_1))
+            lambda callback: self.GUI_read_nf(page=1, 
+                                              update_progress_callback=
+                                                 callback)))
         self.btn_file_uni.clicked.connect(lambda: self.run_fcn_thread(
                                                         self.GUI_prep_files))
         self.btn_sync_music.clicked.connect(self.SCDL.LibMan.sync_music_lib)
@@ -133,7 +150,9 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         self.btn_read_lib_2.clicked.connect(lambda: self.run_fcn_thread(
                                                         self.GUI_read_dir))
         self.btn_read_nf_2.clicked.connect(lambda: self.run_fcn_thread(
-                                                        self.GUI_read_nf_2))
+            lambda callback: self.GUI_read_nf(page=2, 
+                                              update_progress_callback=
+                                                 callback)))
         self.btn_goalfld_search.clicked.connect(self.GUI_find_goal_fld)
         self.btn_del_ex_files.clicked.connect(self.GUI_del_doubles_lib)
         self.btn_reset_goalfld.clicked.connect(self.GUI_reset_goal_fld)
@@ -153,7 +172,7 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         
         Parameters:
             new_settings (dict):
-                new settings
+                New settings
         
         Returns:
             None
@@ -246,19 +265,16 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         self.lineEdit_nf_dir_1.setPlaceholderText(str(self.settings["nf_dir"]))
         self.lineEdit_nf_dir_2.setPlaceholderText(str(self.settings["nf_dir"]))
     
-    def del_rows_left (self):
-        self.del_rows(self.tbl_view_left, self.tbl_left)
-        
-    def del_rows_right(self):
-        self.del_rows(self.tbl_view_right, self.tbl_right)
-        
-    def add_row_left(self):
-        self.add_row(self.tbl_view_left, self.tbl_left)
-        
-    def add_row_right(self):
-        self.add_row(self.tbl_view_right, self.tbl_right)
-    
     def save_tbl_left(self):
+        """Saves the data displayed in the left table to the respective 
+        dataframe and updates all connected class attributes
+        
+        Parameters:
+            None
+        
+        Returns:
+            None
+        """
         self.tbl_data_left = self.tbl_left._data.copy(deep=True)
         if self.tbl_left_variable == "playlists":
             self.SCDL.playlists = self.tbl_left._data.copy(deep=True)
@@ -281,6 +297,15 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
             self.SCDL.LibMan.file_df = self.tbl_left._data.copy(deep=True)
     
     def save_tbl_right(self):
+        """Saves the data displayed in the right table to the respective 
+        dataframe and updates all connected class attributes
+        
+        Parameters:
+            None
+        
+        Returns:
+            None
+        """
         self.tbl_data_right = self.tbl_right._data.copy(deep=True)
         if self.tbl_right_variable == "playlists":
             self.SCDL.playlists = self.tbl_right._data.copy(deep=True)
@@ -303,17 +328,45 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
             self.SCDL.LibMan.file_df = self.tbl_right._data.copy(deep=True)
         
     def cancel_tbl_left(self):
+        """Reset the displayed data in the left table to the last saved version
+        of the data
+        
+        Parameters:
+            None
+        
+        Returns:
+            None
+        """
         self.GUI_change_tbl_data(data=self.tbl_data_left, 
                                  lr="left", 
                                  variable=self.tbl_left_variable)
         
     def cancel_tbl_right(self):
+        """Reset the displayed data in the right table to the last saved version
+        of the data
+        
+        Parameters:
+            None
+        
+        Returns:
+            None
+        """
         self.GUI_change_tbl_data(data=self.tbl_data_right, 
                                  lr="right", 
                                  variable=self.tbl_right_variable)
     
     def del_rows(self, view, TableWidget):
-        """deletes the selected rows in a CustomTableWidget"""
+        """Deletes the selected rows in a CustomTableWidget
+        
+        Parameters:
+            view (Pyqt QTableView):
+                The View of the table widget in which to delete the rows
+            TableWidget (Pyqt QTableWidget):
+                The table widget in which to delete the rows
+        
+        Returns:
+            None
+        """
         if not list(TableWidget._data.columns):
             return
         
@@ -325,8 +378,18 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
     
     def add_row(self, view, TableWidget):
         """Inserts a new row in a CustomTableWidget. If a row is selected, then
-        the new row is inserted after the selected row. If no row is selected in 
-        the widget, then the new row is appended to the end of the table"""
+        the new row is inserted after the selected row. If no row is selected 
+        in the widget, then the new row is appended to the end of the table
+         
+        Parameters:
+            view (Pyqt QTableView):
+                The View of the table widget in which to add the row
+            TableWidget (Pyqt QTableWidget):
+                The table widget in which to add the row
+        
+        Returns:
+            None
+        """
         if not list(TableWidget._data.columns):
             return
         
@@ -338,14 +401,22 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
             TableWidget.insertRows(TableWidget.rowCount(), 1)
     
     def tbl_sel_left (self, new_value=""):
+        """Adjusts the displayed dataframe in the left table based on a 
+        selection keyword.
+        This funcntion is a partial function for tbl_sel(lr="left", sel=new_value)
+        """
         self.tbl_sel(lr="left", sel=new_value)
     
     def tbl_sel_right (self, new_value=""):
+        """Adjusts the displayed dataframe in the right table based on a 
+        selection keyword.
+        This funcntion is a partial function for tbl_sel(lr="right", sel=new_value)
+        """
         self.tbl_sel(lr="right", sel=new_value)
     
     def tbl_sel(self, lr, sel=""):
         """Adjusts the displayed dataframe in the specified table based on a 
-        selection keyword
+        selection keyword. Column widths are formatted according to presets.
         
         Parameters:
             lr (str):
@@ -361,6 +432,7 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         Returns:
             None
         """
+        if lr not in ["left", "right"]: return
         
         if sel:
             if sel == "Soundcloud Playlists":
@@ -368,37 +440,56 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
                                           lr=lr, 
                                           variable="playlists")
                 
-                header = self.tbl_view_left.horizontalHeader()    
+                if lr == "left":
+                    header = self.tbl_view_left.horizontalHeader() 
+                    tbl_view = self.tbl_view_left
+                else:
+                    header = self.tbl_view_right.horizontalHeader() 
+                    tbl_view = self.tbl_view_right
+
                 
-                header.setDefaultSectionSize()(0, QTW.QHeaderView.ResizeMode.ResizeToContents)
-                header.setSectionResizeMode(0, QTW.QHeaderView.ResizeMode.ResizeToContents)
-                header.setSectionResizeMode(1, QTW.QHeaderView.ResizeMode.Stretch)
-                header.setSectionResizeMode(2, QTW.QHeaderView.ResizeMode.Fixed)
-                self.tbl_view_left.setColumnWidth(2, 10)
-                header.setSectionResizeMode(3, QTW.QHeaderView.ResizeMode.Fixed)
-                self.tbl_view_left.setColumnWidth(3, 10)
-                header.setSectionResizeMode(4, QTW.QHeaderView.ResizeMode.ResizeToContents)
-                
-                # header = self.tbl_view_left.horizontalHeader()       
-                # header.setSectionResizeMode(0, QTW.QHeaderView.ResizeMode.ResizeToContents)
-                # header.setSectionResizeMode(1, QTW.QHeaderView.ResizeMode.Stretch)
-                # header.setSectionResizeMode(2, QTW.QHeaderView.ResizeMode.Fixed)
-                # self.tbl_view_left.setColumnWidth(2, 10)
-                # header.setSectionResizeMode(3, QTW.QHeaderView.ResizeMode.Fixed)
-                # self.tbl_view_left.setColumnWidth(3, 10)
-                # header.setSectionResizeMode(4, QTW.QHeaderView.ResizeMode.ResizeToContents)
+                #header.setDefaultSectionSize()(0, QTW.QHeaderView.ResizeMode.ResizeToContents)
+                header.setSectionResizeMode(
+                    0, QTW.QHeaderView.ResizeMode.ResizeToContents)
+                header.setSectionResizeMode(
+                    1, QTW.QHeaderView.ResizeMode.Stretch)
+                header.setSectionResizeMode(
+                    2, QTW.QHeaderView.ResizeMode.Fixed)
+                tbl_view.setColumnWidth(2, 80)
+                header.setSectionResizeMode(
+                    3, QTW.QHeaderView.ResizeMode.Fixed)
+                tbl_view.setColumnWidth(3, 80)
+                header.setSectionResizeMode(
+                    4, QTW.QHeaderView.ResizeMode.ResizeToContents)
             elif sel == "Soundcloud Tracks":
                 self.GUI_change_tbl_data(data = self.SCDL.track_df, 
                                           lr=lr,
                                           variable = "track_links")
+                
+                if lr == "left":
+                    header = self.tbl_view_left.horizontalHeader() 
+                else:
+                    header = self.tbl_view_right.horizontalHeader()  
+                
             elif sel == "Library Files":
                 self.GUI_change_tbl_data (data = self.SCDL.LibMan.lib_df, 
                                           lr=lr,
                                           variable = "library")
+                
+                if lr == "left":
+                    header = self.tbl_view_left.horizontalHeader() 
+                else:
+                    header = self.tbl_view_right.horizontalHeader() 
+                    
             elif sel == "New Files":
                 self.GUI_change_tbl_data (data = self.SCDL.LibMan.file_df, 
                                           lr=lr,
                                           variable = "new_files")
+                
+                if lr == "left":
+                    header = self.tbl_view_left.horizontalHeader() 
+                else:
+                    header = self.tbl_view_right.horizontalHeader() 
     
     def GUI_change_tbl_data(self, data, lr, variable):
         """Changes the data of a specified table widget and updates the 
@@ -431,12 +522,6 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         
         #Hide / unhide columns based on selection of "reduced view"
         self.red_tbl_view(lr)
-    
-    def red_tbl_view_left (self):
-        self.red_tbl_view(lr="left")
-        
-    def red_tbl_view_right (self):
-        self.red_tbl_view(lr="right")
     
     def red_tbl_view (self, lr):
         """Hides non-essential columns for a given table based on the currently
@@ -488,9 +573,9 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         row in the left table.
         
         Args:
-            selected:
+            selected (PyQt QModelIndexList):
                 Selected rows in the left table widget
-            deselected:
+            deselected (PyQt QModelIndexList):
                 Unselected rows in the left table widget    
         
         Returns:
@@ -517,8 +602,10 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         """Exctracts the soundcloud playlists from the sc-account (c.f. 
         settings variable) and displays them in the left table widget
     
-        Args:
-            None
+        Parameters:
+            update_progress_callback (function handle - optional):
+                Function handle to return the progress (Intended for usage in 
+                conjunction with PyQt6 signals). 
         
         Returns:
             None
@@ -545,20 +632,22 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
                                  update_progress_callback=
                                      update_progress_callback)
         
-        self.GUI_change_tbl_data (data = self.SCDL.LinkExt.playlists, 
-                                  lr="left", 
-                                  variable="playlists")
-        
+        #Update the Value in the ComboBox and emit the currentTextChanged 
+        # signal in order to trigger the updating of the table
         self.comboBox_tbl_left.setCurrentText("Soundcloud Playlists")
+        self.comboBox_tbl_left.currentTextChanged.emit(
+            self.comboBox_tbl_left.currentText())
         if callable(update_progress_callback):
             update_progress_callback(100)
 
     def GUI_extr_tracks(self, update_progress_callback=False):
-        """Extracts the links of the tracks from the extracted soundcloud 
-        playlists and displays the results in the right table widget
+        """Extracts the links of the tracks from the soundcloud playlists
+        and displays the results in the right table widget
         
-        Args:
-            None
+        Parameters:
+            update_progress_callback (function handle - optional):
+                Function handle to return the progress (Intended for usage in 
+                conjunction with PyQt6 signals). 
         
         Returns:
             None
@@ -575,16 +664,28 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         else:
             print("No Playlists to extract tracks from found")
         
-        self.GUI_change_tbl_data (data = self.SCDL.track_df, 
-                                  lr="right",
-                                  variable = "track_links")
-        
+        #Update the Value in the ComboBox and emit the currentTextChanged 
+        # signal in order to trigger the updating of the table
         self.comboBox_tbl_right.setCurrentText("Soundcloud Tracks")
+        self.comboBox_tbl_right.currentTextChanged.emit(
+            self.comboBox_tbl_right.currentText())
+        
         
         if callable(update_progress_callback):
             update_progress_callback(100)
         
     def GUI_download_tracks(self, update_progress_callback=False):
+        """Downloads the Downloads in the track DataFrame
+        and displays the results in the right table widget
+        
+        Parameters:
+            update_progress_callback (function handle - optional):
+                Function handle to return the progress (Intended for usage in 
+                conjunction with PyQt6 signals). 
+        
+        Returns:
+            None
+        """
         if callable(update_progress_callback):
             update_progress_callback(0)
         try:
@@ -592,10 +693,12 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         except Exception as e:
             print(f"Error while downloading tracks {e.__class__}: {e}")
         finally:
-            self.GUI_change_tbl_data (data = self.SCDL.track_df, 
-                                      lr="right",
-                                      variable = "track_links")
+
+            #Update the Value in the ComboBox and emit the currentTextChanged 
+            # signal in order to trigger the updating of the table
             self.comboBox_tbl_right.setCurrentText("Soundcloud Tracks")
+            self.comboBox_tbl_right.currentTextChanged.emit(
+                self.comboBox_tbl_right.currentText())
             if callable(update_progress_callback):
                 update_progress_callback(100)
     
@@ -617,66 +720,84 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
     
     
     def GUI_read_dir (self, update_progress_callback=False):
+        """Reads all .mp3 and .wav file from the track library directory (
+        including subfolders)
+        
+        Parameters:
+            update_progress_callback (function handle - optional):
+                Function handle to return the progress (Intended for usage in 
+                conjunction with PyQt6 signals). 
+        
+        Returns:
+            None
+        """
         if callable(update_progress_callback):
             update_progress_callback(0)
         
         self.SCDL.LibMan.read_dir(update_progress_callback)
-        self.GUI_change_tbl_data (data = self.SCDL.LibMan.lib_df, 
-                                  lr="left",
-                                  variable = "library")
+        
+        #Update the Value in the ComboBox and emit the currentTextChanged 
+        # signal in order to trigger the updating of the table
         self.comboBox_tbl_left.setCurrentText("Library Files")
+        self.comboBox_tbl_left.currentTextChanged.emit(
+            self.comboBox_tbl_left.currentText())
         
         if callable(update_progress_callback):
             update_progress_callback(100)
     
-    def GUI_read_nf_1(self, update_progress_callback=False):
+    def GUI_read_nf(self, page, update_progress_callback=False):
+        """Reads all .mp3 and .wav file from the new files directory (
+        including subfolders)
+        
+        Parameters:
+            update_progress_callback (function handle - optional):
+                Function handle to return the progress (Intended for usage in 
+                conjunction with PyQt6 signals). 
+        
+        Returns:
+            None
+        """
         update_progress_callback(0)
-        if self.lineEdit_nf_dir_1.text():
+        if page == 1:
+            nf_dir_cust = self.lineEdit_nf_dir_1.text()
+        elif page == 2: 
+            nf_dir_cust = self.lineEdit_nf_dir_2.text()
+        else:
+            return
+        
+        if nf_dir_cust:
             self.SCDL.LibMan.read_tracks(
                 update_progress_callback=update_progress_callback,
-                directory=self.lineEdit_nf_dir_1.text(), 
+                directory=nf_dir_cust, 
                 mode="replace")
         else:
             self.SCDL.LibMan.read_tracks(
                 update_progress_callback=update_progress_callback,
                 directory=self.settings["nf_dir"],
                 mode="replace")
-            
-        self.GUI_change_tbl_data (data = self.SCDL.LibMan.file_df, 
-                                  lr="right",
-                                  variable = "new_files")
+        
+        #Update the Value in the ComboBox and emit the currentTextChanged 
+        # signal in order to trigger the updating of the table
         self.comboBox_tbl_right.setCurrentText("New Files")
+        self.comboBox_tbl_right.currentTextChanged.emit(
+            self.comboBox_tbl_right.currentText())
         
         if callable(update_progress_callback):
             update_progress_callback(100)
-    
-    def GUI_read_nf_2(self, update_progress_callback=False):
-        if callable(update_progress_callback):
-            update_progress_callback(0)
-            
-        if self.lineEdit_nf_dir_2.text():
-            self.SCDL.LibMan.read_tracks(
-                update_progress_callback=update_progress_callback,
-                directory=self.lineEdit_nf_dir_2.text(), 
-                mode="replace")
-        else:
-            self.SCDL.LibMan.read_tracks(
-                update_progress_callback=update_progress_callback,
-                directory=self.settings["nf_dir"],
-                mode="replace")
 
-        self.GUI_change_tbl_data (data = self.SCDL.LibMan.file_df, 
-                                  lr="right",
-                                  variable = "new_files")
-        self.comboBox_tbl_right.setCurrentText("New Files")
-        
-        if callable(update_progress_callback):
-            update_progress_callback(100)
-    
     def GUI_prep_files(self, update_progress_callback=False):
         """Preps the files in either the new file directory or the track library.
         It can be selected whether the filenames should be unified, the metadata
-        inserted and the samplerate checked."""
+        inserted and the samplerate checked.
+        
+        Parameters:
+            update_progress_callback (function handle - optional):
+                Function handle to return the progress (Intended for usage in 
+                conjunction with PyQt6 signals). 
+        
+        Returns:
+            None
+        """
         
         if callable(update_progress_callback):
             update_progress_callback(0)
@@ -726,67 +847,132 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
             
         if df == "nf":
             print()
-            self.GUI_change_tbl_data (data = self.SCDL.LibMan.file_df, 
-                                      lr="right",
-                                      variable = "new_files")
+            #Update the Value in the ComboBox and emit the currentTextChanged 
+            # signal in order to trigger the updating of the table
+            self.comboBox_tbl_right.setCurrentText("New Files")
+            self.comboBox_tbl_right.currentTextChanged.emit(
+                self.comboBox_tbl_right.currentText())
         else:
-            self.GUI_change_tbl_data (data = self.SCDL.LibMan.lib_df, 
-                                      lr="left",
-                                      variable = "library")
+            #Update the Value in the ComboBox and emit the currentTextChanged 
+            # signal in order to trigger the updating of the table
+            self.comboBox_tbl_left.setCurrentText("Library Files")
+            self.comboBox_tbl_left.currentTextChanged.emit(
+                self.comboBox_tbl_left.currentText())
         
         if callable(update_progress_callback):
             update_progress_callback(100)
     
     def GUI_find_goal_fld(self):
+        """Finds the folder (and file name) where the files in the new files
+        directory should be moved to within the track library directory. 
+        Determination of the folder & filename is either based on the metadata
+        or the filename (searches closest match in the library). Selection of 
+        these modes is done via the self.rbtn_meta and self.rbtn_search.
+        
+        Parameters:
+            None
+        
+        Returns:
+            None
+        """
         mode = "metadata" if self.rbtn_meta.isChecked() else "namesearch"
         
         file_df = self.SCDL.LibMan.determine_goal_folder(mode=mode)
         
-        self.GUI_change_tbl_data (data = file_df, 
-                                  lr="right", 
-                                  variable="new_files")
+        #Update the Value in the ComboBox and emit the currentTextChanged 
+        # signal in order to trigger the updating of the table
         self.comboBox_tbl_right.setCurrentText("New Files")
+        self.comboBox_tbl_right.currentTextChanged.emit(
+            self.comboBox_tbl_right.currentText())
     
     def GUI_move_files(self):
+        """Moves the files in the new files directory to the goal folder and 
+        goal file specified in the file_df
+        
+        Parameters:
+            None
+        
+        Returns:
+            None
+        """
         self.SCDL.LibMan.move_to_library()
         
         if self.lineEdit_nf_dir_2.text():
             self.SCDL.LibMan.read_tracks(directory=self.lineEdit_nf_dir_2.text(), 
                                     mode="replace")
         elif self.lineEdit_nf_dir_1.text():
-            self.SCDL.LibMan.read_tracks(directory=self.lineEdit_nf_dir_1.text(), 
-                                    mode="replace")
+            self.SCDL.LibMan.read_tracks(
+                directory=self.lineEdit_nf_dir_1.text(), mode="replace")
         else:
             self.SCDL.LibMan.read_tracks(directory=self.settings["nf_dir"],
                                          mode="replace")
         
-        self.GUI_change_tbl_data (data = self.SCDL.LibMan.file_df, 
-                                  lr="right",
-                                  variable = "new_files")
+        #Update the Value in the ComboBox and emit the currentTextChanged 
+        # signal in order to trigger the updating of the table
         self.comboBox_tbl_right.setCurrentText("New Files")
+        self.comboBox_tbl_right.currentTextChanged.emit(
+            self.comboBox_tbl_right.currentText())
     
     def GUI_del_doubles_lib(self):
+        """Deletes the files in the file_df for which a corresponding file in 
+        the library was found (Looks up the goal folder and goal filename in 
+        the file_df). 
+        
+        Parameters:
+            None
+        
+        Returns:
+            None
+        """
         self.SCDL.LibMan.del_doubles()
         
-        self.GUI_change_tbl_data (data = self.SCDL.LibMan.file_df, 
-                                  lr="right",
-                                  variable = "new_files")
+        #Update the Value in the ComboBox and emit the currentTextChanged 
+        # signal in order to trigger the updating of the table
         self.comboBox_tbl_right.setCurrentText("New Files")
+        self.comboBox_tbl_right.currentTextChanged.emit(
+            self.comboBox_tbl_right.currentText())
     
     def GUI_reset_goal_fld (self):
+        """Resets the found goal folder and goal filename
+        
+        Parameters:
+            None
+        
+        Returns:
+            None
+        """
         self.SCDL.LibMan.reset_goal_folder()
         
-        self.GUI_change_tbl_data (data = self.SCDL.LibMan.file_df, 
-                                  lr="right",
-                                  variable = "new_files")
+        #Update the Value in the ComboBox and emit the currentTextChanged 
+        # signal in order to trigger the updating of the table
         self.comboBox_tbl_right.setCurrentText("New Files")
+        self.comboBox_tbl_right.currentTextChanged.emit(
+            self.comboBox_tbl_right.currentText())
     
     def open_settings(self):
+        """Opens the settings window
+        
+        Parameters:
+            None
+        
+        Returns:
+            None
+        """
         self.SettingsDialog.changed_settings = dict()
         self.SettingsDialog.exec()
         # self.Dialog.show()
     
     def check_dialog_settings(self):
+        """Saves the settings in the settings window to the internal settings,
+        validates the new values and updates the corresponding class attributes.
+        Settings are exported to a .txt file for the next programm run.
+        
+        Parameters:
+            None
+        
+        Returns:
+            None
+        """
         #Run internal save function
         self.SettingsDialog.save_settings()
         
@@ -806,6 +992,15 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
             f.write(json.dumps(settings))
         
     def update_settings(self):
+        """Updates the class attributes with the current settings in the 
+        self.settings dict
+        
+        Parameters:
+            None
+        
+        Returns:
+            None
+        """
         self.SCDL.driver_choice = self.settings.get("driver_choice")
         self.SCDL.sc_account = self.settings.get("sc_account")
         self.SCDL.nf_dir = self.settings.get("nf_dir")
@@ -823,17 +1018,18 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         The same applies if certain settings are missing in the file or their
         values are invalid.
         
-        Args:
+        Parameters:
             None
         
         Returns:
             None
         """
         
-        settings_path, ok = QTW.QFileDialog.getOpenFileName(self,
-                                                            "Select a settings file to import",
-                                                            str(os.getcwd()),
-                                                            "Text files (*.txt)")
+        settings_path, ok = \
+            QTW.QFileDialog.getOpenFileName(self,
+                                            "Select a settings file to import",
+                                            str(os.getcwd()),
+                                            "Text files (*.txt)")
         with open(settings_path, "r") as f:
             imported_settings = f.read()
         
@@ -859,7 +1055,14 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         self.update_settings()
 
     def change_lightmode (self):
-        """Changes the lighting mode """
+        """Changes the display mode to light or dark mode
+        
+        Parameters:
+            None
+        
+        Returns:
+            None
+        """
         
         if self.SettingsDialog.cb_darkmode.isChecked():
             qdarktheme.setup_theme("dark",
@@ -873,13 +1076,29 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
             self.setStyleSheet("""QPushButton {color: #000000}""")
     
     def run_fcn_thread(self, fcn):
-        """Start the worker to run 'long_running_task' from SomeClass."""
+        """Creates a worker for the passed function and starts it
+        
+        Parameters:
+            fcn (function handle):
+                Function to run as a worker thread
+        
+        Returns:
+            None
+        """
         worker = Worker(fcn)
         worker.signals.progress_updated.connect(self.update_progress)
         self.threadpool.start(worker)
         
     def update_progress(self, value):
-        """Update the progress bar with the current progress value."""
+        """Update the progress bar with the current progress value.
+        
+        Parameters:
+            value (int):
+                New value to set for the progress bar. Should be within [0,100]
+        
+        Returns:
+            None
+        """
         if value > 100:
             value = 100
         if value < 0:
