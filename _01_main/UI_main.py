@@ -93,8 +93,10 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         sys.stderr = OutputLogger(self.txtedit_messages)
         
         #SCDL buttons
-        self.btn_pl_search.clicked.connect(self.GUI_extr_playlists)
-        self.btn_track_ext.clicked.connect(self.GUI_extr_tracks)
+        self.btn_pl_search.clicked.connect(lambda: self.run_fcn_thread(
+                                                        self.GUI_extr_playlists))
+        self.btn_track_ext.clicked.connect(lambda: self.run_fcn_thread(
+                                                        self.GUI_extr_tracks))
         self.btn_track_dl.clicked.connect(self.GUI_download_tracks)
         self.btn_dl_hist_up.clicked.connect(self.GUI_update_dl_history)
         
@@ -119,15 +121,19 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         self.selectionModel.selectionChanged.connect(self.update_content_right)
         
         #LibManager Buttons
-        # This is how all functions which should run as threads need to be called:
-        self.btn_read_lib_1.clicked.connect(lambda: self.run_fcn_thread(self.GUI_read_dir))
-        self.btn_read_nf_1.clicked.connect(self.GUI_read_nf_1)
-        self.btn_file_uni.clicked.connect(self.GUI_prep_files)
+        self.btn_read_lib_1.clicked.connect(lambda: self.run_fcn_thread(
+                                                        self.GUI_read_dir))
+        self.btn_read_nf_1.clicked.connect(lambda: self.run_fcn_thread(
+                                                        self.GUI_read_nf_1))
+        self.btn_file_uni.clicked.connect(lambda: self.run_fcn_thread(
+                                                        self.GUI_prep_files))
         self.btn_sync_music.clicked.connect(self.SCDL.LibMan.sync_music_lib)
         
         #LibUpdater Buttons
-        self.btn_read_lib_2.clicked.connect(self.GUI_read_dir)
-        self.btn_read_nf_2.clicked.connect(self.GUI_read_nf_2)
+        self.btn_read_lib_2.clicked.connect(lambda: self.run_fcn_thread(
+                                                        self.GUI_read_dir))
+        self.btn_read_nf_2.clicked.connect(lambda: self.run_fcn_thread(
+                                                        self.GUI_read_nf_2))
         self.btn_goalfld_search.clicked.connect(self.GUI_find_goal_fld)
         self.btn_del_ex_files.clicked.connect(self.GUI_del_doubles_lib)
         self.btn_reset_goalfld.clicked.connect(self.GUI_reset_goal_fld)
@@ -136,8 +142,10 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         #Settings
         self.SettingsChange.triggered.connect(self.open_settings)
         self.SettingsImport.triggered.connect(self.import_settings)
-        self.SettingsDialog.buttonBox.accepted.connect(self.check_dialog_settings)
-        self.SettingsDialog.cb_darkmode.stateChanged.connect(self.change_lightmode)
+        self.SettingsDialog.buttonBox.accepted.connect(
+                                                self.check_dialog_settings)
+        self.SettingsDialog.cb_darkmode.stateChanged.connect(
+                                                self.change_lightmode)
     
     def validate_settings(self, new_settings):
         """Verifies a dict of settings and transfers all valid new settings to 
@@ -505,7 +513,7 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         if self.tbl_left_variable == "whatever i want to use for file df of tracks for search engine":
             pass
             
-    def GUI_extr_playlists (self):
+    def GUI_extr_playlists (self, update_progress_callback=False):
         """Exctracts the soundcloud playlists from the sc-account (c.f. 
         settings variable) and displays them in the left table widget
     
@@ -515,7 +523,8 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         Returns:
             None
         """
-        
+        if callable(update_progress_callback):
+            update_progress_callback(0)
         use_cache = self.cb_use_cached.isChecked()
         
         if self.rbtn_pl_all.isChecked():
@@ -532,15 +541,19 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         self.SCDL.extr_playlists(search_key=search_key, 
                                  search_type=self.pl_extr_mode, 
                                  sc_account = self.settings["sc_account"],
-                                 use_cache=use_cache)
+                                 use_cache=use_cache,
+                                 update_progress_callback=
+                                     update_progress_callback)
         
         self.GUI_change_tbl_data (data = self.SCDL.LinkExt.playlists, 
                                   lr="left", 
                                   variable="playlists")
         
         self.comboBox_tbl_left.setCurrentText("Soundcloud Playlists")
+        if callable(update_progress_callback):
+            update_progress_callback(100)
 
-    def GUI_extr_tracks(self):
+    def GUI_extr_tracks(self, update_progress_callback=False):
         """Extracts the links of the tracks from the extracted soundcloud 
         playlists and displays the results in the right table widget
         
@@ -550,10 +563,15 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         Returns:
             None
         """
+        if callable(update_progress_callback):
+            update_progress_callback(0)
+            
         if not self.SCDL.LinkExt.playlists.empty:
             self.SCDL.extr_tracks(mode="new", 
                                   autosave=True, 
-                                  reextract=True)
+                                  reextract=True,
+                                  update_progress_callback = 
+                                      update_progress_callback)
         else:
             print("No Playlists to extract tracks from found")
         
@@ -563,7 +581,12 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         
         self.comboBox_tbl_right.setCurrentText("Soundcloud Tracks")
         
-    def GUI_download_tracks(self):
+        if callable(update_progress_callback):
+            update_progress_callback(100)
+        
+    def GUI_download_tracks(self, update_progress_callback=False):
+        if callable(update_progress_callback):
+            update_progress_callback(0)
         try:
             self.SCDL.download_tracks()
         except Exception as e:
@@ -573,6 +596,8 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
                                       lr="right",
                                       variable = "track_links")
             self.comboBox_tbl_right.setCurrentText("Soundcloud Tracks")
+            if callable(update_progress_callback):
+                update_progress_callback(100)
     
     def GUI_update_dl_history(self):
         """Updates the Download history file with the last tracks from either
@@ -591,69 +616,113 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         self.SCDL.LinkExt.update_dl_history(pl=pl_mode)
     
     
-    def GUI_read_dir (self, update_progress_callback):
-        update_progress_callback(0)
+    def GUI_read_dir (self, update_progress_callback=False):
+        if callable(update_progress_callback):
+            update_progress_callback(0)
+        
         self.SCDL.LibMan.read_dir(update_progress_callback)
-        #update_progress_callback(0)
         self.GUI_change_tbl_data (data = self.SCDL.LibMan.lib_df, 
                                   lr="left",
                                   variable = "library")
         self.comboBox_tbl_left.setCurrentText("Library Files")
+        
+        if callable(update_progress_callback):
+            update_progress_callback(100)
     
-    def GUI_read_nf_1(self):
+    def GUI_read_nf_1(self, update_progress_callback=False):
+        update_progress_callback(0)
         if self.lineEdit_nf_dir_1.text():
-            self.SCDL.LibMan.read_tracks(directory=self.lineEdit_nf_dir_1.text(), 
-                                    mode="replace")
+            self.SCDL.LibMan.read_tracks(
+                update_progress_callback=update_progress_callback,
+                directory=self.lineEdit_nf_dir_1.text(), 
+                mode="replace")
         else:
-            self.SCDL.LibMan.read_tracks(directory=self.settings["nf_dir"],
-                                         mode="replace")
+            self.SCDL.LibMan.read_tracks(
+                update_progress_callback=update_progress_callback,
+                directory=self.settings["nf_dir"],
+                mode="replace")
             
         self.GUI_change_tbl_data (data = self.SCDL.LibMan.file_df, 
                                   lr="right",
                                   variable = "new_files")
         self.comboBox_tbl_right.setCurrentText("New Files")
-    
-    def GUI_read_nf_2(self):
-        if self.lineEdit_nf_dir_2.text():
-            self.SCDL.LibMan.read_tracks(directory=self.lineEdit_nf_dir_2.text(), 
-                                    mode="replace")
-        else:
-            self.SCDL.LibMan.read_tracks(directory=self.settings["nf_dir"],
-                                         mode="replace")
         
+        if callable(update_progress_callback):
+            update_progress_callback(100)
+    
+    def GUI_read_nf_2(self, update_progress_callback=False):
+        if callable(update_progress_callback):
+            update_progress_callback(0)
+            
+        if self.lineEdit_nf_dir_2.text():
+            self.SCDL.LibMan.read_tracks(
+                update_progress_callback=update_progress_callback,
+                directory=self.lineEdit_nf_dir_2.text(), 
+                mode="replace")
+        else:
+            self.SCDL.LibMan.read_tracks(
+                update_progress_callback=update_progress_callback,
+                directory=self.settings["nf_dir"],
+                mode="replace")
+
         self.GUI_change_tbl_data (data = self.SCDL.LibMan.file_df, 
                                   lr="right",
                                   variable = "new_files")
         self.comboBox_tbl_right.setCurrentText("New Files")
+        
+        if callable(update_progress_callback):
+            update_progress_callback(100)
     
-    def GUI_prep_files(self):
+    def GUI_prep_files(self, update_progress_callback=False):
         """Preps the files in either the new file directory or the track library.
         It can be selected whether the filenames should be unified, the metadata
         inserted and the samplerate checked."""
         
+        if callable(update_progress_callback):
+            update_progress_callback(0)
+            
         #Prepare selections for file adjustment (checkboxes)
         adj_fnames = self.cb_fnames.isChecked()
         adj_art_tit = self.cb_metadata.isChecked()
         adj_genre = self.cb_genre.isChecked()
+        check_sr = self.cb_samplerate.isChecked()
         
         #Prepare selection of which directory should be processed
         if self.rbtn_nf.isChecked():
             df = "nf"
+            ratio_wav = round(sum(self.SCDL.LibMan.file_df.extension ==".wav")
+                                 /len(self.SCDL.LibMan.file_df.index)*100)
         else:
             df = "lib"
-        
+            ratio_wav = round(sum(self.SCDL.LibMan.lib_df.extension ==".wav")
+                                 /len(self.SCDL.LibMan.lib_df.index)*100)
+            
         #Adjust filenames and/or metadata (if selected)
         if any([adj_fnames, adj_art_tit, adj_genre]):
+            #Determine Progressbar limits
+            prog_bounds = [0,100-ratio_wav] if check_sr else [0,100]
+            
+            #Prepare  files
             self.SCDL.LibMan.prepare_files (df_sel=df,
                                             adj_fnames=adj_fnames,
                                             adj_art_tit = adj_art_tit,
-                                            adj_genre = adj_genre)
+                                            adj_genre = adj_genre,
+                                            update_progress_callback = 
+                                              update_progress_callback,
+                                            prog_bounds=prog_bounds)
+        
+        update_progress_callback(prog_bounds[1])
         
         #Adjust samplerate (if selected)
         if self.cb_samplerate.isChecked():
+            if any([adj_fnames, adj_art_tit, adj_genre]):
+                prog_bounds = [prog_bounds[1],100] if check_sr else [0,100]
             self.SCDL.LibMan.adjust_sample_rate(mode=df, 
                                                 max_sr=48000, std_sr=44100, 
-                                                auto_genre=False)
+                                                auto_genre=False,
+                                                update_progress_callback = 
+                                                  update_progress_callback,
+                                                prog_bounds=prog_bounds)
             
         if df == "nf":
             print()
@@ -661,9 +730,12 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
                                       lr="right",
                                       variable = "new_files")
         else:
-            self.GUI_change_tbl_data (data = self.SCDL.LibMan.file_df, 
+            self.GUI_change_tbl_data (data = self.SCDL.LibMan.lib_df, 
                                       lr="left",
                                       variable = "library")
+        
+        if callable(update_progress_callback):
+            update_progress_callback(100)
     
     def GUI_find_goal_fld(self):
         mode = "metadata" if self.rbtn_meta.isChecked() else "namesearch"
@@ -805,16 +877,14 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         worker = Worker(fcn)
         worker.signals.progress_updated.connect(self.update_progress)
         self.threadpool.start(worker)
-    
-    def test_task(self, update_progress_callback):
-        self.SCDL.LibMan.long_running_task(update_progress_callback)
+        
     def update_progress(self, value):
         """Update the progress bar with the current progress value."""
         if value > 100:
             value = 100
         if value < 0:
             value = 0
-        self.progressBar.setValue(round(value))
+        self.progressBar.setValue(value)
 
 #%% SettingsWindow
 

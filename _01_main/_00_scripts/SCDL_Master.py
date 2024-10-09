@@ -76,7 +76,8 @@ class Soundclouddownloader:
         
     def extr_playlists(self, search_key=[], search_type="all", 
                        use_cache = True,
-                       sc_account = None):
+                       sc_account = None,
+                       update_progress_callback=False):
         """Extract the playlists and track links from the soundcloud account 
         
         Parameters:
@@ -90,12 +91,15 @@ class Soundclouddownloader:
         self.playlists = self.LinkExt.extr_playlists(search_key=search_key,
                                                      search_type=search_type,
                                                      sc_account=sc_account,
-                                                     use_cache=use_cache)
+                                                     use_cache=use_cache,
+                                                     update_progress_callback=
+                                                     update_progress_callback)
             
         return self.playlists
     
     def extr_tracks(self, playlists = pd.DataFrame(), mode="new", 
-                    autosave=True, reextract=False):
+                    autosave=True, reextract=False,
+                    update_progress_callback=False):
         if reextract or self.track_df.empty:
             if not type(playlists) == pd.core.frame.DataFrame:
                 raise TypeError("Playlists variable is not a pandas DataFrame")
@@ -110,7 +114,9 @@ class Soundclouddownloader:
             self.track_df, self.playlists = self.LinkExt.extr_links(
                                                 playlists = playlists, 
                                                 mode=mode, 
-                                                autosave=autosave)
+                                                autosave=autosave,
+                                                update_progress_callback = 
+                                                    update_progress_callback)
             # self.track_df.insert(len(self.track_df.columns), "downloaded", False)
             return self.track_df
         else:

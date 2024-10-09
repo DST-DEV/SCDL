@@ -1,6 +1,7 @@
 import re
 import os
 import threading
+import numpy as np
 import pandas as pd
 from functools import reduce
 import pathlib
@@ -65,7 +66,7 @@ class PlaylistLinkExtractor:
         self.sc_account = sc_account
         
     def extr_playlists(self, search_key=[], search_type="all", use_cache=True,
-                       sc_account = None):
+                       sc_account = None, update_progress_callback=False):
         """Extract the links to the playlists from the soundcloud playlist 
         website for my account (user-727245698-705348285). Results can be 
         filtered using the search_key via the full name of the playlists or a 
@@ -102,19 +103,39 @@ class PlaylistLinkExtractor:
             #Check the driver
             self.check_driver()
             
+            #Update progressbar
+            if callable(update_progress_callback):
+                prog = 5
+                update_progress_callback(prog)
+            
             #Load webpage
             print("Extracting playlists from Soundcloud")
             self.driver.get("https://soundcloud.com/" + sc_account + "/sets")
+            
+            #Update progressbar
+            if callable(update_progress_callback):
+                prog = 20
+                update_progress_callback(prog)
             
             #If this is the time opening soundcloud of the session, then reject cookies
             if not self.cookies_removed:
                 self.reject_cookies()
                 self.cookies_removed = True
-        
             
+            #Update progressbar
+            if callable(update_progress_callback):
+                prog = 25
+                update_progress_callback(prog)
+                
             #Scroll down until all tracks are loaded
             while not self.check_existence():
                 self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight)")
+                
+                #Update progressbar
+                if callable(update_progress_callback):
+                    if prog <=70: 
+                        prog += 3
+                        update_progress_callback(prog)
             
             #Extract links to playlists
             try:
@@ -131,7 +152,12 @@ class PlaylistLinkExtractor:
                 print(f"\nPlaylist extraction error: {e}")
           
             playlists = pd.DataFrame(columns=["name", "link", "last_track", "status"])
-            for i in range(len(self.driver.find_elements(By.CLASS_NAME, "sound__coverArt"))):
+            
+            #Prepare Progressbar variables
+            i=0
+            update_fac = (100-prog)/100
+            n_pl = len(self.driver.find_elements(By.CLASS_NAME, "sound__coverArt"))
+            for i in range(n_pl):
                 link = self.driver.find_element(
                     By.XPATH, 
                     f"//li[@class='soundList__item'][{i+1}]"
@@ -149,6 +175,12 @@ class PlaylistLinkExtractor:
                     ).text
                 playlists.loc[-1]=[name, link, "", ""]
                 playlists = playlists.reset_index(drop=True)
+                
+                i +=1
+                if i>=.0499*n_pl:
+                    prog +=round(i/n_pl*100,3)*update_fac
+                    i=0
+                    update_progress_callback(int(np.ceil(prog)))
         
             #Save found playlists (for later use)
             self.save_playlists (playlists)
@@ -263,7 +295,8 @@ class PlaylistLinkExtractor:
     
     
     
-    def extr_links(self, playlists = pd.DataFrame(), mode="new", autosave=True):
+    def extr_links(self, playlists = pd.DataFrame(), mode="new", autosave=True,
+                   update_progress_callback=False):
         """Extract the links to the tracks within the playlists specified in the
         self.playlists list
         
@@ -319,6 +352,15 @@ class PlaylistLinkExtractor:
                      (~playlists.status.str.contains("new tracks found")) 
                      & (playlists.status != "Empty")]
         
+        #Prepare Progressbar variables
+        #Update progressbar
+        if callable(update_progress_callback):
+            prog = 10
+            update_progress_callback(prog)
+            
+            n_pls = len(pls.index)
+            i_prog=0
+            update_fac = (90-prog)/100
         for index, pl in pls.iterrows():
             
             #Open playlist (iteratively - sometimes the browser doesn't load properly at first)
@@ -400,6 +442,15 @@ class PlaylistLinkExtractor:
                     self.playlists.loc[index, "last_track"] = curr_tracks.iloc[-1].link
                     if autosave: self.track_df = pd.concat ([self.track_df, curr_tracks])
                     self.playlists.loc[index, "status"] = f"{len(curr_tracks)} new tracks found" 
+            
+            #Update progress bar
+            if callable(update_progress_callback):
+                i_prog +=1
+                if i_prog>=.0499*n_pls:
+                    prog +=round(i_prog/n_pls*100,3)*update_fac
+                    print (f"pl {i}/{n_pls}, prog = {prog}, prog_call = {int(np.ceil(prog))}")
+                    i_prog=0
+                    update_progress_callback(int(np.ceil(prog)))
         
         self.driver.quit()
         

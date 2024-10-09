@@ -54,7 +54,7 @@ class LibManager:
         self.lib_df = pd.DataFrame(columns=["folder", "filename", "extension"])
 
 
-    def read_dir (self, update_progress_callback=None):
+    def read_dir (self, update_progress_callback=False):
         """Finds all mp3 & wav files within the library directory and its 
         substructure.
         
@@ -75,7 +75,7 @@ class LibManager:
             time.sleep(0.05)  # Simulate long task
             update_progress_callback(i)  # Report progress
             
-    def read_files(self, directory, update_progress_callback=None, 
+    def read_files(self, directory, update_progress_callback=False, 
                    excluded_folders = []):
         """Finds all mp3 & wav files within a directory and its substructure.
         
@@ -124,15 +124,15 @@ class LibManager:
                                    )
                                ])
             #Update progress bar
-            if not type(update_progress_callback) == type(None):
+            if callable(update_progress_callback):
                 i +=1
                 if i>=.0499*n_files:
-                    prog +=5
+                    prog +=round(i/n_files*100,3)
                     i=0
-                    update_progress_callback(prog)
+                    update_progress_callback(int(np.ceil(prog)))
         return doc.reset_index(drop=True)    
     
-    def read_tracks(self, update_progress_callback=None, 
+    def read_tracks(self, update_progress_callback=False, 
                     directory=None, mode="replace"):
         """Finds all mp3, wav and aiff files within a directory and its substructure.
         
@@ -185,22 +185,26 @@ class LibManager:
         elif mode=="independent":
             return file_df
     
-    def prepare_new_files(self):
+    def prepare_new_files(self, update_progress_callback=False):
         "Runs the prepare files function for the new files dataframe"
         
-        self.file_df = self.prepare_files(self.file_df.copy(deep=True))
+        self.file_df = self.prepare_files(self.file_df.copy(deep=True), 
+                                          update_progress_callback)
         return self.file_df
     
-    def prepare_lib_files (self):
+    def prepare_lib_files (self, update_progress_callback=False):
         "Runs the prepare files function for the library files dataframe"
         
-        self.lib_df = self.prepare_files(self.lib_df.copy(deep=True))
+        self.lib_df = self.prepare_files(self.lib_df.copy(deep=True), 
+                                         update_progress_callback)
         return self.lib_df
     
     def prepare_files (self, df_sel=None,
                        adj_fnames = True,
                        adj_art_tit = True,
-                       adj_genre = True):
+                       adj_genre = True, 
+                       update_progress_callback=False,
+                       prog_bounds = [0,100]):
         """Strips the filename of predefined obsolete strings and inserts the 
         artist and title in the metadata.
         If the file is in the .wav format, then the sample rate is adjusted to 
@@ -242,8 +246,13 @@ class LibManager:
         else:
             ValueError("Parameter df_sel must be either a string of value 'nf'",
                        " or 'lib', or a pandas Dataframe")
-            
         
+        #Prepare Progressbar variables
+        n_files = len(df.index)
+        i=0
+        prog=prog_bounds[0]
+        update_fac = (prog_bounds[1]-prog_bounds[0])/100
+        #Iterate over Dataframe
         for index, row in df.iterrows():
             #Skip entries, which are already processed or which were chosen
             # explicitly not to be included
@@ -275,6 +284,14 @@ class LibManager:
                     df.loc[index, "status"] = "Metadata error"
                 else:
                     df.loc[index, "status"] = "Renamed and Metadata adjusted"
+            
+            #Update progress bar
+            if callable(update_progress_callback):
+                i +=1
+                if i>=.0499*n_files:
+                    prog +=round(i/n_files*100,3)*update_fac
+                    i=0
+                    update_progress_callback(int(np.ceil(prog)))
         
         #Save the results
         if type(df_sel) == str:
@@ -356,7 +373,9 @@ class LibManager:
     
         
     def adjust_sample_rate(self, tracks=pd.DataFrame(), max_sr=48000, 
-                           std_sr=44100, mode="nf", auto_genre=False):
+                           std_sr=44100, mode="nf", auto_genre=False,
+                           update_progress_callback=False, 
+                           prog_bounds = [0,100]):
         """Finds all .wav files and checks if their sample_rate is below max_sr. 
         If not so, the respective files are converted to the user specified
         sample rate std_sr
@@ -436,6 +455,14 @@ class LibManager:
         #Note: in case of a single file to process, the function automatically
         #processes it and returns. The following code is therefore only executed
         #if tracks is a dataframe with multiple entries 
+        
+        #Prepare Progressbar variables
+        n_files = sum(tracks.extension ==".wav")
+        i=0
+        prog=prog_bounds[0]
+        update_fac = (prog_bounds[1]-prog_bounds[0])/100
+        
+        #Iterate over files
         for index, row in tracks.loc[tracks.extension ==".wav"].iterrows():
             filepath = Path(row.folder, row.filename + ".wav")
             
@@ -449,6 +476,14 @@ class LibManager:
                 self.file_df.loc[index, "status"] = "Error during sample rate adjustment"
             else:
                 self.file_df.loc[index, "status"] = "sample rate checked"
+            
+            #Update progress bar
+            if callable(update_progress_callback):
+                i +=1
+                if i>=.0499*n_files:
+                    prog +=round(i/n_files*100,3)*update_fac
+                    i=0
+                    update_progress_callback(int(np.ceil(prog)))
             
     def adjust_sr(self, filepath, max_sr=48000,  std_sr=44100, 
                   auto_genre=False):
