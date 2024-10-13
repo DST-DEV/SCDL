@@ -83,9 +83,11 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         # Set the title
         self.setWindowTitle("Soundcloud Downloader")
         
-        # Set the custom icon for the application
-        icon = QTG.QIcon(r"./_01_rsc/SCDLO_V1_icon.ico")  # Replace with the actual path to your icon file
-        self.setWindowIcon(icon)
+# =============================================================================
+#         # Set the custom icon for the application
+#         icon = QTG.QIcon(r"./_01_rsc/SCDLO_V1_icon.ico")  # Replace with the actual path to your icon file
+#         self.setWindowIcon(icon)
+# =============================================================================
         
     def setup_connections(self):
         """Setup of the connections of the Buttons in the GUI to the respective
@@ -292,7 +294,18 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
             self.SCDL.track_df = self.tbl_left._data.copy(deep=True)
             self.SCDL.LinkExt.track_df = self.SCDL.track_df
         elif self.tbl_left_variable == "library":
-            self.SCDL.LibMan.lib_df = self.tbl_left._data.copy(deep=True)
+            data = self.tbl_left._data.copy(deep=True)
+            #Check if there is a common library path prefix (in this case 
+            # this prefix was removed when displaying the data in the tables)
+            if hasattr(self, 'common_lib_path'):
+                # Ensure the prefix ends with a directory separator
+                if not self.common_lib_path.endswith(os.path.sep):
+                    self.common_lib_path += os.path.sep
+                
+                # Add the prefix back to each path
+                data.folder = self.common_lib_path + data.folder
+            
+            self.SCDL.LibMan.lib_df = data
         elif self.tbl_left_variable == "new_files":
             self.SCDL.LibMan.file_df = self.tbl_left._data.copy(deep=True)
     
@@ -435,61 +448,72 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         if lr not in ["left", "right"]: return
         
         if sel:
+            if lr == "left":
+                header = self.tbl_view_left.horizontalHeader() 
+                tbl_view = self.tbl_view_left
+            else:
+                header = self.tbl_view_right.horizontalHeader() 
+                tbl_view = self.tbl_view_right
+            
             if sel == "Soundcloud Playlists":
                 self.GUI_change_tbl_data(self.SCDL.LinkExt.playlists, 
                                           lr=lr, 
                                           variable="playlists")
-                
-                if lr == "left":
-                    header = self.tbl_view_left.horizontalHeader() 
-                    tbl_view = self.tbl_view_left
-                else:
-                    header = self.tbl_view_right.horizontalHeader() 
-                    tbl_view = self.tbl_view_right
 
+                #Adjust settings for column widths
+                header.setMinimumSectionSize(30)
+                header.setMaximumSectionSize(300)
+                header.resizeSections(
+                    QTW.QHeaderView.ResizeMode.ResizeToContents)
+                header.setSectionResizeMode(
+                    QTW.QHeaderView.ResizeMode.Interactive)
+                tbl_view.setColumnWidth(1, 80)  #Fixed width for link column
                 
-                #header.setDefaultSectionSize()(0, QTW.QHeaderView.ResizeMode.ResizeToContents)
-                header.setSectionResizeMode(
-                    0, QTW.QHeaderView.ResizeMode.ResizeToContents)
-                header.setSectionResizeMode(
-                    1, QTW.QHeaderView.ResizeMode.Stretch)
-                header.setSectionResizeMode(
-                    2, QTW.QHeaderView.ResizeMode.Fixed)
-                tbl_view.setColumnWidth(2, 80)
-                header.setSectionResizeMode(
-                    3, QTW.QHeaderView.ResizeMode.Fixed)
-                tbl_view.setColumnWidth(3, 80)
-                header.setSectionResizeMode(
-                    4, QTW.QHeaderView.ResizeMode.ResizeToContents)
+                #Reduce width of playlist names if necessary
+                if header.sectionSize(0)>250:
+                    tbl_view.setColumnWidth(0, 250)
+                    
             elif sel == "Soundcloud Tracks":
                 self.GUI_change_tbl_data(data = self.SCDL.track_df, 
                                           lr=lr,
                                           variable = "track_links")
                 
-                if lr == "left":
-                    header = self.tbl_view_left.horizontalHeader() 
-                else:
-                    header = self.tbl_view_right.horizontalHeader()  
+                #Adjust settings for column widths
+                header.setMinimumSectionSize(30)
+                header.setMaximumSectionSize(200)
+                header.resizeSections(
+                    QTW.QHeaderView.ResizeMode.ResizeToContents)
+                header.setSectionResizeMode(
+                    QTW.QHeaderView.ResizeMode.Interactive)
+                # Set fixed width for "downloaded column
+                header.setSectionResizeMode(
+                    5, QTW.QHeaderView.ResizeMode.Fixed)    
                 
             elif sel == "Library Files":
                 self.GUI_change_tbl_data (data = self.SCDL.LibMan.lib_df, 
                                           lr=lr,
                                           variable = "library")
                 
-                if lr == "left":
-                    header = self.tbl_view_left.horizontalHeader() 
-                else:
-                    header = self.tbl_view_right.horizontalHeader() 
+                #Adjust settings for column widths
+                header.setMinimumSectionSize(30)
+                header.setMaximumSectionSize(200)
+                header.resizeSections(
+                    QTW.QHeaderView.ResizeMode.ResizeToContents)
+                header.setSectionResizeMode(
+                    QTW.QHeaderView.ResizeMode.Interactive)
                     
             elif sel == "New Files":
                 self.GUI_change_tbl_data (data = self.SCDL.LibMan.file_df, 
                                           lr=lr,
                                           variable = "new_files")
                 
-                if lr == "left":
-                    header = self.tbl_view_left.horizontalHeader() 
-                else:
-                    header = self.tbl_view_right.horizontalHeader() 
+                #Adjust settings for column widths
+                header.setMinimumSectionSize(30)
+                header.setMaximumSectionSize(200)
+                header.resizeSections(
+                    QTW.QHeaderView.ResizeMode.ResizeToContents)
+                header.setSectionResizeMode(
+                    QTW.QHeaderView.ResizeMode.Interactive)
     
     def GUI_change_tbl_data(self, data, lr, variable):
         """Changes the data of a specified table widget and updates the 
@@ -508,8 +532,25 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
             None
         """
 
+        
         if not type(data)==pd.core.frame.DataFrame:
             return
+        
+        if variable == "library":
+            #Find the common prefix of all folder paths
+            common_lib_path = os.path.commonprefix(list(data.folder))
+            
+            if common_lib_path:
+                self.common_lib_path = common_lib_path
+
+                #Ensure the common prefix ends at a directory separator
+                # This prevents cases where the prefix might cut off mid-directory
+                if not self.common_lib_path.endswith(os.path.sep):
+                    self.common_lib_path = \
+                    os.path.dirname(self.common_lib_path) + os.path.sep
+    
+                #Remove the common prefix from each path
+                data.folder = data.folder.str[len(self.common_lib_path):]
         
         if lr == "left" or lr == "l":
             self.tbl_left.change_data (data, insert_checkboxes=True)
@@ -738,9 +779,14 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         
         #Update the Value in the ComboBox and emit the currentTextChanged 
         # signal in order to trigger the updating of the table
-        self.comboBox_tbl_left.setCurrentText("Library Files")
-        self.comboBox_tbl_left.currentTextChanged.emit(
-            self.comboBox_tbl_left.currentText())
+        if not self.comboBox_tbl_left.currentText() == "Library Files":
+            self.comboBox_tbl_left.setCurrentText("Library Files")
+        else:
+            #In the case, that the Combobox is already set to the libary files
+            # the signal needs to be emitted manually, so that the view is 
+            # updated
+            self.comboBox_tbl_left.currentTextChanged.emit(
+                self.comboBox_tbl_left.currentText())
         
         if callable(update_progress_callback):
             update_progress_callback(100)
@@ -1069,11 +1115,20 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
                                     custom_colors={"[dark]": {"primary": "#75A4FF"}}
                                     )
             self.setStyleSheet("""QPushButton {color: #FFFFFF}""")
+            
+            # Set the custom icon for the application
+            icon = QTG.QIcon(r"./_01_rsc/SCDLO_V1_icon_darkmode.ico")
+            self.setWindowIcon(icon)
+
         else:
             qdarktheme.setup_theme("light",
                                     custom_colors={"[light]": {"primary": "#2469B2"}}
                                     )
             self.setStyleSheet("""QPushButton {color: #000000}""")
+            
+            # Set the custom icon for the application
+            icon = QTG.QIcon(r"./_01_rsc/SCDLO_V1_icon_lightmode.ico")
+            self.setWindowIcon(icon)
     
     def run_fcn_thread(self, fcn):
         """Creates a worker for the passed function and starts it
@@ -1341,9 +1396,9 @@ if __name__ == "__main__":
         # Set the taskbar icon for Windows
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(app_id)
     
-    
+    qdarktheme.enable_hi_dpi()
     app = QApplication(sys.argv)
-
+    
     window = MainWindow()
     window.show()
     
