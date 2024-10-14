@@ -158,9 +158,12 @@ class PlaylistLinkExtractor:
             playlists = pd.DataFrame(columns=["name", "link", "last_track", "status"])
             
             #Prepare Progressbar variables
-            i=0
-            update_fac = (100-prog)/100
-            n_pl = len(self.driver.find_elements(By.CLASS_NAME, "sound__coverArt"))
+            if callable(update_progress_callback):
+                i_p=0
+                update_fac = (100-prog)/100
+                
+            n_pl = len(self.driver.find_elements(By.CLASS_NAME, 
+                                                 "sound__coverArt"))
             for i in range(n_pl):
                 link = self.driver.find_element(
                     By.XPATH, 
@@ -180,11 +183,12 @@ class PlaylistLinkExtractor:
                 playlists.loc[-1]=[name, link, "", ""]
                 playlists = playlists.reset_index(drop=True)
                 
-                i +=1
-                if i>=.0499*n_pl:
-                    prog +=round(i/n_pl*100,3)*update_fac
-                    i=0
-                    update_progress_callback(int(np.ceil(prog)))
+                if callable(update_progress_callback):
+                    i_p +=1
+                    if i_p>=.0499*n_pl:
+                        prog +=round(i_p/n_pl*100,3)*update_fac
+                        i_p=0
+                        update_progress_callback(int(np.ceil(prog)))
         
             #Save found playlists (for later use)
             self.save_playlists (playlists)
@@ -306,7 +310,7 @@ class PlaylistLinkExtractor:
     
     def extr_links(self, playlists = pd.DataFrame(), mode="new", autosave=True,
                    update_progress_callback=False):
-        """Extract the links to the tracks within the specified playlists
+        """Extract the links to the tracks within the specified playlists. 
         
         Parameters: 
             playlists (pandas DataFrame - optional): 
@@ -376,21 +380,22 @@ class PlaylistLinkExtractor:
             i_prog=0
             update_fac = (90-prog)/100
         for index, pl in pls.iterrows():
-            
+            #Update progress index
+            if callable(update_progress_callback):
+                i_prog +=1
+                
             #Open playlist (iteratively - sometimes the browser doesn't load properly at first)
             iteration = 0
             while iteration<2: 
                 try:
                     self.open_pl (pl, index)
-                    # self.run_with_timeout(func=self.open_pl, 
-                    #                       pl=pl, index = index)
                 except Exception as e:
                     iteration+=1
                 else:
                     break
-            
-            #Skip the playlist if its empty
-            if self.playlists.loc[index, "status"] == "Empty": continue
+
+            # #Skip the playlist if its empty
+            # if self.playlists.loc[index, "status"] == "Empty": continue
             
             #Extract the tracks based on the selected mode
             curr_tracks = pd.DataFrame(columns=["playlist", "title", "link",
@@ -458,13 +463,11 @@ class PlaylistLinkExtractor:
                     self.playlists.loc[index, "status"] = f"{len(curr_tracks)} new tracks found" 
             
             #Update progress bar
-            if callable(update_progress_callback):
-                i_prog +=1
-                if i_prog>=.0499*n_pls:
-                    prog +=round(i_prog/n_pls*100,3)*update_fac
-                    print (f"pl {i}/{n_pls}, prog = {prog}, prog_call = {int(np.ceil(prog))}")
-                    i_prog=0
-                    update_progress_callback(int(np.ceil(prog)))
+            if callable(update_progress_callback) and (i_prog>=.0499*n_pls):
+                prog +=round(i_prog/n_pls*100,3)*update_fac
+                print (f"pl {i}/{n_pls}, prog = {prog}, prog_call = {int(np.ceil(prog))}")
+                i_prog=0
+                update_progress_callback(int(np.ceil(prog)))
         
         self.driver.quit()
         
@@ -569,63 +572,58 @@ class PlaylistLinkExtractor:
             raise e
         return True
     
-    def update_dl_history(self, mode="set_finished", pl=pd.DataFrame()):
+    def update_dl_history(self, mode="set_finished"):
         """Updates the last tracks in the download history.
         
         Parameters:
             mode (str - optional): 
                 either 'add_new' or 'set_finished'
-                - 'add_new': Adds all playlists which are not yet in the Download 
-                            history file and inserts the last track of the playlist
-                - 'set_finished': sets all playlists in the Download history file 
-                                  to fully downloaded (by inserting the last track 
-                                  of each playlist into it (including new playlists))
-            pl (pandas DataFrame or str):
-                Playlists to consider for the update. can be either a dataframe 
-                containing the name and link to the playlist or a string of 
-                value "current" or "all"
+                - 'add new': Adds all playlists which are not yet in the 
+                            Download  history file and inserts the last track 
+                            of the playlist
                 - "current": Only the playlists in the self.playlists dataframe
-                             are considered
-                - "all": Playlists are reextracted and all found playlists are
-                         considered
+                             are considered and their last track is inserted
+                             in the Download history
+                - 'all': Reextracts the last track for all playlists from the 
+                         Soundcloud profile and inserts their last track into
+                         the Download history (including new playlists))
                               
         Returns:
             None
         """
         
-        if type(pl)==str:
-            if pl == "current":
-                pl = self.playlists
-                if pl.empty:
-                    raise ValueError("No playlists found. Extract playlists" 
-                                     +"first or choose mode 'all'")
-            elif pl == "all":
-                pl = self.extr_playlists(search_type="all", use_cache=False)
-            else:
-                raise ValueError("pl must be a string of value 'current' or "
-                                 + "'all' or a pandas DataFrame")
-        elif not type(pl)==pd.core.frame.DataFrame:
-            raise TypeError("pl must be a string of value 'current' or "
-                             + "'all' or a pandas DataFrame")
-        elif pl.empty:
-            raise ValueError("pl dataframe is empty")
+        if not type(mode)==str:
+            raise TypeError("Mode must be a string")
+        
+        if mode == "current":
+            pl = self.playlists
+            if pl.empty:
+                raise ValueError("No playlists found. Extract playlists" 
+                                 +"first or choose mode 'all'")
+        elif mode in ["add new","all"]:
+            pl = self.extr_playlists(search_type="all", use_cache=False)
+        else:
+            raise ValueError("mode must be a string of value 'add new', "
+                             + "'current' or 'all'")
             
         with open(self.history_file, "r") as f:
             history = json.loads(f.read())
         
         #If mode is 'add_new'. find all playlists which are not yet in the history
-        if mode == "add_new":
-            pl = pl.loc[not pl["name"].isin(history.keys())]
+        if mode == "add new":
+            pl = pl.loc[~pl["name"].isin(history.keys())]
             
+        if not pl.empty:
+            tracks, _ = self.extr_links(playlists = pl, 
+                                        mode="last")
+        else:
+            self.driver.quit()
+            return
         
-        tracks, _ = self.extr_links(playlists = pl,
-                                    skp_unchanged = False, 
-                                    mode="last")
-        
-        for index, row in tracks.iterrows:
+        for index, row in tracks.iterrows():
             history[row.playlist] = row.link
         
-        history = json.dumps(self.dl_history)                                           #Prepare the dict for the export
+        history = json.dumps(history)      #Prepare the dict for the export
         with open(self.history_file, 'w') as f:
             f.write(history)
         

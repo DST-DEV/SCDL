@@ -347,7 +347,7 @@ class SoundcloudMP3Downloader:
 
 if __name__ == '__main__':
     link = "https://soundcloud.com/technowereld/premiere-steven-de-koda-cant-say-no-free-dl"
-    sd = SoundcloudMP3Downloader()
-    sd.download_track(link)
-    tl = sd.tracklist
+    # sd = SoundcloudMP3Downloader()
+    # sd.download_track(link)
+    # tl = sd.tracklist
     # lst_download = sd.finish()

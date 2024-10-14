@@ -371,7 +371,7 @@ class Soundclouddownloader:
 if __name__ == '__main__':
 
     scdl = Soundclouddownloader(hist_file="C:\\Users\\davis\\00_data\\01_Projects\\Personal\\SCDL\\_01_main\\_01_rsc\\Download_history.txt")
-    scdl.LibMan.read_tracks(r"C:\Users\davis\Downloads\SC DL", mode="replace")
+    # scdl.LibMan.read_tracks(r"C:\Users\davis\Downloads\SC DL", mode="replace")
     # scdl.download_all()
     
     # track_df, pl_status = scdl.extr_playlists(reextract = True)

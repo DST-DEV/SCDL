@@ -166,7 +166,7 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         self.SettingsDialog.buttonBox.accepted.connect(
                                                 self.check_dialog_settings)
         self.SettingsDialog.cb_darkmode.stateChanged.connect(
-                                                self.change_lightmode)
+            self.change_lightmode)
     
     def validate_settings(self, new_settings):
         """Verifies a dict of settings and transfers all valid new settings to 
@@ -532,7 +532,6 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
             None
         """
 
-        
         if not type(data)==pd.core.frame.DataFrame:
             return
         
@@ -755,9 +754,14 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
             None
         """
         
-        pl_mode = "current" if self.rbtn_curr_pl.isChecked() else "all"
+        if self.rbtn_new_pl.isChecked():
+            mode = "add new"
+        elif self.rbtn_curr_pl.isChecked():
+            mode = "current"
+        else:
+            mode = "all"
         
-        self.SCDL.LinkExt.update_dl_history(pl=pl_mode)
+        self.SCDL.LinkExt.update_dl_history(mode=mode)
     
     
     def GUI_read_dir (self, update_progress_callback=False):
@@ -1116,8 +1120,11 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
                                     )
             self.setStyleSheet("""QPushButton {color: #FFFFFF}""")
             
+            # # Set the custom icon for the application
+            # icon = QTG.QIcon(r"./_01_rsc/SCDLO_V1_icon_white.ico")
+            # self.setWindowIcon(icon)
             # Set the custom icon for the application
-            icon = QTG.QIcon(r"./_01_rsc/SCDLO_V1_icon_darkmode.ico")
+            icon = QTG.QIcon(r"./_01_rsc/SCDLO_V1_icon_white.ico")
             self.setWindowIcon(icon)
 
         else:
@@ -1127,7 +1134,7 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
             self.setStyleSheet("""QPushButton {color: #000000}""")
             
             # Set the custom icon for the application
-            icon = QTG.QIcon(r"./_01_rsc/SCDLO_V1_icon_lightmode.ico")
+            icon = QTG.QIcon(r"./_01_rsc/SCDLO_V1_icon_black.ico")
             self.setWindowIcon(icon)
     
     def run_fcn_thread(self, fcn):

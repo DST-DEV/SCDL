@@ -7,10 +7,12 @@
 
 
 from PyQt6 import QtCore, QtGui, QtWidgets
+###############################################################################
+# Extended Imports
 import PyQt6.QtWidgets as QTW
 import pandas as pd
 from _00_scripts.CustomTableModel import CustomTableModel, CustomTableView, CheckBoxDelegate, TblBlueprint
-
+###############################################################################
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -34,6 +36,8 @@ class Ui_MainWindow(object):
         self.gridLayout.setObjectName("gridLayout")
         self.grid_left = QtWidgets.QGridLayout()
         self.grid_left.setObjectName("grid_left")
+        #######################################################################
+        # Custom Table left
         
         #Insert left table
         df1 = pd.DataFrame({'a': ['Mary', 'Jim', 'John'],
@@ -54,6 +58,7 @@ class Ui_MainWindow(object):
         # self.tbl_left.setRowCount(0)
         # self.grid_left.addWidget(self.tbl_left, 0, 0, 1, 2)
         
+        #######################################################################
         self.btn_addrow_left = QtWidgets.QPushButton(parent=self.centralwidget)
         self.btn_addrow_left.setObjectName("btn_addrow_left")
         self.grid_left.addWidget(self.btn_addrow_left, 1, 0, 1, 1)
@@ -122,6 +127,8 @@ class Ui_MainWindow(object):
         self.hLayout_tbl_sel_right.setStretch(0, 1)
         self.hLayout_tbl_sel_right.setStretch(1, 10)
         self.grid_right.addLayout(self.hLayout_tbl_sel_right, 3, 0, 1, 2)
+        #######################################################################
+        # Custom Table right
         
         #Insert table right
         self.tbl_view_right = QTW.QTableView()
@@ -137,6 +144,7 @@ class Ui_MainWindow(object):
         # self.tbl_right.setRowCount(0)
         # self.grid_right.addWidget(self.tbl_right, 0, 0, 1, 2)
         
+        #######################################################################
         self.btn_save_right = QtWidgets.QPushButton(parent=self.centralwidget)
         self.btn_save_right.setObjectName("btn_save_right")
         self.grid_right.addWidget(self.btn_save_right, 5, 0, 1, 1)
@@ -300,18 +308,6 @@ class Ui_MainWindow(object):
         self.glayout_SCDL.addItem(spacerItem13, 12, 0, 1, 1)
         self.glayout_dl_hist = QtWidgets.QGridLayout()
         self.glayout_dl_hist.setObjectName("glayout_dl_hist")
-        self.btn_dl_hist_up = QtWidgets.QPushButton(parent=self.tab_scdl)
-        self.btn_dl_hist_up.setObjectName("btn_dl_hist_up")
-        self.glayout_dl_hist.addWidget(self.btn_dl_hist_up, 2, 1, 1, 1)
-        self.rbtn_curr_pl = QtWidgets.QRadioButton(parent=self.tab_scdl)
-        self.rbtn_curr_pl.setChecked(True)
-        self.rbtn_curr_pl.setObjectName("rbtn_curr_pl")
-        self.BtnGroup_dl_hist = QtWidgets.QButtonGroup(MainWindow)
-        self.BtnGroup_dl_hist.setObjectName("BtnGroup_dl_hist")
-        self.BtnGroup_dl_hist.addButton(self.rbtn_curr_pl)
-        self.glayout_dl_hist.addWidget(self.rbtn_curr_pl, 3, 1, 1, 1)
-        spacerItem14 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
-        self.glayout_dl_hist.addItem(spacerItem14, 2, 2, 1, 1)
         self.lbl_hist_up = QtWidgets.QLabel(parent=self.tab_scdl)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Preferred, QtWidgets.QSizePolicy.Policy.Maximum)
         sizePolicy.setHorizontalStretch(0)
@@ -321,12 +317,29 @@ class Ui_MainWindow(object):
         self.lbl_hist_up.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         self.lbl_hist_up.setObjectName("lbl_hist_up")
         self.glayout_dl_hist.addWidget(self.lbl_hist_up, 1, 1, 1, 1)
-        spacerItem15 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
-        self.glayout_dl_hist.addItem(spacerItem15, 2, 0, 1, 1)
+        spacerItem14 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        self.glayout_dl_hist.addItem(spacerItem14, 2, 0, 1, 1)
         self.rbtn_all_pl = QtWidgets.QRadioButton(parent=self.tab_scdl)
         self.rbtn_all_pl.setObjectName("rbtn_all_pl")
+        self.BtnGroup_dl_hist = QtWidgets.QButtonGroup(MainWindow)
+        self.BtnGroup_dl_hist.setObjectName("BtnGroup_dl_hist")
         self.BtnGroup_dl_hist.addButton(self.rbtn_all_pl)
-        self.glayout_dl_hist.addWidget(self.rbtn_all_pl, 4, 1, 1, 1)
+        self.glayout_dl_hist.addWidget(self.rbtn_all_pl, 5, 1, 1, 1)
+        spacerItem15 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        self.glayout_dl_hist.addItem(spacerItem15, 2, 2, 1, 1)
+        self.rbtn_curr_pl = QtWidgets.QRadioButton(parent=self.tab_scdl)
+        self.rbtn_curr_pl.setChecked(True)
+        self.rbtn_curr_pl.setObjectName("rbtn_curr_pl")
+        self.BtnGroup_dl_hist.addButton(self.rbtn_curr_pl)
+        self.glayout_dl_hist.addWidget(self.rbtn_curr_pl, 4, 1, 1, 1)
+        self.btn_dl_hist_up = QtWidgets.QPushButton(parent=self.tab_scdl)
+        self.btn_dl_hist_up.setObjectName("btn_dl_hist_up")
+        self.glayout_dl_hist.addWidget(self.btn_dl_hist_up, 2, 1, 1, 1)
+        self.rbtn_new_pl = QtWidgets.QRadioButton(parent=self.tab_scdl)
+        self.rbtn_new_pl.setChecked(False)
+        self.rbtn_new_pl.setObjectName("rbtn_new_pl")
+        self.BtnGroup_dl_hist.addButton(self.rbtn_new_pl)
+        self.glayout_dl_hist.addWidget(self.rbtn_new_pl, 3, 1, 1, 1)
         self.glayout_dl_hist.setColumnStretch(0, 1)
         self.glayout_dl_hist.setColumnStretch(1, 30)
         self.glayout_dl_hist.setColumnStretch(2, 1)
@@ -671,10 +684,11 @@ class Ui_MainWindow(object):
         self.cb_use_cached.setText(_translate("MainWindow", "Use cached playlists"))
         self.btn_track_dl.setText(_translate("MainWindow", "Download Tracks"))
         self.lbl_track_dl.setText(_translate("MainWindow", "Track Downloader"))
-        self.btn_dl_hist_up.setText(_translate("MainWindow", "Update DL history"))
-        self.rbtn_curr_pl.setText(_translate("MainWindow", "Current playlists"))
         self.lbl_hist_up.setText(_translate("MainWindow", "DL History Updater"))
         self.rbtn_all_pl.setText(_translate("MainWindow", "All playlists"))
+        self.rbtn_curr_pl.setText(_translate("MainWindow", "Current playlists"))
+        self.btn_dl_hist_up.setText(_translate("MainWindow", "Update DL history"))
+        self.rbtn_new_pl.setText(_translate("MainWindow", "New playlists"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_scdl), _translate("MainWindow", "SCDL"))
         self.rbtn_nf.setText(_translate("MainWindow", "New files"))
         self.rbtn_lib.setText(_translate("MainWindow", "Library"))

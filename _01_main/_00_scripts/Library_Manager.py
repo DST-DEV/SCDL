@@ -1041,7 +1041,7 @@ if __name__ == '__main__':
     # LibMan = LibManager(lib_dir, nf_dir)
     LibMan = LibManager()
     # lib_df = LibMan.read_dir()
-    track_df = LibMan.read_tracks(r"C:\Users\davis\Downloads\SC DL", mode="replace")
+    # track_df = LibMan.read_tracks(r"C:\Users\davis\Downloads\SC DL", mode="replace")
     # file_df = LibMan.determine_goal_folder(mode="namesearch")
     # 
     # rename_doc = LibManLibMan.process_directory()
