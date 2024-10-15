@@ -1213,6 +1213,16 @@ class SettingsWindow (QTW.QDialog, UI_SettingsDialog):
         self.setup_connections()
     
     def setup_connections (self):
+        """Setup of the connections of the GUI elements with their respective
+        functions
+        
+        Parameters:
+            None
+        
+        Returns:
+            None
+        """
+        
         #Connect buttons
         self.buttonBox.accepted.connect(self.save_settings)
         self.buttonBox.rejected.connect(self.cancel_settings)
@@ -1230,9 +1240,10 @@ class SettingsWindow (QTW.QDialog, UI_SettingsDialog):
     def change_entries(self, settings):
         """Changes the entries in the setting dialog entry fields.
         
-        Args:
+        Parameters:
             settings (dict):
-                Dictionary containing setting name - setting value key-value pairs
+                Dictionary containing <setting name> - <setting value> 
+                key-value pairs
         
         Returns:
             None
@@ -1280,7 +1291,8 @@ class SettingsWindow (QTW.QDialog, UI_SettingsDialog):
         
         Returns:
             settings (dict):
-                Retrieved setting values with setting names as keys"""
+                Retrieved setting values with setting names as keys
+        """
         
         if type(setting_names) == str:
             setting_names = [setting_names]
@@ -1308,47 +1320,147 @@ class SettingsWindow (QTW.QDialog, UI_SettingsDialog):
         return settings
     
     def retrieve_entries_all(self):
+        """Retrieve all entries in the settings dialog entry fields as a dict
+        
+        Parameters:
+            None
+            
+        Returns:
+            settings (dict):
+                Retrieved setting values with setting names as keys
+        """
+        
         return self.retrieve_entries(list(self.settings.keys()))
     
     def save_settings(self):
+        """Save all changed settings into the internal settings dict
+        
+        Parameters:
+            None
+        
+        Returns:
+            None
+        """
+        
         # self.settings = self.retrieve_entries_all()
         for key,value in self.changed_settings.items():
             if not type(value) == type(None):
                 self.settings[key] = value
         
     def cancel_settings (self):
+        """Reset the changes to the setting entry fields to their last saved 
+        value and clear the changed_settings dict
+        
+        Parameters:
+            None
+        
+        Returns:
+            None
+        """
+        
         self.change_entries(self.settings)
         self.changed_settings = dict()
         
     def closeEvent(self, evnt):
+        """Event for when Settings window is closed
+        
+        Parameters:
+            None
+        
+        Returns:
+            None
+        """
         self.cancel_settings()
         super(SettingsWindow, self).closeEvent(evnt)
             
     def sc_account_changed(self, new_value=""):
+        """Adds the changed value of the Soundcloud account entry field to 
+        the internal changed_settings dict
+        
+        Parameters:
+            None
+        
+        Returns:
+            None
+        """
         if new_value:
             self.changed_settings["sc_account"] = new_value
         
     def driver_changed (self, new_value=""):
+        """Adds the changed value of the Webdriver entry field to 
+        the internal changed_settings dict
+        
+        Parameters:
+            None
+        
+        Returns:
+            None
+        """
         if new_value:
             self.changed_settings["driver_choice"] = Path(new_value)
         
     def track_lib_changed (self, new_value=""):
+        """Adds the changed value of the Track library folder path entry field 
+        to the internal changed_settings dict
+        
+        Parameters:
+            None
+        
+        Returns:
+            None
+        """
         if new_value:
             self.changed_settings["lib_dir"] = Path(new_value)
         
     def dl_folder_changed (self, new_value=""):
+        """Adds the changed value of the Downloads folder path entry field 
+        to the internal changed_settings dict
+        
+        Parameters:
+            None
+        
+        Returns:
+            None
+        """
         if new_value:
             self.changed_settings["dl_dir"] = Path(new_value)
         
     def music_lib_changed (self, new_value=""):
+        """Adds the changed value of the Music library folder path entry field 
+        to the internal changed_settings dict
+        
+        Parameters:
+            None
+        
+        Returns:
+            None
+        """
         if new_value:
             self.changed_settings["music_dir"] = Path(new_value)
         
     def nff_changed (self, new_value=""):
+        """Adds the changed value of the new files folder path entry field 
+        to the internal changed_settings dict
+        
+        Parameters:
+            None
+        
+        Returns:
+            None
+        """
         if new_value:
             self.changed_settings["nf_dir"] = Path(new_value)
     
     def excl_fld_changed (self):
+        """Adds the changed value of the entry field for excluded folders in 
+        the track library to the internal changed_settings dict
+        
+        Parameters:
+            None
+        
+        Returns:
+            None
+        """
         new_value = self.textEdit_excl_fld.toPlainText()
         
         self.changed_settings[
@@ -1356,16 +1468,48 @@ class SettingsWindow (QTW.QDialog, UI_SettingsDialog):
                                    in new_value.split(', ')]
                                    
     def dark_mode_changed (self):
+        """Adds the changed value of the Dark mode radio button to the 
+        internal changed_settings dict
+        
+        Parameters:
+            None
+        
+        Returns:
+            None
+        """
         self.changed_settings[
             "dark_mode"] = self.cb_darkmode.isChecked()
 
 #%% OutputLogger    
 
 class OutputLogger:
+    """Changes the defoult output from the python console to a widget in the 
+    GUI"""
+    
     def __init__(self, text_edit_widget):
+        """Initialization of the text edit widget
+        
+        Parameters:
+            text_edit_widget (PyQt QTextEdit):
+                Text widget which should be used for the text ouput of the 
+                program
+        
+        Returns:
+            None
+        """
         self.text_edit_widget = text_edit_widget
 
     def write(self, message):
+        """Write a message to the text widget
+        
+        Parameters:
+            message (str):
+                Text to display in the text widget
+        
+        Returns:
+            None
+        """
+        
         self.text_edit_widget.append(message)
 
     def flush(self):
@@ -1378,20 +1522,23 @@ class WorkerSignals(QTC.QObject):
     progress_updated = QTC.pyqtSignal(int)  # Signal to update progress bar
 
 class Worker(QTC.QRunnable):
-    '''
-    Worker thread
-
+    """
+    Worker thread for Multithreading of functions in the GUI with the 
+    PyQt QThreadPool.
     Inherits from QRunnable to handler worker thread setup, signals and wrap-up.
-
-    :param callback: The function callback to run on this worker thread. Supplied args and
-                     kwargs will be passed through to the runner.
-    :type callback: function
-    :param args: Arguments to pass to the callback function
-    :param kwargs: Keywords to pass to the callback function
-
-    '''
+    
+    Parameters:
+        fn (function handle):
+            Function to run as a thread
+        *args: 
+            additional arguments as inputs for the function
+        **kwargs: 
+            additional keyword arguments as inputs for the function
+    """
     
     def __init__(self, fn, *args, **kwargs):
+        
+        
         super(Worker, self).__init__()
         # Store constructor arguments (re-used for processing)
         self.fn = fn
@@ -1403,12 +1550,27 @@ class Worker(QTC.QRunnable):
 
     @pyqtSlot()
     def run(self):
-        """Run the function with the provided arguments."""
+        """Run the function with the provided arguments.
+        
+        Parameters:
+            None
+        
+        Returns:
+            None
+        """
         # Execute the function with the provided arguments
         self.fn(self.emit_progress, *self.args, **self.kwargs)
 
     def emit_progress(self, value):
-        """Emit progress signal to update progress bar."""
+        """Emit progress signal to update progress bar.
+        
+        Parameters:
+            value(int or float):
+                Progress bar value (Should be within [0,100])
+        
+        Returns:
+            None
+        """
         self.signals.progress_updated.emit(value)
 
 #%% Main
