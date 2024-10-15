@@ -43,10 +43,30 @@ class PlaylistLinkExtractor:
         if not self.pl_dir.exists():
             os.mkdir(self.pl_dir)
         
+        #Check history file and create it, if it doesn't exist
+        if not os.path.exists(hist_file):
+            with open(hist_file, 'w') as f:
+                f.write("{}")
+        self.history_file = hist_file
+        
         #Retrieve saved playlist data
         pl_path = Path(self.pl_dir, "playlists.feather")
         if pl_path.exists():
             self.playlists_cache = pd.read_feather(pl_path)
+            
+            #Load the Download history
+            with open(self.history_file, "r") as f:
+                history = json.loads(f.read())
+            
+            #Insert the last saved "last track" into the dataframe
+            for index, pl in self.playlists_cache.iterrows():
+                if pl["name"] in history:
+                    self.playlists_cache.loc[index, "last_track"] = \
+                        history[pl["name"]]
+            
+            #Save updated playlists
+            self.playlists_cache.to_feather(Path(self.pl_dir, 
+                                                 "playlists.feather"))
         else:
             self.playlists_cache = pd.DataFrame(columns=["name", "link", 
                                                          "last_track", 
@@ -59,8 +79,6 @@ class PlaylistLinkExtractor:
                                                          "last_track", 
                                                          "status"])
         
-            
-        self.history_file = hist_file
         self.cookies_removed = False
         self.driver_choice = driver_choice
         self.sc_account = sc_account
@@ -103,6 +121,10 @@ class PlaylistLinkExtractor:
             if not type(sc_account)==str \
                 or (type(sc_account)==str and not sc_account):
                 sc_account = self.sc_account
+            
+            #Load the Download history
+            with open(self.history_file, "r") as f:
+                history = json.loads(f.read())
             
             #Check the driver
             self.check_driver()
@@ -155,7 +177,8 @@ class PlaylistLinkExtractor:
             except Exception as e:
                 print(f"\nPlaylist extraction error: {e}")
           
-            playlists = pd.DataFrame(columns=["name", "link", "last_track", "status"])
+            playlists = pd.DataFrame(columns=["name", "link", 
+                                              "last_track", "status"])
             
             #Prepare Progressbar variables
             if callable(update_progress_callback):
@@ -180,7 +203,10 @@ class PlaylistLinkExtractor:
                     + "/a[@class='sc-link-primary soundTitle__title sc-link-dark "
                     + "sc-text-h4']/span"
                     ).text
-                playlists.loc[-1]=[name, link, "", ""]
+                if name in history:
+                    playlists.loc[-1]=[name, link, history[name], ""]
+                else:
+                    playlists.loc[-1]=[name, link, "", ""]
                 playlists = playlists.reset_index(drop=True)
                 
                 if callable(update_progress_callback):
@@ -412,6 +438,8 @@ class PlaylistLinkExtractor:
                 if autosave: self.track_df = pd.concat ([self.track_df, tracks])
                     
             else:    
+                #Get last track from previous program run and last track of the
+                # currently open soundcloud page
                 last_track_hist = pl.last_track or history.get(pl["name"])
                 last_track = self.driver.find_element(
                     By.XPATH,
@@ -573,7 +601,8 @@ class PlaylistLinkExtractor:
         return True
     
     def update_dl_history(self, mode="set_finished"):
-        """Updates the last tracks in the download history.
+        """Updates the last tracks in the download history and the 
+        self.playlists dataframe.
         
         Parameters:
             mode (str - optional): 
@@ -617,12 +646,30 @@ class PlaylistLinkExtractor:
             tracks, _ = self.extr_links(playlists = pl, 
                                         mode="last")
         else:
-            self.driver.quit()
+            #Check if webdriver is still open and if so, close it
+            try:
+               self.driver.current_url
+            except:
+                pass
+            else:
+                self.driver.quit()
             return
         
+        #Update DL History and self.playlists df
         for index, row in tracks.iterrows():
             history[row.playlist] = row.link
+            if row.playlist in self.playlists["name"]:
+                index = self.playlists.loc[
+                    self.playlists["name"] == row.playlist].index.values[0]
+                
+                self.playlists[index, "last_track"] =  row.link
+            else:
+                pl_link = pl.loc[pl["name"] == row.playlist].link
+                
+                self.playlists.loc[-1] = [row.playlist, pl_link, row.link, ""]
+                self.playlists = self.playlists.reset_index(drop=True)
         
+        #Save the updated DL History as a txt file
         history = json.dumps(history)      #Prepare the dict for the export
         with open(self.history_file, 'w') as f:
             f.write(history)

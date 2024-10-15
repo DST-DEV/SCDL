@@ -104,12 +104,13 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         sys.stderr = OutputLogger(self.txtedit_messages)
         
         #SCDL buttons
-        self.btn_pl_search.clicked.connect(lambda: self.run_fcn_thread(
-                                                        self.GUI_extr_playlists))
-        self.btn_track_ext.clicked.connect(lambda: self.run_fcn_thread(
-                                                        self.GUI_extr_tracks))
+        self.btn_pl_search.clicked.connect(
+            lambda: self.run_fcn_thread(self.GUI_extr_playlists))
+        self.btn_track_ext.clicked.connect(
+            lambda: self.run_fcn_thread(self.GUI_extr_tracks))
         self.btn_track_dl.clicked.connect(self.GUI_download_tracks)
-        self.btn_dl_hist_up.clicked.connect(self.GUI_update_dl_history)
+        self.btn_dl_hist_up.clicked.connect(
+            lambda: self.run_fcn_thread(self.GUI_update_dl_history))
         
         #Table buttons
         self.btn_addrow_left.clicked.connect(
@@ -637,7 +638,45 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
                                       variable = "track_links")
         if self.tbl_left_variable == "whatever i want to use for file df of tracks for search engine":
             pass
-            
+    
+    def update_tbl_display(self, lr, variable):
+        """Updates the displayed content of the left or right table by changing 
+        the selection in the table combobox or by reemitting the 
+        currentTextChanged signal
+        
+        Parameters:
+            lr (str):
+                Selection whether to update the 'left' or 'right' table
+            variable (str):
+                Selection of the variable which should be displayed in the 
+                table. Must be one of the possible inputs for the table 
+                selection comboboxes
+        
+        Returns:
+            None
+        """
+        if not type(lr)==str:
+            raise TypeError("lr must be a string")
+        if not type(variable)==str:
+            raise TypeError("variable must be a string")
+        
+        if lr=="left":
+            comboBox = self.comboBox_tbl_left
+        elif lr == "right":
+            comboBox = self.comboBox_tbl_right
+        else:
+            raise ValueError("lr must be either 'left' or 'right'")
+        
+        #Update the Value in the ComboBox and emit the currentTextChanged 
+        # signal in order to trigger the updating of the table
+        if not comboBox.currentText() == variable:
+            comboBox.setCurrentText(variable)
+        else:
+            #In the case, that the Combobox is already set to the libary files
+            # the signal needs to be emitted manually, so that the view is 
+            # updated
+            comboBox.currentTextChanged.emit(comboBox.currentText())
+        
     def GUI_extr_playlists (self, update_progress_callback=False):
         """Exctracts the soundcloud playlists from the sc-account (c.f. 
         settings variable) and displays them in the left table widget
@@ -672,11 +711,10 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
                                  update_progress_callback=
                                      update_progress_callback)
         
-        #Update the Value in the ComboBox and emit the currentTextChanged 
-        # signal in order to trigger the updating of the table
-        self.comboBox_tbl_left.setCurrentText("Soundcloud Playlists")
-        self.comboBox_tbl_left.currentTextChanged.emit(
-            self.comboBox_tbl_left.currentText())
+        #Update table display
+        self.update_tbl_display (lr="left", variable = "Soundcloud Playlists")
+        
+        #Update the progress bar
         if callable(update_progress_callback):
             update_progress_callback(100)
 
@@ -704,12 +742,8 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         else:
             print("No Playlists to extract tracks from found")
         
-        #Update the Value in the ComboBox and emit the currentTextChanged 
-        # signal in order to trigger the updating of the table
-        self.comboBox_tbl_right.setCurrentText("Soundcloud Tracks")
-        self.comboBox_tbl_right.currentTextChanged.emit(
-            self.comboBox_tbl_right.currentText())
-        
+        #Update table display
+        self.update_tbl_display (lr="right", variable = "Soundcloud Tracks")
         
         if callable(update_progress_callback):
             update_progress_callback(100)
@@ -733,16 +767,15 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         except Exception as e:
             print(f"Error while downloading tracks {e.__class__}: {e}")
         finally:
-
-            #Update the Value in the ComboBox and emit the currentTextChanged 
-            # signal in order to trigger the updating of the table
-            self.comboBox_tbl_right.setCurrentText("Soundcloud Tracks")
-            self.comboBox_tbl_right.currentTextChanged.emit(
-                self.comboBox_tbl_right.currentText())
+            #Update table display
+            self.update_tbl_display (lr="right", 
+                                     variable = "Soundcloud Tracks")
+            
+            #Update the progress bar
             if callable(update_progress_callback):
                 update_progress_callback(100)
     
-    def GUI_update_dl_history(self):
+    def GUI_update_dl_history(self, update_progress_callback):
         """Updates the Download history file with the last tracks from either
         the currently extracted playlists, or all playlists from the soundcloud
         profile
@@ -753,7 +786,11 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         Returns:
             None
         """
+        #Update the progress bar
+        if callable(update_progress_callback):
+            update_progress_callback(0)
         
+        #Determine the mode            
         if self.rbtn_new_pl.isChecked():
             mode = "add new"
         elif self.rbtn_curr_pl.isChecked():
@@ -761,7 +798,15 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         else:
             mode = "all"
         
+        #Update the DL history
         self.SCDL.LinkExt.update_dl_history(mode=mode)
+        
+        #Update table display
+        self.update_tbl_display (lr="left", variable = "Soundcloud Playlists")
+        
+        #Update the progress bar
+        if callable(update_progress_callback):
+            update_progress_callback(100)
     
     
     def GUI_read_dir (self, update_progress_callback=False):
@@ -781,17 +826,10 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         
         self.SCDL.LibMan.read_dir(update_progress_callback)
         
-        #Update the Value in the ComboBox and emit the currentTextChanged 
-        # signal in order to trigger the updating of the table
-        if not self.comboBox_tbl_left.currentText() == "Library Files":
-            self.comboBox_tbl_left.setCurrentText("Library Files")
-        else:
-            #In the case, that the Combobox is already set to the libary files
-            # the signal needs to be emitted manually, so that the view is 
-            # updated
-            self.comboBox_tbl_left.currentTextChanged.emit(
-                self.comboBox_tbl_left.currentText())
+        #Update table display
+        self.update_tbl_display (lr="left", variable = "Library Files")
         
+        #Update the progress bar
         if callable(update_progress_callback):
             update_progress_callback(100)
     
@@ -826,12 +864,10 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
                 directory=self.settings["nf_dir"],
                 mode="replace")
         
-        #Update the Value in the ComboBox and emit the currentTextChanged 
-        # signal in order to trigger the updating of the table
-        self.comboBox_tbl_right.setCurrentText("New Files")
-        self.comboBox_tbl_right.currentTextChanged.emit(
-            self.comboBox_tbl_right.currentText())
+        #Update table display
+        self.update_tbl_display (lr="right", variable = "New Files")
         
+        #Update the progress bar
         if callable(update_progress_callback):
             update_progress_callback(100)
 
@@ -896,19 +932,13 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
                                                 prog_bounds=prog_bounds)
             
         if df == "nf":
-            print()
-            #Update the Value in the ComboBox and emit the currentTextChanged 
-            # signal in order to trigger the updating of the table
-            self.comboBox_tbl_right.setCurrentText("New Files")
-            self.comboBox_tbl_right.currentTextChanged.emit(
-                self.comboBox_tbl_right.currentText())
+            #Update table display
+            self.update_tbl_display (lr="right", variable = "New Files")
         else:
-            #Update the Value in the ComboBox and emit the currentTextChanged 
-            # signal in order to trigger the updating of the table
-            self.comboBox_tbl_left.setCurrentText("Library Files")
-            self.comboBox_tbl_left.currentTextChanged.emit(
-                self.comboBox_tbl_left.currentText())
+            #Update table display
+            self.update_tbl_display (lr="left", variable = "Library Files")
         
+        #Update the progress bar
         if callable(update_progress_callback):
             update_progress_callback(100)
     
@@ -929,11 +959,8 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         
         file_df = self.SCDL.LibMan.determine_goal_folder(mode=mode)
         
-        #Update the Value in the ComboBox and emit the currentTextChanged 
-        # signal in order to trigger the updating of the table
-        self.comboBox_tbl_right.setCurrentText("New Files")
-        self.comboBox_tbl_right.currentTextChanged.emit(
-            self.comboBox_tbl_right.currentText())
+        #Update table display
+        self.update_tbl_display (lr="right", variable = "New Files")
     
     def GUI_move_files(self):
         """Moves the files in the new files directory to the goal folder and 
@@ -957,11 +984,8 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
             self.SCDL.LibMan.read_tracks(directory=self.settings["nf_dir"],
                                          mode="replace")
         
-        #Update the Value in the ComboBox and emit the currentTextChanged 
-        # signal in order to trigger the updating of the table
-        self.comboBox_tbl_right.setCurrentText("New Files")
-        self.comboBox_tbl_right.currentTextChanged.emit(
-            self.comboBox_tbl_right.currentText())
+        #Update table display
+        self.update_tbl_display (lr="right", variable = "New Files")
     
     def GUI_del_doubles_lib(self):
         """Deletes the files in the file_df for which a corresponding file in 
@@ -976,11 +1000,8 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         """
         self.SCDL.LibMan.del_doubles()
         
-        #Update the Value in the ComboBox and emit the currentTextChanged 
-        # signal in order to trigger the updating of the table
-        self.comboBox_tbl_right.setCurrentText("New Files")
-        self.comboBox_tbl_right.currentTextChanged.emit(
-            self.comboBox_tbl_right.currentText())
+        #Update table display
+        self.update_tbl_display (lr="right", variable = "New Files")
     
     def GUI_reset_goal_fld (self):
         """Resets the found goal folder and goal filename
@@ -993,11 +1014,8 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         """
         self.SCDL.LibMan.reset_goal_folder()
         
-        #Update the Value in the ComboBox and emit the currentTextChanged 
-        # signal in order to trigger the updating of the table
-        self.comboBox_tbl_right.setCurrentText("New Files")
-        self.comboBox_tbl_right.currentTextChanged.emit(
-            self.comboBox_tbl_right.currentText())
+        #Update table display
+        self.update_tbl_display (lr="right", variable = "New Files")
     
     def open_settings(self):
         """Opens the settings window
