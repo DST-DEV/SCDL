@@ -233,7 +233,8 @@ class Soundclouddownloader:
                     # Since some of them are special characters in a Regex, they 
                     # need to be escaped with a backslash
                     rem_chars = [",", r"\(", r"\)", r"\[", r"\]", r"\$", "&", 
-                                 "~", "'", r"\.", r"\?", r"\^", r"\+", r"\*"]
+                                 "~", "'", r"\.", r"\?", r"\!", r"\^", r"\+", 
+                                 r"\*", r"/"]
                     pattern1 = " " + r' | '.join(rem_chars) + " "
                     pattern2 = r'|'.join(rem_chars)
                     dl_title = re.sub(pattern1, lambda m: " ", track.title)
@@ -310,7 +311,7 @@ class Soundclouddownloader:
                     except:
                         pass
             
-            #Rename the files with their correct filenames and insert the genre
+            #Rename the files with their correct filenames
             for index, track in curr_tracks.iterrows():
                 os.replace(Path(self.dl_dir, "tmp", track.dl_name + track.ext), 
                            Path(self.dl_dir, "tmp", track.title + track.ext)

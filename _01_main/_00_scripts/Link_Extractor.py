@@ -423,6 +423,12 @@ class PlaylistLinkExtractor:
             # #Skip the playlist if its empty
             # if self.playlists.loc[index, "status"] == "Empty": continue
             
+            #Test if the Playlist is empty and if so, skip it
+            if self.check_existence(search_str="//div[@class='listenDetails']"
+                                    + "/div[@class='emptyNetworkPage']"):
+                self.playlists.loc[index, "status"] = "Empty"
+                continue
+
             #Extract the tracks based on the selected mode
             curr_tracks = pd.DataFrame(columns=["playlist", "title", "link",
                                                 "uploader"])
@@ -493,7 +499,7 @@ class PlaylistLinkExtractor:
             #Update progress bar
             if callable(update_progress_callback) and (i_prog>=.0499*n_pls):
                 prog +=round(i_prog/n_pls*100,3)*update_fac
-                print (f"pl {i}/{n_pls}, prog = {prog}, prog_call = {int(np.ceil(prog))}")
+                #print (f"pl {index}/{n_pls}, prog = {prog}, prog_call = {int(np.ceil(prog))}")
                 i_prog=0
                 update_progress_callback(int(np.ceil(prog)))
         
@@ -658,11 +664,11 @@ class PlaylistLinkExtractor:
         #Update DL History and self.playlists df
         for index, row in tracks.iterrows():
             history[row.playlist] = row.link
-            if row.playlist in self.playlists["name"]:
+            if row.playlist in list(self.playlists["name"]):
                 index = self.playlists.loc[
                     self.playlists["name"] == row.playlist].index.values[0]
                 
-                self.playlists[index, "last_track"] =  row.link
+                self.playlists.loc[index, "last_track"] =  row.link
             else:
                 pl_link = pl.loc[pl["name"] == row.playlist].link
                 

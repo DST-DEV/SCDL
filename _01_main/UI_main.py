@@ -109,8 +109,9 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         self.btn_track_ext.clicked.connect(
             lambda: self.run_fcn_thread(self.GUI_extr_tracks))
         self.btn_track_dl.clicked.connect(self.GUI_download_tracks)
-        self.btn_dl_hist_up.clicked.connect(
-            lambda: self.run_fcn_thread(self.GUI_update_dl_history))
+        # self.btn_dl_hist_up.clicked.connect(
+        #     lambda: self.run_fcn_thread(self.GUI_update_dl_history))
+        self.btn_dl_hist_up.clicked.connect(self.GUI_update_dl_history)
         
         #Table buttons
         self.btn_addrow_left.clicked.connect(
@@ -481,7 +482,7 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
                 
                 #Adjust settings for column widths
                 header.setMinimumSectionSize(30)
-                header.setMaximumSectionSize(200)
+                header.setMaximumSectionSize(300)
                 header.resizeSections(
                     QTW.QHeaderView.ResizeMode.ResizeToContents)
                 header.setSectionResizeMode(
@@ -497,7 +498,7 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
                 
                 #Adjust settings for column widths
                 header.setMinimumSectionSize(30)
-                header.setMaximumSectionSize(200)
+                header.setMaximumSectionSize(300)
                 header.resizeSections(
                     QTW.QHeaderView.ResizeMode.ResizeToContents)
                 header.setSectionResizeMode(
@@ -510,7 +511,7 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
                 
                 #Adjust settings for column widths
                 header.setMinimumSectionSize(30)
-                header.setMaximumSectionSize(200)
+                header.setMaximumSectionSize(300)
                 header.resizeSections(
                     QTW.QHeaderView.ResizeMode.ResizeToContents)
                 header.setSectionResizeMode(
