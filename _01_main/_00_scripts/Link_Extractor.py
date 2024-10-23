@@ -387,14 +387,10 @@ class PlaylistLinkExtractor:
             playlists = playlists.loc[playlists.include == True]
         
         if mode =="new":
-            pls = playlists.loc[
-                     (~playlists.status.str.contains("new tracks found")) 
-                     & (playlists.status != "Empty")
-                     & (playlists.status != "skipped")]
+            pls = playlists.loc[(playlists.status != "Empty")
+                                & (playlists.status != "skipped")]
         else: 
-            pls = playlists.loc[
-                     (~playlists.status.str.contains("new tracks found")) 
-                     & (playlists.status != "Empty")]
+            pls = playlists.loc[playlists.status != "Empty"]
         
         #Prepare Progressbar variables
         #Update progressbar
@@ -417,6 +413,7 @@ class PlaylistLinkExtractor:
                     self.open_pl (pl, index)
                 except Exception as e:
                     iteration+=1
+                    print("Soundcloud not loading again")
                 else:
                     break
 
@@ -453,9 +450,7 @@ class PlaylistLinkExtractor:
                     + "sc-link-primary sc-font-light'])[last()]").get_attribute(
                         "href").split("in=user")[0]
                        
-                if (mode == "new" 
-                    and history.get(pl["name"]) 
-                    and last_track_hist == last_track):
+                if (mode == "new" and last_track_hist == last_track):
                     
                     #Skip playlist since no new tracks were added since last download
                     self.playlists.loc[index, "status"] = "skipped"
@@ -476,8 +471,6 @@ class PlaylistLinkExtractor:
                                                              uploader]
                         
                     if (mode == "new" 
-                        and history.get(pl["name"]) 
-                        and last_track_hist != last_track
                         and last_track_hist in curr_tracks.link.to_list()):
                         
                         #Filter the new tracks (Only save tracks after the 
@@ -492,7 +485,9 @@ class PlaylistLinkExtractor:
                     curr_tracks.insert (5, "downloaded", False)
                     
                     tracks = pd.concat ([tracks, curr_tracks])
-                    self.playlists.loc[index, "last_track"] = curr_tracks.iloc[-1].link
+# =============================================================================
+#                     #self.playlists.loc[index, "last_track"] = curr_tracks.iloc[-1].link
+# =============================================================================
                     if autosave: self.track_df = pd.concat ([self.track_df, curr_tracks])
                     self.playlists.loc[index, "status"] = f"{len(curr_tracks)} new tracks found" 
             
@@ -503,7 +498,7 @@ class PlaylistLinkExtractor:
                 i_prog=0
                 update_progress_callback(int(np.ceil(prog)))
         
-        self.driver.quit()
+        self.driver.close()
         
         return tracks, self.playlists
     
@@ -595,7 +590,7 @@ class PlaylistLinkExtractor:
                                                 msg="Track loading timeout", 
                                                 key = pl.link, 
                                                 search_col="link")
-            raise TimeoutException("Loading of last track took to")
+            raise TimeoutException("Loading of last track took too long")
         except Exception as e:
             #print (f"Track loading exception for playlist {pl_name}: {e}")
             self.playlists = self.add_exception(self.playlists, 
@@ -658,7 +653,7 @@ class PlaylistLinkExtractor:
             except:
                 pass
             else:
-                self.driver.quit()
+                self.driver.close()
             return
         
         #Update DL History and self.playlists df

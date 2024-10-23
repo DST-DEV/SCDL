@@ -246,6 +246,13 @@ class Soundclouddownloader:
                         curr_tracks.loc[index, "ext"] = ".mp3"
                     elif Path(self.dl_dir, "tmp", dl_title +".wav").exists():
                         curr_tracks.loc[index, "ext"] = ".wav"
+                    else:
+                        if self.track_df.loc[index, "exceptions"]:           
+                            self.track_df.loc[index, "exceptions"] += \
+                            " | " + f"Metadata exception: DL name could not be determined"
+                        else:
+                            self.track_df.loc[index, "exceptions"] = \
+                                f"Metadata exception: DL name could not be determined"
                     
                     #Change the filename to the correct format
                     # (If no artist is specified in the filename, then add the 
@@ -313,10 +320,11 @@ class Soundclouddownloader:
             
             #Rename the files with their correct filenames
             for index, track in curr_tracks.iterrows():
-                os.replace(Path(self.dl_dir, "tmp", track.dl_name + track.ext), 
-                           Path(self.dl_dir, "tmp", track.title + track.ext)
-                           ) 
-            
+                if track.ext:
+                    os.replace(Path(self.dl_dir, "tmp", track.dl_name + track.ext), 
+                               Path(self.dl_dir, "tmp", track.title + track.ext)
+                               ) 
+                    
             #Insert the genre metadata
             self.LibMan.set_metadata(Path(self.dl_dir, "tmp", 
                                           track.title + track.ext), 
@@ -333,6 +341,10 @@ class Soundclouddownloader:
                     pass
                 os.replace(Path(self.dl_dir, "tmp", file), 
                            Path(self.dl_dir, file))
+            
+            #Update the playlists dataframe
+            self.playlists.loc[self.playlists["name"]==pl_name, 
+                               "last_track"] = track.link
             
             #Update the history file
             history = json.dumps(self.dl_history)                                           #Prepare the dict for the export

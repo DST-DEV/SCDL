@@ -378,7 +378,7 @@ class LibManager:
         
         #Remove all content within square brackets (except for the ones which 
         # include the words 'Remix', 'Edit' or 'Mashup')
-        new_filename = re.sub(r'\[(.*?(?:(?!Remix|Edit|Mashup).)*?)\]', '', 
+        new_filename = re.sub(r'\[(?!.*\b(Mashup|Edit|Remix)\b).*?\]', '', 
                               new_filename,
                               flags=re.IGNORECASE)
         
@@ -1039,13 +1039,11 @@ if __name__ == '__main__':
     # nf_dir = r"C:\Users\davis\Downloads\SCDL test\00_General\new files"
     # lib_dir = r"C:\Users\davis\Downloads\SCDL test"
     # LibMan = LibManager(lib_dir, nf_dir)
-    LibMan = LibManager()
-    # lib_df = LibMan.read_dir()
-    # track_df = LibMan.read_tracks(r"C:\Users\davis\Downloads\SC DL", mode="replace")
-    # file_df = LibMan.determine_goal_folder(mode="namesearch")
-    # 
-    # rename_doc = LibManLibMan.process_directory()
-    # track_df = LibMan.move_to_library()
+    nf_dir = r"C:\Users\davis\Downloads\Souncloud Download\tmp\test"
+    LibMan = LibManager(nf_dir=nf_dir)
+    LibMan.adjust_fname ("Travis Scott, Quavo - Go [Riley Stewart edit].mp3", nf_dir)
+    
+
     
     
     

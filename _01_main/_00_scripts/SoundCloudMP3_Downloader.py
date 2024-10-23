@@ -342,7 +342,7 @@ class SoundcloudMP3Downloader:
      
     def finish(self):
         """Closes the application and return the tracklist"""
-        self.driver.quit()
+        self.driver.close()
         return self.tracklist
 
 if __name__ == '__main__':
