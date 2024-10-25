@@ -26,7 +26,7 @@ import pandas as pd
 import pathlib
 import time
 import json
-import os
+import os 
 
 
 class MainWindow(QTW.QMainWindow, Ui_MainWindow):
@@ -109,9 +109,9 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         self.btn_track_ext.clicked.connect(
             lambda: self.run_fcn_thread(self.GUI_extr_tracks))
         self.btn_track_dl.clicked.connect(self.GUI_download_tracks)
-        # self.btn_dl_hist_up.clicked.connect(
-        #     lambda: self.run_fcn_thread(self.GUI_update_dl_history))
-        self.btn_dl_hist_up.clicked.connect(self.GUI_update_dl_history)
+        self.btn_dl_hist_up.clicked.connect(
+            lambda: self.run_fcn_thread(self.GUI_update_dl_history))
+        # self.btn_dl_hist_up.clicked.connect(self.GUI_update_dl_history)
         
         #Table buttons
         self.btn_addrow_left.clicked.connect(
@@ -148,6 +148,7 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
                                                  callback)))
         self.btn_file_uni.clicked.connect(lambda: self.run_fcn_thread(
                                                         self.GUI_prep_files))
+        self.btn_file_uni.clicked.connect(self.GUI_prep_files)
         self.btn_sync_music.clicked.connect(self.SCDL.LibMan.sync_music_lib)
         
         #LibUpdater Buttons
@@ -918,8 +919,13 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
                                             update_progress_callback = 
                                               update_progress_callback,
                                             prog_bounds=prog_bounds)
-        
-        update_progress_callback(prog_bounds[1])
+            
+            if callable(update_progress_callback):
+                update_progress_callback(prog_bounds[1])
+                
+        else:
+           #Determine Progressbar limits
+           prog_bounds = [0,100] 
         
         #Adjust samplerate (if selected)
         if self.cb_samplerate.isChecked():

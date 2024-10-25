@@ -503,10 +503,11 @@ class LibManager:
         #if tracks is a dataframe with multiple entries 
         
         #Prepare Progressbar variables
-        n_files = sum(tracks.extension ==".wav")
-        i=0
-        prog=prog_bounds[0]
-        update_fac = (prog_bounds[1]-prog_bounds[0])/100
+        if callable(update_progress_callback):
+            n_files = sum(tracks.extension ==".wav")
+            i=0
+            prog=prog_bounds[0]
+            update_fac = (prog_bounds[1]-prog_bounds[0])/100
         
         #Iterate over files
         for index, row in tracks.loc[tracks.extension ==".wav"].iterrows():
@@ -555,8 +556,11 @@ class LibManager:
             None
         """
         
-        data, sr = soundfile.read(filepath)
-        
+        with soundfile.SoundFile(filepath, 'r+') as f:
+            sr = f.samplerate
+            bd = int(f.subtype.replace("PCM_", ""))
+            data = f.read() 
+
         if sr>max_sr:
             # Get the metadata (will be deleted during resampling)
             file = music_tag.load_file(filepath)
@@ -1024,7 +1028,7 @@ class LibManager:
                 index = df.loc[df[search_col] == key].index.values[0]
                 df.loc[index, col] += " | " +  msg
             else:
-                df.loc[-1] = [""]*len(df.column)
+                df.loc[-1] = [""]*len(df.columns)
                 df.loc[-1, col]=msg
                 df.loc[-1, search_col]=key
                 df = df.reset_index(drop=True)

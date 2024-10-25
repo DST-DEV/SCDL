@@ -851,7 +851,7 @@ class PlaylistLinkExtractor:
                 index = df.loc[df[search_col] == key].index.values[0]
                 df.loc[index, col] += " | " +  msg
             else:
-                df.loc[-1] = [""]*len(df.column)
+                df.loc[-1] = [""]*len(df.columns)
                 df.loc[-1, col]=msg
                 df.loc[-1, search_col]=key
                 df = df.reset_index(drop=True)

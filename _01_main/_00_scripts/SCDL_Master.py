@@ -190,7 +190,9 @@ class Soundclouddownloader:
         #Filter out tracks which were selected to not be considered
         if "include" in self.track_df.columns:
             tracks_tbd = self.track_df.loc[
-                self.track_df.include == True]
+                self.track_df.include == True].copy(deep=True)
+        else:
+            tracks_tbd = self.track_df.copy(deep=True)
         
         #Filter all tracks which are not yet downloaded
         tracks_tbd = tracks_tbd.loc[ 
@@ -220,9 +222,9 @@ class Soundclouddownloader:
                 dl_doc = MP3DL.download_track(track.link)
                 
                 #Update status of track in track_df and add to documentation
-                self.track_df.loc[
-                    (self.track_df.link==track.link) & (self.track_df.playlist==pl_name), 
-                    "downloaded"]= dl_doc.exceptions==""
+                self.track_df.loc[(self.track_df.link==track.link) 
+                                  & (self.track_df.playlist==pl_name),
+                                  "downloaded"]= dl_doc.exceptions==""
                 
                 try: 
                     #Insert genre
@@ -235,10 +237,12 @@ class Soundclouddownloader:
                     rem_chars = [",", r"\(", r"\)", r"\[", r"\]", r"\$", "&", 
                                  "~", "'", r"\.", r"\?", r"\!", r"\^", r"\+", 
                                  r"\*", r"/"]
-                    pattern1 = " " + r' | '.join(rem_chars) + " "
-                    pattern2 = r'|'.join(rem_chars)
+                    pattern1 = r' |'.join(rem_chars) + ""
+                    pattern2 = " " + r' | '.join(rem_chars) + " "
+                    pattern3 = r'|'.join(rem_chars)
                     dl_title = re.sub(pattern1, lambda m: " ", track.title)
-                    dl_title = re.sub(pattern2, lambda m: "", dl_title).\
+                    dl_title = re.sub(pattern2, lambda m: " ", track.title)
+                    dl_title = re.sub(pattern3, lambda m: "", dl_title).\
                         replace(" ", "_")
                     
                     #Determine the file type 
@@ -247,12 +251,12 @@ class Soundclouddownloader:
                     elif Path(self.dl_dir, "tmp", dl_title +".wav").exists():
                         curr_tracks.loc[index, "ext"] = ".wav"
                     else:
-                        if self.track_df.loc[index, "exceptions"]:           
-                            self.track_df.loc[index, "exceptions"] += \
-                            " | " + f"Metadata exception: DL name could not be determined"
-                        else:
-                            self.track_df.loc[index, "exceptions"] = \
-                                f"Metadata exception: DL name could not be determined"
+                        self.track_df = self.add_exception(self.track_df, 
+                                                           col="exceptions", 
+                                                           msg="Metadata exception: DL name "
+                                                           +"could not be determined", 
+                                                           key = track.link, 
+                                                           search_col="link")
                     
                     #Change the filename to the correct format
                     # (If no artist is specified in the filename, then add the 
@@ -286,15 +290,21 @@ class Soundclouddownloader:
                     MP3DL.add_exception(link = track.link, 
                                       exception = f"Metadata exception: {e}")
                     
-                    curr_track_index = self.track_df.loc[
-                        self.track_df.link == track.link].index.to_list()[0]
+                    self.track_df = self.add_exception(self.track_df,
+                                                       col="exceptions", 
+                                                       msg=f"Metadata exception: {e}", 
+                                                       key = track.link, 
+                                                       search_col="link")
                     
-                    if self.track_df.loc[curr_track_index, "exceptions"]:           
-                        self.track_df.loc[curr_track_index, "exceptions"] += \
-                        " | " + f"Metadata exception: {e}"
-                    else:
-                        self.track_df.loc[curr_track_index, "exceptions"] = \
-                            f"Metadata exception: {e}"
+                    # curr_track_index = self.track_df.loc[
+                    #     self.track_df.link == track.link].index.to_list()[0]
+                    
+                    # if self.track_df.loc[curr_track_index, "exceptions"]:           
+                    #     self.track_df.loc[curr_track_index, "exceptions"] += \
+                    #     " | " + f"Metadata exception: {e}"
+                    # else:
+                    #     self.track_df.loc[curr_track_index, "exceptions"] = \
+                    #         f"Metadata exception: {e}"
 
                 #Update dl_history for last downloaded track
                 self.dl_history[pl_name]=track.link
@@ -380,6 +390,48 @@ class Soundclouddownloader:
         
         return self.track_df
     
+    def add_exception(self, df, col, msg="", 
+                      index = -1, key = "", search_col=""):
+        """Inserts an exception into a provided dataframe. The row can be
+        specified via the index or a search key in a search column
+        
+        Parameters:
+            df (pandas DataFrame): 
+                Dataframe in which to insert the message
+            col (str - optional):
+                Name of the column in which to insert the exception message
+            msg (str - optional):
+                exception message
+            index (int or Index object):
+                Index of the row where to insert the exception
+            key (str - optional):
+                Key to search for the key for in the search_col for the 
+                determination of the row where to insert the exception
+            search_col (str - optional):
+                In which column to search for the key for the determination of 
+                the row where to insert the exception
+        
+        Returns:
+            None
+        """
+        if index >=0 & index<len(df):
+            if df.loc[index, col]:
+                df.loc[index, col] += " | " + msg
+            else:
+                df.loc[index, col] =  msg
+        elif key and (search_col in df.columns):
+            if key in df[search_col].values:
+                index = df.loc[df[search_col] == key].index.values[0]
+                df.loc[index, col] += " | " +  msg
+            else:
+                df.loc[-1] = [""]*len(df.columns)
+                df.loc[-1, col]=msg
+                df.loc[-1, search_col]=key
+                df = df.reset_index(drop=True)
+        else:
+            raise ValueError("no valid index or search key and search column provided")
+            
+        return df
     
 if __name__ == '__main__':
 
