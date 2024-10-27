@@ -146,8 +146,8 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
             lambda callback: self.GUI_read_nf(page=1, 
                                               update_progress_callback=
                                                  callback)))
-        self.btn_file_uni.clicked.connect(lambda: self.run_fcn_thread(
-                                                        self.GUI_prep_files))
+        # self.btn_file_uni.clicked.connect(lambda: self.run_fcn_thread(
+        #                                                 self.GUI_prep_files))
         self.btn_file_uni.clicked.connect(self.GUI_prep_files)
         self.btn_sync_music.clicked.connect(self.SCDL.LibMan.sync_music_lib)
         

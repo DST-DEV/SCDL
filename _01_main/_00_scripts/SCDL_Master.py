@@ -236,11 +236,9 @@ class Soundclouddownloader:
                     # need to be escaped with a backslash
                     rem_chars = [",", r"\(", r"\)", r"\[", r"\]", r"\$", "&", 
                                  "~", "'", r"\.", r"\?", r"\!", r"\^", r"\+", 
-                                 r"\*", r"/"]
-                    pattern1 = r' |'.join(rem_chars) + ""
+                                 r"\*", r"/", r":"]
                     pattern2 = " " + r' | '.join(rem_chars) + " "
                     pattern3 = r'|'.join(rem_chars)
-                    dl_title = re.sub(pattern1, lambda m: " ", track.title)
                     dl_title = re.sub(pattern2, lambda m: " ", track.title)
                     dl_title = re.sub(pattern3, lambda m: "", dl_title).\
                         replace(" ", "_")
@@ -261,8 +259,14 @@ class Soundclouddownloader:
                     #Change the filename to the correct format
                     # (If no artist is specified in the filename, then add the 
                     # name of the uploader)
-                    correct_fname = track.title if " - "  in track.title \
-                        else track.uploader + " - " +  track.title
+                    if (" - " in track.title) \
+                    or (" "+chr(8211)+" " in track.title):
+                        correct_fname = track.title
+                    else:
+                        correct_fname = track.uploader + " - " +  track.title
+                    
+                    #Remove invalid filename characters for windows
+                    correct_fname = re.sub(r'[<>?:/|\\"]', "", correct_fname)
                     
                     #Save the names for later
                     # Note: the renaming of the files to the correct filenames
@@ -335,10 +339,10 @@ class Soundclouddownloader:
                                Path(self.dl_dir, "tmp", track.title + track.ext)
                                ) 
                     
-            #Insert the genre metadata
-            self.LibMan.set_metadata(Path(self.dl_dir, "tmp", 
-                                          track.title + track.ext), 
-                                     genre=pl_name)
+                    #Insert the genre metadata
+                    self.LibMan.set_metadata(Path(self.dl_dir, "tmp", 
+                                                  track.title + track.ext), 
+                                             genre=pl_name)
             
             #Move all files in the "tmp" folder to the dl folder
             files = [f for f in os.listdir(Path(self.dl_dir, "tmp")) 

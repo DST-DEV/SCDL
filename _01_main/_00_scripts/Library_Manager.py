@@ -285,10 +285,11 @@ class LibManager:
                        " or 'lib', or a pandas Dataframe")
         
         #Prepare Progressbar variables
-        n_files = len(df.index)
-        i=0
-        prog=prog_bounds[0]
-        update_fac = (prog_bounds[1]-prog_bounds[0])/100
+        if callable(update_progress_callback):
+            n_files = len(df.index)
+            i=0
+            prog=prog_bounds[0]
+            update_fac = (prog_bounds[1]-prog_bounds[0])/100
         #Iterate over Dataframe
         for index, row in df.iterrows():
             #Skip entries, which are already processed or which were chosen
@@ -371,14 +372,15 @@ class LibManager:
         
         #Replace lowercase and uppercase variants of "Remix", "Edit", and 
         # "Mashup" by the title form
-        new_filename = re.sub(r"(remix|edit|mashup)", 
+        new_filename = re.sub(r"(remix|edit|mashup|bootleg)", 
                               lambda match: match.group(1).title(), 
                               new_filename,
                               flags=re.IGNORECASE)
         
         #Remove all content within square brackets (except for the ones which 
         # include the words 'Remix', 'Edit' or 'Mashup')
-        new_filename = re.sub(r'\[(?!.*\b(Mashup|Edit|Remix)\b).*?\]', '', 
+        new_filename = re.sub(r'\[(?![^\]]*(Mashup|Edit|Remix|Bootleg)).*?\]', 
+                              '', 
                               new_filename,
                               flags=re.IGNORECASE)
         
@@ -387,11 +389,9 @@ class LibManager:
         # Note: searching for lowercase and uppercase versions of the string is 
         # not necessary, since they were replaced by the title version in a 
         # previous step
-        new_filename = re.sub(r"\s*\[(.*?(?:Remix|Edit|Mashup).*?)\]\s*", 
+        new_filename = re.sub(r"\s*\[(.*?(?:Remix|Edit|Mashup|Bootleg).*?)\]\s*", 
                               lambda match: ' (' + match.group(1) + ')', 
                               new_filename)
-        
-        
         
         #Remove all round brackets which contain the words 'ft', 'prod', 'feat', or 'records'
         excl = "|".join(np.array([[x.lower(),x.upper(),x.title()] 
@@ -400,8 +400,12 @@ class LibManager:
         new_filename = re.sub(r"\s*\(.*(?:" + excl + r").*\)\s*", '', 
                               new_filename)
         
-        #Convert to title type and remove leading and tailing spaces
-        new_filename = new_filename.title().strip()
+        #Replace the weird long hyphen that is sometimes used in the track title
+        new_filename = new_filename.replace(chr(8211), "-")
+        
+        #Convert to title type and remove leading and tailing spaces as well 
+        # as double (or more) spaces
+        new_filename = re.sub(r"\s+", " ", new_filename).title().strip()
         
         #Note: os.replace is used instead of os.rename since os.replace 
         #automatically overwrites if a file with the new filename already exists
@@ -409,8 +413,6 @@ class LibManager:
                   os.path.join(folder_path, new_filename + extension))
         
         return new_filename, extension
-    
-    
         
     def adjust_sample_rate(self, tracks=pd.DataFrame(), max_sr=48000, 
                            std_sr=44100, mode="nf", auto_genre=False,

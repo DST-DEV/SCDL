@@ -626,7 +626,13 @@ class PlaylistLinkExtractor:
             raise TypeError("Mode must be a string")
         
         if mode == "current":
-            pl = self.playlists
+            #Filter out tracks which were selected to not be considered
+            if "include" in self.playlists.columns:
+                pl = self.playlists.loc[
+                        self.playlists.include == True].copy(deep=True)
+            else:
+                pl = self.playlists.copy(deep=True)
+            
             if pl.empty:
                 raise ValueError("No playlists found. Extract playlists" 
                                  +"first or choose mode 'all'")
