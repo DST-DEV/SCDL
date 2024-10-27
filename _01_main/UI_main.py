@@ -111,7 +111,6 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         self.btn_track_dl.clicked.connect(self.GUI_download_tracks)
         self.btn_dl_hist_up.clicked.connect(
             lambda: self.run_fcn_thread(self.GUI_update_dl_history))
-        # self.btn_dl_hist_up.clicked.connect(self.GUI_update_dl_history)
         
         #Table buttons
         self.btn_addrow_left.clicked.connect(
@@ -552,6 +551,7 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
                     os.path.dirname(self.common_lib_path) + os.path.sep
     
                 #Remove the common prefix from each path
+                data = data.copy(deep=True)
                 data.folder = data.folder.str[len(self.common_lib_path):]
         
         if lr == "left" or lr == "l":

@@ -284,12 +284,16 @@ class LibManager:
             ValueError("Parameter df_sel must be either a string of value 'nf'",
                        " or 'lib', or a pandas Dataframe")
         
+        if not "status" in df.columns:
+            df["status"] = ""
+        
         #Prepare Progressbar variables
         if callable(update_progress_callback):
             n_files = len(df.index)
             i=0
             prog=prog_bounds[0]
             update_fac = (prog_bounds[1]-prog_bounds[0])/100
+        
         #Iterate over Dataframe
         for index, row in df.iterrows():
             #Skip entries, which are already processed or which were chosen
@@ -315,8 +319,8 @@ class LibManager:
                                            adj_art_tit=adj_art_tit,
                                            adj_genre = adj_genre)
                 except Exception as e:
-                    self.file_df = self.add_exception(
-                        self.file_df, col = "status",
+                    df = self.add_exception(
+                        df, col = "status",
                         msg=f"Metadata error: {e.__class__} : {e}", 
                         index = index)
                     df.loc[index, "status"] = "Metadata error"
@@ -467,16 +471,31 @@ class LibManager:
         elif type(tracks)==pd.core.frame.DataFrame:
             if tracks.empty:
                 if mode =="nf":
-                    tracks = self.file_df if not self.file_df.empty \
-                        else self.read_tracks(self, directory=self.nf_dir, 
-                                              mode="independent")
+                    if self.file_df.empty:
+                        tracks = self.read_tracks(self, directory=self.nf_dir, 
+                                                  mode="independent")
+                        save_mode = "None"
+                    else:
+                        tracks = self.file_df.copy(deep=True)
+                        save_mode = "file_df"
                 elif mode == "lib":
-                    tracks = self.lib_df if not self.lib_df.empty \
-                        else self.read_tracks(self, directory=self.lib_dir,
-                                              mode="independent")
+                    if self.lib_df.empty:
+                        tracks = self.read_tracks(self, directory=self.lib_dir,
+                                                  mode="independent")
+                        save_mode = "None"
+                    else:
+                        tracks = self.lib_df.copy(deep=True)
+                        save_mode = "lib_df"
                 else:
                     raise ValueError("mode must be either 'new' or 'lib' or "
                                      + "tracks parameter must be a dataframe")
+            else:
+                save_mode = "None"
+                
+        if not "status" in tracks.columns:
+            tracks["status"] = ""
+        
+                
         #If tracks is a non-empty string, it is converted to a Path and it is
         # checked whether the Path exists and it is a wav file
         elif type(tracks)==str and not tracks=="":
@@ -518,13 +537,13 @@ class LibManager:
             try:
                 self.adjust_sr(filepath, max_sr, std_sr, auto_genre)
             except Exception as e:
-                self.file_df = self.add_exception(
-                    self.file_df, col = "status",
+                tracks = self.add_exception(
+                    tracks, col = "status",
                     msg=f"sample rate adjustment error: {e.__class__} : {e}", 
                     index = index)
-                self.file_df.loc[index, "status"] = "Error during sample rate adjustment"
+                tracks.loc[index, "status"] = "Error during sample rate adjustment"
             else:
-                self.file_df.loc[index, "status"] = "sample rate checked"
+                tracks.loc[index, "status"] = "sample rate checked"
             
             #Update progress bar
             if callable(update_progress_callback):
@@ -533,6 +552,12 @@ class LibManager:
                     prog +=round(i/n_files*100,3)*update_fac
                     i=0
                     update_progress_callback(int(np.ceil(prog)))
+        
+        #If the tracks were extracted from the class dataframes, then save
+        # the tracks df to them. Else return the tracks df
+        if save_mode=="file_df": self.track_df = tracks
+        elif save_mode=="lib_df": self.lib_df = tracks
+        else: return tracks
             
     def adjust_sr(self, filepath, max_sr=48000,  std_sr=44100, 
                   auto_genre=False):
@@ -558,9 +583,13 @@ class LibManager:
             None
         """
         
-        with soundfile.SoundFile(filepath, 'r+') as f:
+        with soundfile.SoundFile(filepath, 'r') as f:
             sr = f.samplerate
-            bd = int(f.subtype.replace("PCM_", ""))
+            bd = f.subtype.replace("PCM_", "")
+            bd = int(bd) if not bd=="FLOAT" else 32 
+            #Note: The bid depth of 32 bit files cant be read correctly 
+            # (always returns "FLOAT"). Hence this workaround
+            
             data = f.read() 
 
         if sr>max_sr:
@@ -578,7 +607,14 @@ class LibManager:
                 self.set_metadata_auto(filepath, update_genre=True)
             else:
                 self.set_metadata (filepath, **metadata)
-    
+        elif bd > 16:   #If the bit depth is larger than 16 bit
+            soundfile.write(filepath, data, sr, subtype='PCM_16')
+            
+            if auto_genre:
+                self.set_metadata_auto(filepath, update_genre=True)
+            else:
+                self.set_metadata (filepath, **metadata)
+            
     def set_metadata_auto (self, filepath, genre = "", 
                            adj_genre=False, adj_art_tit=True,
                            exp_wav=False):
@@ -1045,9 +1081,9 @@ if __name__ == '__main__':
     # nf_dir = r"C:\Users\davis\Downloads\SCDL test\00_General\new files"
     # lib_dir = r"C:\Users\davis\Downloads\SCDL test"
     # LibMan = LibManager(lib_dir, nf_dir)
-    nf_dir = r"C:\Users\davis\Downloads\Souncloud Download\tmp\test"
+    nf_dir = r"C:\Users\davis\Downloads\Souncloud Download\test_files"
     LibMan = LibManager(nf_dir=nf_dir)
-    LibMan.adjust_fname ("Travis Scott, Quavo - Go [Riley Stewart edit].mp3", nf_dir)
+    tdf = LibMan.adjust_sample_rate()
     
 
     
