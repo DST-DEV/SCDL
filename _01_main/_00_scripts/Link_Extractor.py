@@ -458,26 +458,27 @@ class PlaylistLinkExtractor:
                           + " tracks are already downloaded")
                 
                 else:
-                    #Extract tracks
-                    for i in range(0, len(self.driver.find_elements(
+                    #Extract tracks (starting with the newest one, i.e. the 
+                    # last one in the track container)
+                    for i in range(len(self.driver.find_elements(
                         By.CLASS_NAME, 
-                        "trackList__item.sc-border-light-bottom.sc-px-2x"))):
+                        "trackList__item.sc-border-light-bottom.sc-px-2x"))-1,
+                                    0,
+                                   -1):
                     
                         track_link, title, uploader = self.extr_track(i)
                         
+                        #If track is last downloaded track, exit loop
+                        if mode=="new" and track_link == last_track_hist:
+                            break
                         curr_tracks.loc[len(curr_tracks)] = [pl["name"], 
                                                              title,
                                                              track_link,
                                                              uploader]
-                        
-                    if (mode == "new" 
-                        and last_track_hist in curr_tracks.link.to_list()):
-                        
-                        #Filter the new tracks (Only save tracks after the 
-                        # "last_track" (= new tracks))
-                        curr_tracks = curr_tracks[
-                            (curr_tracks.index[curr_tracks.link==last_track_hist]
-                            ).to_list()[0]+1:len(curr_tracks)]
+                    
+                    #Invert the order of the curr_tracks
+                    curr_tracks = curr_tracks.iloc[::-1]
+                    curr_tracks.reset_index(inplace=True, drop=True)
                             
                     #Save tracks
                     # curr_tracks.insert (1, "title", "")
