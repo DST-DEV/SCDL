@@ -419,7 +419,7 @@ class LibManager:
         return new_filename, extension
         
     def adjust_sample_rate(self, tracks=pd.DataFrame(), max_sr=48000, 
-                           std_sr=44100, mode="nf", auto_genre=False,
+                           std_sr=44100, mode="nf", 
                            update_progress_callback=False, 
                            prog_bounds = [0,100]):
         """Finds all .wav files and checks if their sample_rate is below max_sr. 
@@ -439,9 +439,6 @@ class LibManager:
                 which directory should be considered.
                 - "nf": only consider the files in self.base_dir
                 - "lib": only consider the files in the track library
-            auto_genre (opt.): 
-                Whether the genre should be inserted based on the folder path 
-                (default: False). Else the old genre value will be kept
             update_progress_callback (function handle - optional):
                 Function handle to return the progress (Intended for usage in 
                 conjunction with PyQt6 signals). 
@@ -502,7 +499,11 @@ class LibManager:
             filepath = Path(tracks)
             
             if filepath.exists() and filepath.suffix == ".wav":
-                self.adjust_sr(filepath, max_sr, std_sr, auto_genre)
+                self.adjust_sr(filepath, max_sr, std_sr)
+                
+                #Update progressbar
+                if callable(update_progress_callback):
+                    update_progress_callback(prog_bounds[1])
                 return
             else:
                 raise OSError("Filepath doesn't point to a wav file")
@@ -510,7 +511,11 @@ class LibManager:
         # wav file
         elif type(tracks)== type(Path()):   
             if filepath.exists() and filepath.suffix == ".wav":
-                self.adjust_sr(filepath, max_sr, std_sr, auto_genre)
+                self.adjust_sr(filepath, max_sr, std_sr)
+                
+                #Update progressbar
+                if callable(update_progress_callback):
+                    update_progress_callback(prog_bounds[1])
                 return
             else:
                 raise OSError("Filepath doesn't point to a wav file")
@@ -535,7 +540,7 @@ class LibManager:
             filepath = Path(row.folder, row.filename + ".wav")
             
             try:
-                self.adjust_sr(filepath, max_sr, std_sr, auto_genre)
+                self.adjust_sr(filepath, max_sr, std_sr)
             except Exception as e:
                 tracks = self.add_exception(
                     tracks, col = "status",
@@ -553,14 +558,18 @@ class LibManager:
                     i=0
                     update_progress_callback(int(np.ceil(prog)))
         
+        
+        #Update progressbar
+        if callable(update_progress_callback):
+            update_progress_callback(prog_bounds[1])
+        
         #If the tracks were extracted from the class dataframes, then save
         # the tracks df to them. Else return the tracks df
         if save_mode=="file_df": self.track_df = tracks
         elif save_mode=="lib_df": self.lib_df = tracks
         else: return tracks
             
-    def adjust_sr(self, filepath, max_sr=48000,  std_sr=44100, 
-                  auto_genre=False):
+    def adjust_sr(self, filepath, max_sr=48000,  std_sr=44100):
         """Checks if their sample_rate of the file specified by the filepath
         is below max_sr. 
         If not so, the respective files are converted to the user specified
@@ -575,45 +584,30 @@ class LibManager:
             std_sr (opt. - int): 
                 standard sample rate to which files with a sample rate higher 
                 than max_sr should be converted
-            auto_genre (opt.): 
-                whether the genre should be inserted based on the folder 
-                path (default: False). Else the old genre value will be kept
             
         Returns:
             None
         """
         
-        with soundfile.SoundFile(filepath, 'r') as f:
-            sr = f.samplerate
-            bd = f.subtype.replace("PCM_", "")
-            bd = int(bd) if not bd=="FLOAT" else 32 
-            #Note: The bid depth of 32 bit files cant be read correctly 
-            # (always returns "FLOAT"). Hence this workaround
-            
-            data = f.read() 
-
+        #Read the file  
+        sf = soundfile.SoundFile(filepath, 'r+')
+        sr = sf.samplerate
+        bd = sf.subtype.replace("PCM_", "")
+        bd = int(bd) if not bd=="FLOAT" else 32 
+        #Note: The bid depth of 32 bit files cant be read correctly 
+        # (always returns "FLOAT"). Hence this workaround
+        
+        data = sf.read()
+        
         if sr>max_sr:
-            # Get the metadata (will be deleted during resampling)
-            file = music_tag.load_file(filepath)
-            metadata = {"genre":file["genre"].first,
-                        "artist":file["artist"].first,
-                        "title":file["title"].first}
-            
             # Resample the data
             resampled_data = resample(data, int(len(data)*(std_sr/sr)))
             soundfile.write(filepath, resampled_data, std_sr, subtype='PCM_16')
-            
-            if auto_genre:
-                self.set_metadata_auto(filepath, update_genre=True)
-            else:
-                self.set_metadata (filepath, **metadata)
         elif bd > 16:   #If the bit depth is larger than 16 bit
             soundfile.write(filepath, data, sr, subtype='PCM_16')
             
-            if auto_genre:
-                self.set_metadata_auto(filepath, update_genre=True)
-            else:
-                self.set_metadata (filepath, **metadata)
+        sf.close()
+
             
     def set_metadata_auto (self, filepath, genre = "", 
                            adj_genre=False, adj_art_tit=True,
@@ -688,11 +682,16 @@ class LibManager:
                 "mod-script-pipe" option in the Edit->Preferences->Modules must 
                 be enabled
             **kwargs: 
-                metadata to be edited
+                metadata to be edited. Valid metadata fields are:
+                - artist
+                - title
+                - genre
+                - album
             
         Returns:
             None
         """
+        valid_keys = ["artist", "title", "genre", "album"]
         
         if type(filepath)==str:
             filepath=Path(filepath)
@@ -703,34 +702,26 @@ class LibManager:
         if not filepath.exists():
             raise FileNotFoundError(f"File with path {filepath} doesn't exist")
 
-        if filepath.suffix in [".mp3", ".wav", ".aiff"]:
-            file = music_tag.load_file(filepath)   
+        if filepath.suffix in ".mp3":
+            file = music_tag.load_file(filepath) 
+            
+            for key, value in kwargs.items():
+                if key in valid_keys:
+                    file[key] = value
+                
+            file.save()
+        elif filepath.suffix == ".wav":
+            sf = soundfile.SoundFile(filepath, 'r+')
+            data = sf.read()
+            
+            for key, value in kwargs.items():
+                if key in valid_keys:
+                    sf.__setattr__(key, value)
+            
+            sf.write(data)
+            sf.close()
         else: 
             raise ValueError(f"Invalid file format: {filepath.suffix}")
-        
-        for key in kwargs.keys():
-            file[key] = kwargs[key]
-        file.save()
-            
-        if exp_wav and filepath.suffix == ".wav":
-            file = music_tag.load_file(filepath)
-            if not (file["title"] and file["artist"] and file["genre"]):
-                return
-                #Note: If the track has no metadata and another track was opened
-                # in Audacity previously, then Audacity keeps the metadata from
-                # the previous track and also inserts it in the track which has
-                # no metadata. Therefore the code for the Audacity API is only
-                # executed, if the title, artist and genre metadata is filled
-                # out in the current file
-            
-            try:
-                #Note: Audacity must be opened and the "mod-script-pipe" option 
-                # in the Edit->Preferences->Modules must be enabled
-                audacity.do(f'Import2: Filename="{filepath}"')
-                audacity.do(f'Export2: Filename="{filepath}" NumChannels=2')
-                audacity.do('TrackClose')
-            except:
-                pass
 
     def convert_to_alphanumeric(self, input_string):
         """Convert an arbitrary string to its closest alphanumeric 
