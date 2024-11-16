@@ -230,18 +230,9 @@ class Soundclouddownloader:
                     #Insert genre
                     time.sleep(.3)          #Apparently needed in order for the MP3 function to work reliably
                     
-                    #Determine download name (the Download websites removes & replaces certain characters)
-                    # Note on rem_chars: These are the characters to be removed.
-                    # Since some of them are special characters in a Regex, they 
-                    # need to be escaped with a backslash
-                    rem_chars = [",", r"\(", r"\)", r"\[", r"\]", r"\$", "&", 
-                                 "~", "'", r"\.", r"\?", r"\!", r"\^", r"\+", 
-                                 r"\*", r"/", r":"]
-                    pattern2 = " " + r' | '.join(rem_chars) + " "
-                    pattern3 = r'|'.join(rem_chars)
-                    dl_title = re.sub(pattern2, lambda m: " ", track.title)
-                    dl_title = re.sub(pattern3, lambda m: "", dl_title).\
-                        replace(" ", "_")
+                    #Determine download name (the Download websites removes & 
+                    #replaces certain characters)
+                    dl_title = self.convert_title(track.title)
                     
                     #Determine the file type 
                     if Path(self.dl_dir, "tmp", dl_title + ".mp3").exists():
@@ -384,6 +375,54 @@ class Soundclouddownloader:
         # return self.track_df, rename_doc
         
         return self.track_df
+    
+    @staticmethod
+    def convert_title (track_title):
+        """Converts a track_title string to the naming format that is used by 
+        the soundcloudtomp3.biz website
+        
+        Parameters:
+            track_title (string):
+                The title of the track as written on Soundcloud
+        
+        Returns:
+            track_title (string):
+                The track title in the format from the soundcloudtomp3.biz 
+                website
+        """
+        
+        # Define the list of invalid characters (escaped for regex compatibility)
+        rem_chars = [",", r"\(", r"\)", r"\[", r"\]", r"\$", "&", 
+                     "~", "'", r"\.", r"\?", r"\!", r"\^", r"\+", 
+                     r"\*", r"/", r":"]
+
+        # Combine all characters into a single regex pattern
+        rem_chars_pattern = "|".join(rem_chars)
+
+        # Remove any rem_char at the start of the string
+        track_title = re.sub(f"^({rem_chars_pattern})+", "", track_title)
+        # Remove any rem_char at the end of the string
+        track_title = re.sub(f"({rem_chars_pattern})+$", "", track_title)
+        # Step 1: Replace any invalid character surrounded by whitespace with an underscore
+        track_title = re.sub(rf"\s(({rem_chars_pattern})+)\s", "_", track_title)
+        # Step 2: Replace invalid characters followed by whitespace with an underscore
+        track_title = re.sub(rf"({rem_chars_pattern})\s", "_", track_title)
+        # Step 3: Replace invalid characters preceded by whitespace with an underscore
+        track_title = re.sub(rf"\s({rem_chars_pattern})", "_", track_title)
+        # Step 4: Replace sequences of invalid characters surrounded by spaces with an underscore
+        track_title = re.sub(rf"\s({rem_chars_pattern})+", "_", track_title)
+        # Step 5: Replace remaining individual invalid characters with an underscore
+        track_title = re.sub(rf"({rem_chars_pattern})", "_", track_title)
+        #Step 6: Remove leading and trailing edges
+        track_title = track_title.strip()
+        
+        #Step 7: Replace white spaces with underscores
+        track_title = track_title.replace(" ", "_")
+        #Step 8: Replace multiple adjacent underscore
+        track_title =  re.sub(r"_+", "_", track_title)
+        
+        return track_title.strip()
+
     
     def add_exception(self, df, col, msg="", 
                       index = -1, key = "", search_col=""):
