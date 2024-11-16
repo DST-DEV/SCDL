@@ -26,7 +26,7 @@ class LibManager:
                "motz", "OUTNOW"]        #common obsolete strings
     
     def __init__(self, lib_dir = None, nf_dir = None, music_dir = None,
-                 excl_lib_folders=["00_Organization"], **kwargs):
+                 excl_lib_folders=["00_Organization", "Sets"], **kwargs):
         #set the standard directory for the code to work in (if none is provided
         # by the user, use the downloads folder)
         if type(lib_dir)==str:

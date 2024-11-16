@@ -275,17 +275,6 @@ class Soundclouddownloader:
                     # file to be downloaded before continuing with the next track
                     curr_tracks.loc[index, "title"] = correct_fname
                     curr_tracks.loc[index, "dl_name"] = dl_title
-                    
-# =============================================================================
-#                     os.replace(Path(self.dl_dir, "tmp", adj_title + ext), 
-#                                Path(self.dl_dir, "tmp", correct_fname)
-#                                ) 
-#                     
-#                     #Insert the genre metadata
-#                     self.LibMan.set_metadata(Path(self.dl_dir, "tmp", 
-#                                                   correct_fname), 
-#                                              genre=pl_name)
-# =============================================================================
 
                 except Exception as e:
                     # print("\n" + str(e))
@@ -299,16 +288,6 @@ class Soundclouddownloader:
                                                        msg=f"Metadata exception: {e}", 
                                                        key = track.link, 
                                                        search_col="link")
-                    
-                    # curr_track_index = self.track_df.loc[
-                    #     self.track_df.link == track.link].index.to_list()[0]
-                    
-                    # if self.track_df.loc[curr_track_index, "exceptions"]:           
-                    #     self.track_df.loc[curr_track_index, "exceptions"] += \
-                    #     " | " + f"Metadata exception: {e}"
-                    # else:
-                    #     self.track_df.loc[curr_track_index, "exceptions"] = \
-                    #         f"Metadata exception: {e}"
 
                 #Update dl_history for last downloaded track
                 self.dl_history[pl_name]=track.link
@@ -332,38 +311,50 @@ class Soundclouddownloader:
                     except:
                         pass
             
-            #Rename the files with their correct filenames
-            for index, track in curr_tracks.iterrows():
-                if track.ext:
-                    os.replace(Path(self.dl_dir, "tmp", track.dl_name + track.ext), 
-                               Path(self.dl_dir, "tmp", track.title + track.ext)
-                               ) 
-                    
-                    #Insert the genre metadata
-                    self.LibMan.set_metadata(Path(self.dl_dir, "tmp", 
-                                                  track.title + track.ext), 
-                                             genre=pl_name)
+            #Update the history file
+            history = json.dumps(self.dl_history) #Prepare the dict for the export
+            with open(self.history_file, 'w') as f:
+                f.write(history)  
+            try:
+                #Rename the files with their correct filenames
+                for index, track in curr_tracks.iterrows():
+                    if track.ext:
+                        os.replace(Path(self.dl_dir, "tmp", 
+                                        track.dl_name + track.ext), 
+                                   Path(self.dl_dir, "tmp", 
+                                        track.title + track.ext)
+                                   ) 
+                        
+                        #Insert the genre metadata
+                        self.LibMan.set_metadata(Path(self.dl_dir, "tmp", 
+                                                      track.title + track.ext), 
+                                                 genre=pl_name)
             
-            #Move all files in the "tmp" folder to the dl folder
-            files = [f for f in os.listdir(Path(self.dl_dir, "tmp")) 
-                     if os.path.isfile(Path(self.dl_dir, "tmp", f))]
-            for file in files:
-                try:
-                    self.LibMan.set_metadata(Path(self.dl_dir, "tmp", file), 
-                                             genre=pl_name)
-                except:
-                    pass
-                os.replace(Path(self.dl_dir, "tmp", file), 
-                           Path(self.dl_dir, file))
+            except:
+                print(f"Warning: Renaming error for file {track.title}")
+            
+            try:
+                #Move all files in the "tmp" folder to the dl folder
+                files = [f for f in os.listdir(Path(self.dl_dir, "tmp")) 
+                         if os.path.isfile(Path(self.dl_dir, "tmp", f))]
+                for file in files:
+                    try:
+                        self.LibMan.set_metadata(Path(self.dl_dir, "tmp", file), 
+                                                 genre=pl_name)
+                    except:
+                        pass
+                    os.replace(Path(self.dl_dir, "tmp", file), 
+                               Path(self.dl_dir, file))
+            except:
+                if file in locals():
+                    print("Warning: Moving files error for file {file}")
+                else:
+                    print("Warning: Moving files error for file")
+            
             
             #Update the playlists dataframe
             self.playlists.loc[self.playlists["name"]==pl_name, 
-                               "last_track"] = track.link
-            
-            #Update the history file
-            history = json.dumps(self.dl_history)                                           #Prepare the dict for the export
-            with open(self.history_file, 'w') as f:
-                f.write(history)   
+                               "last_track"] = track.link 
                 
             # MP3DL.reset() 
         MP3DL.finish() 
