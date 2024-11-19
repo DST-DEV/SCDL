@@ -27,7 +27,7 @@
        <enum>QLayout::SetDefaultConstraint</enum>
       </property>
       <item>
-       <widget class="QTableView" name="tblView"/>
+       <widget class="QTableView" name="tbl_view"/>
       </item>
       <item>
        <layout class="QHBoxLayout" name="horizontalLayout" stretch="30,0">

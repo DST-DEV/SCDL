@@ -819,7 +819,11 @@ class PlaylistLinkExtractor:
         self.playlists_cache = pd.concat(
             [self.playlists_cache, playlists]).drop_duplicates(
                 ['name'],keep='last').sort_values('name')
-                
+        
+        #Clear values in the "last_track" column (Note: if this column doesn't 
+        # exist yet, it is created, which is also fine. The important point is 
+        # that it is empty)
+        self.playlists_cache["last_track"] = ""    
                 
         self.playlists_cache.to_feather(Path(self.pl_dir, "playlists.feather"))
         

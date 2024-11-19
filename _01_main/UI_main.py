@@ -172,10 +172,12 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         self.SettingsDialog.buttonBox.accepted.connect(
                                                 self.check_dialog_settings)
         self.SettingsDialog.cb_darkmode.stateChanged.connect(
-            self.change_lightmode)
+                                                self.change_lightmode)
         
         #DL History Editor
         self.EditHist.triggered.connect(self.open_hist_editor)
+        self.DLHistoryEditor.buttonBox.accepted.connect(
+                                                self.check_dl_hist_changes)
     
     def validate_settings(self, new_settings):
         """Verifies a dict of settings and transfers all valid new settings to 
@@ -1045,9 +1047,50 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
                                             orient='index', 
                                             columns=["last_track"]
                                             ).reset_index(names="playlist")
-        self.DLHistoryEditor.dl_history = dl_hist_df
+        self.DLHistoryEditor.change_data(dl_hist_df)
         self.DLHistoryEditor.exec()
-        # self.Dialog.show()
+    
+    def check_dl_hist_changes(self):
+        """Saves changes to the DL History from the DL History Editor to the 
+        history file and updates the playlists dataframe if specified
+        
+        Parameters:
+            None
+        
+        Returns:
+            None
+        """
+        
+        #Extract the modified dl history as a dict
+        history = self.DLHistoryEditor.dl_history.copy(deep=True)
+        history = dict(zip(history["playlist"], history["last_track"]))
+        
+        #Update SCDL dl_history dict
+        self.SCDL.dl_history = history
+        
+        #Update the history file
+        with open(self.SCDL.history_file, 'w') as f:
+            f.write(json.dumps(history)) 
+        
+        #Update the playlists dataframe
+        if self.DLHistoryEditor.cb_update_pl_df.isChecked():
+            pl_names = set(history.keys()).intersection(self.SCDL.playlists["name"])
+            
+            if not pl_names:
+                return
+            for pl in pl_names:
+                self.SCDL.playlists.loc[self.SCDL.playlists["name"]==pl, 
+                                        "last_track"] = history.get(pl)
+            
+            #Update table display
+            if self.comboBox_tbl_left.currentText() == "Soundcloud Playlists":
+                self.update_tbl_display (lr="left", 
+                                         variable = "Soundcloud Playlists")
+            elif self.comboBox_tbl_right.currentText() == "Soundcloud Playlists":
+                self.update_tbl_display (lr="right", 
+                                         variable = "Soundcloud Playlists")
+        
+        
         
     def open_settings(self):
         """Opens the settings window
@@ -1519,9 +1562,40 @@ class DLHistoryEditor (QTW.QDialog, Ui_DL_History_Editor):
         super(DLHistoryEditor, self).__init__()
         self.setupUi(self)
         
-        self.dl_history = pd.DataFrame(columns=["playlist", "last_track"])
-        # self.setup_connections()
+        self.dl_history = pd.DataFrame(columns=["playlist", "last_track"],
+                                       data=[["",""]])
+        
+        #Table settings
+        header = self.tbl_view.horizontalHeader() 
+        header.setMinimumSectionSize(30)
+        header.setMaximumSectionSize(400)
 
+        #Connect buttons
+        self.buttonBox.accepted.connect(self.save_settings)
+        
+    def change_data(self, data):
+        self.dl_history = data.copy(deep=True)
+        self.tbl.change_data (data.copy(deep=True), insert_checkboxes=False)
+        
+        #Adjust settings for column widths
+        header = self.tbl_view.horizontalHeader() 
+        header.resizeSections(
+            QTW.QHeaderView.ResizeMode.ResizeToContents)
+        
+        #Make playlists column resizeable
+        header.setSectionResizeMode(0,
+            QTW.QHeaderView.ResizeMode.Interactive)
+        
+        #Reduce width of playlist names if necessary
+        if header.sectionSize(0)>100:
+            self.tbl_view.setColumnWidth(0, 100)
+
+        #Set last track column to stretch to fill available space
+        header.setSectionResizeMode(1,
+            QTW.QHeaderView.ResizeMode.Stretch)
+        
+    def save_settings(self):
+        self.dl_history = self.tbl._data.copy(deep=True)
 
 #%% OutputLogger    
 
