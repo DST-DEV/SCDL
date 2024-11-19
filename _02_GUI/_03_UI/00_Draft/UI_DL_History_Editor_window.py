@@ -7,12 +7,7 @@
 
 
 from PyQt6 import QtCore, QtGui, QtWidgets
-###############################################################################
-# Extended Imports
-import PyQt6.QtWidgets as QTW
-import pandas as pd
-from _00_scripts.CustomTableModel import CustomTableModel, CustomTableView, CheckBoxDelegate, TblBlueprint
-###############################################################################
+
 
 class Ui_DL_History_Editor(object):
     def setupUi(self, DL_History_Editor):
@@ -26,18 +21,9 @@ class Ui_DL_History_Editor(object):
         self.verticalLayout = QtWidgets.QVBoxLayout(self.verticalWidget)
         self.verticalLayout.setSizeConstraint(QtWidgets.QLayout.SizeConstraint.SetDefaultConstraint)
         self.verticalLayout.setObjectName("verticalLayout")
-        #######################################################################
-        
-        # Custom Table
-        self.tbl_view = QTW.QTableView(parent=self.verticalWidget)
-        self.tbl = CustomTableModel(pd.DataFrame())
-        self.tbl_view.setModel(self.tbl)
+        self.tbl_view = QtWidgets.QTableView(parent=self.verticalWidget)
+        self.tbl_view.setObjectName("tbl_view")
         self.verticalLayout.addWidget(self.tbl_view)
-        # self.tbl_view = QtWidgets.QTableView(parent=self.verticalWidget)
-        # self.tbl_view.setObjectName("tbl_view")
-        # self.verticalLayout.addWidget(self.tbl_view)
-        
-        #######################################################################
         self.horizontalLayout = QtWidgets.QHBoxLayout()
         self.horizontalLayout.setContentsMargins(-1, -1, 10, -1)
         self.horizontalLayout.setObjectName("horizontalLayout")

@@ -65,6 +65,9 @@
       </item>
       <item row="0" column="1">
        <widget class="QLineEdit" name="lineEdit_scuser">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This is the profile URL of the soundcloud account from which the tracks should be extracted.&lt;/p&gt;&lt;p&gt;It can be found on the profile page either in the edit window or simply taken from the link to the soundcloud profile (https://soundcloud.com/&amp;lt;profile url&amp;gt;)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
         <property name="placeholderText">
          <string>soundcloud profile account number</string>
         </property>
@@ -82,6 +85,9 @@
       </item>
       <item row="1" column="1">
        <widget class="QComboBox" name="comboBox_webdriver">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Webdriver to use for the track extraction and download.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-style:italic;&quot;&gt;Note: &lt;/span&gt;Currently only Firefox is fully implemented.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
         <property name="editable">
          <bool>false</bool>
         </property>
@@ -158,6 +164,9 @@
       </item>
       <item row="0" column="1">
        <widget class="QLineEdit" name="lineEdit_track_lib">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Path to the local folder in which the DJ library is stored&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
         <property name="placeholderText">
          <string>Folder path of the track library</string>
         </property>
@@ -168,6 +177,9 @@
       </item>
       <item row="3" column="1">
        <widget class="QLineEdit" name="lineEdit_nf_fld">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Path to the folder with the new files which should be edited and/or moved to the Track Library.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-style:italic;&quot;&gt;Note: &lt;/span&gt;This can be identical to the downloads folder, but can also be used for arbitrary new files&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
         <property name="placeholderText">
          <string>Folder path for the new files</string>
         </property>
@@ -197,6 +209,9 @@
       </item>
       <item row="1" column="1">
        <widget class="QLineEdit" name="lineEdit_dl_folder">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Folder in which the tracks should be downloaded to&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
         <property name="placeholderText">
          <string>Folder to save the downloaded tracks to</string>
         </property>
@@ -281,6 +296,9 @@
       </item>
       <item row="4" column="1">
        <widget class="QPlainTextEdit" name="textEdit_excl_fld">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Folders within the Track Library which should not be considered when loading the files from the library.&lt;/p&gt;&lt;p&gt;Multiple entries are possible via comma separated values. E.g. the input:&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-style:italic;&quot;&gt;Organisation, dont' touch&lt;/span&gt;&lt;/p&gt;&lt;p&gt;would exclude all folders with the name &amp;quot;Organisation&amp;quot; or &amp;quot;don't touch&amp;quot;.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-style:italic;&quot;&gt;Note:&lt;/span&gt; Entries are case sensitive&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
         <property name="plainText">
          <string/>
         </property>
@@ -318,6 +336,9 @@
       </item>
       <item row="2" column="1">
        <widget class="QLineEdit" name="lineEdit_music_lib">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Folder path in which to sync mp3 files for personal use on a mobile device.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-style:italic;&quot;&gt;Note: &lt;/span&gt;This is a side feature and probably not relevant for most users&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
         <property name="placeholderText">
          <string>Folder path of the music directory</string>
         </property>

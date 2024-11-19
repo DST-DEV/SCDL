@@ -360,6 +360,7 @@ class LibManager:
         """
         new_filename, extension = os.path.splitext(filename)
         
+        #Remove obsolete strings
         for ob_str in self.ob_strs:
             new_filename = new_filename.replace("(" + ob_str + ")", '')
             new_filename = new_filename.replace("(" + ob_str.upper() + ")", '')

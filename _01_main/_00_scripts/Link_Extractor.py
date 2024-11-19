@@ -50,7 +50,8 @@ class PlaylistLinkExtractor:
         self.history_file = hist_file
         
         #Retrieve saved playlist data
-        pl_path = Path(self.pl_dir, "playlists.feather")
+        self.sc_account = sc_account
+        pl_path = Path(self.pl_dir,  f"playlists_{self.sc_account}.feather")
         if pl_path.exists():
             self.playlists_cache = pd.read_feather(pl_path)
             
@@ -65,8 +66,7 @@ class PlaylistLinkExtractor:
                         history[pl["name"]]
             
             #Save updated playlists
-            self.playlists_cache.to_feather(Path(self.pl_dir, 
-                                                 "playlists.feather"))
+            self.playlists_cache.to_feather(pl_path)
         else:
             self.playlists_cache = pd.DataFrame(columns=["name", "link", 
                                                          "last_track", 
@@ -824,8 +824,9 @@ class PlaylistLinkExtractor:
         # exist yet, it is created, which is also fine. The important point is 
         # that it is empty)
         self.playlists_cache["last_track"] = ""    
-                
-        self.playlists_cache.to_feather(Path(self.pl_dir, "playlists.feather"))
+               
+        pl_path = Path(self.pl_dir,  f"playlists_{self.sc_account}.feather")
+        self.playlists_cache.to_feather(pl_path)
         
         
     def add_exception(self, df, col, msg="", 

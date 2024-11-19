@@ -3,7 +3,7 @@ from _00_scripts.SCDL_Master import Soundclouddownloader
 
 #GUI Imports
 from _00_scripts.UI_Main_window import Ui_MainWindow
-from _00_scripts.UI_Settings_window import Ui_Dialog as UI_SettingsDialog
+from _00_scripts.UI_Settings_window import Ui_SettingsDialog
 from _00_scripts.UI_DL_History_Editor import Ui_DL_History_Editor
 from PyQt6.QtWidgets import QApplication, QMainWindow
 from PyQt6.QtCore import QFile
@@ -1088,9 +1088,7 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
                                          variable = "Soundcloud Playlists")
             elif self.comboBox_tbl_right.currentText() == "Soundcloud Playlists":
                 self.update_tbl_display (lr="right", 
-                                         variable = "Soundcloud Playlists")
-        
-        
+                                         variable = "Soundcloud Playlists")  
         
     def open_settings(self):
         """Opens the settings window
@@ -1206,12 +1204,16 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         Returns:
             None
         """
-        
+
         if self.SettingsDialog.cb_darkmode.isChecked():
             qdarktheme.setup_theme("dark",
-                                    custom_colors={"[dark]": {"primary": "#75A4FF"}}
-                                    )
-            self.setStyleSheet("""QPushButton {color: #FFFFFF}""")
+                                    custom_colors={"[dark]": 
+                                                   {"primary": "#75A4FF"}},
+                                    additional_qss="""QToolTip{color: black;
+                                                        color: white;
+                                                        border: 0px}
+                                                      QPushButton {
+                                                          color: #FFFFFF}""")
             
             # # Set the custom icon for the application
             # icon = QTG.QIcon(r"./_01_rsc/SCDLO_V1_icon_white.ico")
@@ -1222,10 +1224,14 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
 
         else:
             qdarktheme.setup_theme("light",
-                                    custom_colors={"[light]": {"primary": "#2469B2"}}
-                                    )
-            self.setStyleSheet("""QPushButton {color: #000000}""")
-            
+                                    custom_colors={"[light]": 
+                                                   {"primary": "#2469B2"}},
+                                    additional_qss="""QToolTip{color: white;
+                                                        color: black;
+                                                        border: 0px;}
+                                                      QPushButton {
+                                                          color: #000000}""")
+                                                          
             # Set the custom icon for the application
             icon = QTG.QIcon(r"./_01_rsc/SCDLO_V1_icon_black.ico")
             self.setWindowIcon(icon)
@@ -1262,7 +1268,7 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
 
 #%% SettingsWindow
 
-class SettingsWindow (QTW.QDialog, UI_SettingsDialog):
+class SettingsWindow (QTW.QDialog, Ui_SettingsDialog):
     def __init__(self, std_settings):
         super(SettingsWindow, self).__init__()
         self.setupUi(self)

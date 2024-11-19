@@ -9,16 +9,16 @@
 from PyQt6 import QtCore, QtGui, QtWidgets
 
 
-class Ui_Dialog(object):
-    def setupUi(self, Dialog):
-        Dialog.setObjectName("Dialog")
-        Dialog.resize(499, 464)
-        self.buttonBox = QtWidgets.QDialogButtonBox(parent=Dialog)
+class Ui_SettingsDialog(object):
+    def setupUi(self, SettingsDialog):
+        SettingsDialog.setObjectName("SettingsDialog")
+        SettingsDialog.resize(499, 464)
+        self.buttonBox = QtWidgets.QDialogButtonBox(parent=SettingsDialog)
         self.buttonBox.setGeometry(QtCore.QRect(330, 440, 161, 21))
         self.buttonBox.setOrientation(QtCore.Qt.Orientation.Horizontal)
         self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.StandardButton.Cancel|QtWidgets.QDialogButtonBox.StandardButton.Ok)
         self.buttonBox.setObjectName("buttonBox")
-        self.verticalLayoutWidget = QtWidgets.QWidget(parent=Dialog)
+        self.verticalLayoutWidget = QtWidgets.QWidget(parent=SettingsDialog)
         self.verticalLayoutWidget.setGeometry(QtCore.QRect(10, 10, 481, 424))
         self.verticalLayoutWidget.setObjectName("verticalLayoutWidget")
         self.verticalLayout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
@@ -173,41 +173,48 @@ class Ui_Dialog(object):
         self.verticalLayout.setStretch(3, 1)
         self.verticalLayout.setStretch(4, 10)
 
-        self.retranslateUi(Dialog)
-        self.buttonBox.accepted.connect(Dialog.accept) # type: ignore
-        self.buttonBox.rejected.connect(Dialog.reject) # type: ignore
-        QtCore.QMetaObject.connectSlotsByName(Dialog)
+        self.retranslateUi(SettingsDialog)
+        self.buttonBox.accepted.connect(SettingsDialog.accept) # type: ignore
+        self.buttonBox.rejected.connect(SettingsDialog.reject) # type: ignore
+        QtCore.QMetaObject.connectSlotsByName(SettingsDialog)
 
-    def retranslateUi(self, Dialog):
+    def retranslateUi(self, SettingsDialog):
         _translate = QtCore.QCoreApplication.translate
-        Dialog.setWindowTitle(_translate("Dialog", "Dialog"))
-        self.lbl_settings.setText(_translate("Dialog", "Webdriver Settings"))
-        self.lbl_scuser.setText(_translate("Dialog", "Soundcloud Account Number"))
-        self.lineEdit_scuser.setPlaceholderText(_translate("Dialog", "soundcloud profile account number"))
-        self.lbl_webdriver.setText(_translate("Dialog", "Webdriver"))
-        self.comboBox_webdriver.setPlaceholderText(_translate("Dialog", "Firefox"))
-        self.comboBox_webdriver.setItemText(0, _translate("Dialog", "Firefox"))
-        self.comboBox_webdriver.setItemText(1, _translate("Dialog", "Chrome"))
-        self.lbl_folders.setText(_translate("Dialog", "Directories"))
-        self.lbl_nf_dir.setText(_translate("Dialog", "New Files Folder Path"))
-        self.lineEdit_track_lib.setPlaceholderText(_translate("Dialog", "Folder path of the track library"))
-        self.lineEdit_nf_fld.setPlaceholderText(_translate("Dialog", "Folder path for the new files"))
-        self.lbl_excl_flds.setText(_translate("Dialog", "<html><head/><body><p>Excluded Track </p><p>Library Folders</p></body></html>"))
-        self.lineEdit_dl_folder.setPlaceholderText(_translate("Dialog", "Folder to save the downloaded tracks to"))
-        self.lbl_track_lib.setText(_translate("Dialog", "Track Library Path"))
-        self.lbl_downloads.setText(_translate("Dialog", "Downloads Folder Path"))
-        self.textEdit_excl_fld.setPlaceholderText(_translate("Dialog", "Folders which should be excluded when processing the track library directory"))
-        self.lbl_music_lib.setText(_translate("Dialog", "Music Folder Path"))
-        self.lineEdit_music_lib.setPlaceholderText(_translate("Dialog", "Folder path of the music directory"))
-        self.lbl_appearance.setText(_translate("Dialog", "Appearance"))
-        self.cb_darkmode.setText(_translate("Dialog", "Dark Mode"))
+        SettingsDialog.setWindowTitle(_translate("SettingsDialog", "Dialog"))
+        self.lbl_settings.setText(_translate("SettingsDialog", "Webdriver Settings"))
+        self.lbl_scuser.setText(_translate("SettingsDialog", "Soundcloud Account Number"))
+        self.lineEdit_scuser.setToolTip(_translate("SettingsDialog", "<html><head/><body><p>This is the profile URL of the soundcloud account from which the tracks should be extracted.</p><p>It can be found on the profile page either in the edit window or simply taken from the link to the soundcloud profile (https://soundcloud.com/&lt;profile url&gt;)</p></body></html>"))
+        self.lineEdit_scuser.setPlaceholderText(_translate("SettingsDialog", "soundcloud profile account number"))
+        self.lbl_webdriver.setText(_translate("SettingsDialog", "Webdriver"))
+        self.comboBox_webdriver.setToolTip(_translate("SettingsDialog", "<html><head/><body><p>Webdriver to use for the track extraction and download.</p><p><span style=\" font-style:italic;\">Note: </span>Currently only Firefox is fully implemented.</p></body></html>"))
+        self.comboBox_webdriver.setPlaceholderText(_translate("SettingsDialog", "Firefox"))
+        self.comboBox_webdriver.setItemText(0, _translate("SettingsDialog", "Firefox"))
+        self.comboBox_webdriver.setItemText(1, _translate("SettingsDialog", "Chrome"))
+        self.lbl_folders.setText(_translate("SettingsDialog", "Directories"))
+        self.lbl_nf_dir.setText(_translate("SettingsDialog", "New Files Folder Path"))
+        self.lineEdit_track_lib.setToolTip(_translate("SettingsDialog", "<html><head/><body><p>Path to the local folder in which the DJ library is stored</p></body></html>"))
+        self.lineEdit_track_lib.setPlaceholderText(_translate("SettingsDialog", "Folder path of the track library"))
+        self.lineEdit_nf_fld.setToolTip(_translate("SettingsDialog", "<html><head/><body><p>Path to the folder with the new files which should be edited and/or moved to the Track Library.</p><p><span style=\" font-style:italic;\">Note: </span>This can be identical to the downloads folder, but can also be used for arbitrary new files</p></body></html>"))
+        self.lineEdit_nf_fld.setPlaceholderText(_translate("SettingsDialog", "Folder path for the new files"))
+        self.lbl_excl_flds.setText(_translate("SettingsDialog", "<html><head/><body><p>Excluded Track </p><p>Library Folders</p></body></html>"))
+        self.lineEdit_dl_folder.setToolTip(_translate("SettingsDialog", "<html><head/><body><p>Folder in which the tracks should be downloaded to</p></body></html>"))
+        self.lineEdit_dl_folder.setPlaceholderText(_translate("SettingsDialog", "Folder to save the downloaded tracks to"))
+        self.lbl_track_lib.setText(_translate("SettingsDialog", "Track Library Path"))
+        self.lbl_downloads.setText(_translate("SettingsDialog", "Downloads Folder Path"))
+        self.textEdit_excl_fld.setToolTip(_translate("SettingsDialog", "<html><head/><body><p>Folders within the Track Library which should not be considered when loading the files from the library.</p><p>Multiple entries are possible via comma separated values. E.g. the input:</p><p><span style=\" font-style:italic;\">Organisation, dont\' touch</span></p><p>would exclude all folders with the name &quot;Organisation&quot; or &quot;don\'t touch&quot;.</p><p><br/></p><p><span style=\" font-style:italic;\">Note:</span> Entries are case sensitive</p><p><br/></p></body></html>"))
+        self.textEdit_excl_fld.setPlaceholderText(_translate("SettingsDialog", "Folders which should be excluded when processing the track library directory"))
+        self.lbl_music_lib.setText(_translate("SettingsDialog", "Music Folder Path"))
+        self.lineEdit_music_lib.setToolTip(_translate("SettingsDialog", "<html><head/><body><p>Folder path in which to sync mp3 files for personal use on a mobile device.</p><p><span style=\" font-style:italic;\">Note: </span>This is a side feature and probably not relevant for most users</p></body></html>"))
+        self.lineEdit_music_lib.setPlaceholderText(_translate("SettingsDialog", "Folder path of the music directory"))
+        self.lbl_appearance.setText(_translate("SettingsDialog", "Appearance"))
+        self.cb_darkmode.setText(_translate("SettingsDialog", "Dark Mode"))
 
 
 if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)
-    Dialog = QtWidgets.QDialog()
-    ui = Ui_Dialog()
-    ui.setupUi(Dialog)
-    Dialog.show()
+    SettingsDialog = QtWidgets.QDialog()
+    ui = Ui_SettingsDialog()
+    ui.setupUi(SettingsDialog)
+    SettingsDialog.show()
     sys.exit(app.exec())

@@ -17,7 +17,7 @@
    </size>
   </property>
   <property name="windowTitle">
-   <string>Dialog</string>
+   <string>Download History Editor</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
    <item>
@@ -49,6 +49,9 @@
         </item>
         <item>
          <widget class="QCheckBox" name="cb_update_pl_df">
+          <property name="toolTip">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Whether the table containing the playlists in the main application should be updated with the new download history. &lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-style:italic;&quot;&gt;Note:&lt;/span&gt; The column &amp;quot;last_track&amp;quot; in the playlists table can be used to temporarily change the last track that is considered already downloaded in the track extraction&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
           <property name="layoutDirection">
            <enum>Qt::LeftToRight</enum>
           </property>
@@ -78,5 +81,38 @@
   </layout>
  </widget>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>accepted()</signal>
+   <receiver>DL_History_Editor</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>199</x>
+     <y>489</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>199</x>
+     <y>259</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>rejected()</signal>
+   <receiver>DL_History_Editor</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>199</x>
+     <y>489</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>199</x>
+     <y>259</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>
