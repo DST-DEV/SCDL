@@ -4,6 +4,7 @@ from _00_scripts.SCDL_Master import Soundclouddownloader
 #GUI Imports
 from _00_scripts.UI_Main_window import Ui_MainWindow
 from _00_scripts.UI_Settings_window import Ui_Dialog as UI_SettingsDialog
+from _00_scripts.UI_DL_History_Editor import Ui_DL_History_Editor
 from PyQt6.QtWidgets import QApplication, QMainWindow
 from PyQt6.QtCore import QFile
 from PyQt5.QtCore import pyqtSlot
@@ -70,6 +71,9 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         
         #Settings Window
         self.SettingsDialog = SettingsWindow(self.settings)
+        
+        #DL History Editor
+        self.DLHistoryEditor = DLHistoryEditor()
         
         #Setup the Threadpool
         self.threadpool = QTC.QThreadPool()
@@ -169,6 +173,9 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
                                                 self.check_dialog_settings)
         self.SettingsDialog.cb_darkmode.stateChanged.connect(
             self.change_lightmode)
+        
+        #DL History Editor
+        self.EditHist.triggered.connect(self.open_hist_editor)
     
     def validate_settings(self, new_settings):
         """Verifies a dict of settings and transfers all valid new settings to 
@@ -1024,6 +1031,24 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         #Update table display
         self.update_tbl_display (lr="right", variable = "New Files")
     
+    def open_hist_editor(self):
+        """Opens the settings window
+        
+        Parameters:
+            None
+        
+        Returns:
+            None
+        """
+        
+        dl_hist_df = pd.DataFrame.from_dict(self.SCDL.dl_history, 
+                                            orient='index', 
+                                            columns=["last_track"]
+                                            ).reset_index(names="playlist")
+        self.DLHistoryEditor.dl_history = dl_hist_df
+        self.DLHistoryEditor.exec()
+        # self.Dialog.show()
+        
     def open_settings(self):
         """Opens the settings window
         
@@ -1487,6 +1512,17 @@ class SettingsWindow (QTW.QDialog, UI_SettingsDialog):
         self.changed_settings[
             "dark_mode"] = self.cb_darkmode.isChecked()
 
+#%% DL History Editor
+
+class DLHistoryEditor (QTW.QDialog, Ui_DL_History_Editor):
+    def __init__(self):
+        super(DLHistoryEditor, self).__init__()
+        self.setupUi(self)
+        
+        self.dl_history = pd.DataFrame(columns=["playlist", "last_track"])
+        # self.setup_connections()
+
+
 #%% OutputLogger    
 
 class OutputLogger:
@@ -1606,87 +1642,3 @@ if __name__ == "__main__":
 
     
     sys.exit(app.exec())
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# class MainWindow(Ui_MainWindow):
-#     def __init__(self):
-#         # super().__init__()
-#         super(Ui_MainWindow, self).__init__()
-
-#         MW = QTW.QMainWindow()
-#         self.setupUi(MW)
-        
-        
-#         # # Set geometry and window color
-#         # self.setGeometry(100, 100, 1000, 500)
-#         # #self.setStyleSheet("background-color: #000000;")
-        
-#         # self.cw = QTW.QWidget()
-#         # self.setCentralWidget(self.cw)
-#         # self.main_layout = QTW.QVBoxLayout(self)        
-        
-#         # self.btn = QTW.QPushButton("Change")
-        
-#         # self.main_layout.addWidget(self.btn)
-        
-#         # #Set the main Layout
-#         # self.cw.setLayout(self.main_layout)
- 
-    
- 
-
-# if __name__ == "__main__":
-#     app = QTW.QApplication(sys.argv)
-#     MainWindow = QTW.QMainWindow()
-#     ui = Ui_MainWindow()
-#     ui.setupUi(MainWindow)
-#     MainWindow.show()
-#     sys.exit(app.exec())
-    
-    
-

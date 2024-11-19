@@ -450,7 +450,7 @@ class PlaylistLinkExtractor:
                     + "sc-link-primary sc-font-light'])[last()]").get_attribute(
                         "href").split("in=user")[0]
                        
-                if (mode == "new" and last_track_hist == last_track):
+                if (mode == "new" and last_track == last_track_hist):
                     
                     #Skip playlist since no new tracks were added since last download
                     self.playlists.loc[index, "status"] = "skipped"
@@ -463,7 +463,7 @@ class PlaylistLinkExtractor:
                     for i in range(len(self.driver.find_elements(
                         By.CLASS_NAME, 
                         "trackList__item.sc-border-light-bottom.sc-px-2x"))-1,
-                                    0,
+                                    -1,
                                    -1):
                     
                         track_link, title, uploader = self.extr_track(i)

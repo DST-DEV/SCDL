@@ -17,7 +17,7 @@ from _00_scripts.CustomTableModel import CustomTableModel, CustomTableView, Chec
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(1180, 791)
+        MainWindow.resize(1180, 792)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Preferred, QtWidgets.QSizePolicy.Policy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -40,12 +40,7 @@ class Ui_MainWindow(object):
         # Custom Table left
         
         #Insert left table
-        df1 = pd.DataFrame({'a': ['Mary', 'Jim', 'John'],
-                            'b': [100.1, 200.2, 300.3],
-                            'c': [False, False, False]})
-        
         self.tbl_view_left = QTW.QTableView()
-        # self.tbl_left = CustomTableModel(pd.DataFrame())
         self.tbl_left = CustomTableModel(pd.DataFrame())
         self.tbl_view_left.setModel(self.tbl_left)
         self.delegate_left = CheckBoxDelegate(self.tbl_view_left)
@@ -643,8 +638,14 @@ class Ui_MainWindow(object):
         self.SettingsImport.setObjectName("SettingsImport")
         self.SettingsChange = QtGui.QAction(parent=MainWindow)
         self.SettingsChange.setObjectName("SettingsChange")
+        self.actionEdit_Download_History = QtGui.QAction(parent=MainWindow)
+        self.actionEdit_Download_History.setObjectName("actionEdit_Download_History")
+        self.EditHist = QtGui.QAction(parent=MainWindow)
+        self.EditHist.setObjectName("EditHist")
         self.menuSettings.addAction(self.SettingsImport)
         self.menuSettings.addAction(self.SettingsChange)
+        self.menuSettings.addSeparator()
+        self.menuSettings.addAction(self.EditHist)
         self.menubar.addAction(self.menuSettings.menuAction())
 
         self.retranslateUi(MainWindow)
@@ -723,6 +724,8 @@ class Ui_MainWindow(object):
         self.actionrfsey.setText(_translate("MainWindow", "rfsey"))
         self.SettingsImport.setText(_translate("MainWindow", "Import"))
         self.SettingsChange.setText(_translate("MainWindow", "Change"))
+        self.actionEdit_Download_History.setText(_translate("MainWindow", "Edit Download History"))
+        self.EditHist.setText(_translate("MainWindow", "DL History Editor"))
 
 
 if __name__ == "__main__":

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1180</width>
-    <height>791</height>
+    <height>792</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -1296,6 +1296,8 @@
     </property>
     <addaction name="SettingsImport"/>
     <addaction name="SettingsChange"/>
+    <addaction name="separator"/>
+    <addaction name="EditHist"/>
    </widget>
    <addaction name="menuSettings"/>
   </widget>
@@ -1315,13 +1317,23 @@
     <string>Change</string>
    </property>
   </action>
+  <action name="actionEdit_Download_History">
+   <property name="text">
+    <string>Edit Download History</string>
+   </property>
+  </action>
+  <action name="EditHist">
+   <property name="text">
+    <string>DL History Editor</string>
+   </property>
+  </action>
  </widget>
  <resources/>
  <connections/>
  <buttongroups>
-  <buttongroup name="BtnGroup_adj_files"/>
-  <buttongroup name="BtnGroup_goal_fld"/>
-  <buttongroup name="BtnGroup_dl_hist"/>
   <buttongroup name="BtnGroup_extr_pl"/>
+  <buttongroup name="BtnGroup_adj_files"/>
+  <buttongroup name="BtnGroup_dl_hist"/>
+  <buttongroup name="BtnGroup_goal_fld"/>
  </buttongroups>
 </ui>
