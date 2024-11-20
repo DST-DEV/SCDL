@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1180</width>
-    <height>792</height>
+    <width>1166</width>
+    <height>795</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -69,6 +69,12 @@
          <layout class="QHBoxLayout" name="hLayout_tbl_sel_left" stretch="10,1">
           <item>
            <widget class="QComboBox" name="comboBox_tbl_left">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
             <property name="layoutDirection">
              <enum>Qt::LeftToRight</enum>
             </property>
@@ -167,6 +173,12 @@
           </item>
           <item>
            <widget class="QComboBox" name="comboBox_tbl_right">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
             <property name="layoutDirection">
              <enum>Qt::RightToLeft</enum>
             </property>
@@ -241,6 +253,18 @@
       </item>
       <item row="0" column="1">
        <widget class="QTabWidget" name="tabWidget">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>270</width>
+          <height>16777215</height>
+         </size>
+        </property>
         <property name="toolTip">
          <string/>
         </property>
@@ -254,7 +278,7 @@
          <enum>QTabWidget::Rounded</enum>
         </property>
         <property name="currentIndex">
-         <number>0</number>
+         <number>2</number>
         </property>
         <widget class="QWidget" name="tab_scdl">
          <property name="toolTip">
@@ -265,116 +289,235 @@
          </attribute>
          <layout class="QVBoxLayout" name="verticalLayout_3">
           <item>
-           <layout class="QGridLayout" name="glayout_SCDL" rowstretch="1,20,1,1,1,6,1,1,1,6,1,0,0,0">
-            <item row="3" column="0">
-             <widget class="Line" name="line">
-              <property name="orientation">
-               <enum>Qt::Horizontal</enum>
+           <layout class="QGridLayout" name="glayout_SCDL">
+            <item row="13" column="0">
+             <layout class="QGridLayout" name="glayout_dl_hist" rowstretch="0,0,0,0,0,0,0" columnstretch="1,30,1">
+              <property name="sizeConstraint">
+               <enum>QLayout::SetDefaultConstraint</enum>
               </property>
-             </widget>
-            </item>
-            <item row="5" column="0">
-             <layout class="QGridLayout" name="glayout_track_ext" rowstretch="10,0" columnstretch="1,30,1">
-              <item row="1" column="1">
-               <widget class="QPushButton" name="btn_track_ext">
+              <item row="3" column="1">
+               <widget class="QRadioButton" name="rbtn_new_pl">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
                 <property name="toolTip">
-                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Extract all new tracks from the playlists displayed in the found soundcloud playlists (cf. &amp;quot;Soundcloud Playlists&amp;quot; in the table dropdown)&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-style:italic;&quot;&gt;Note:&lt;/span&gt; Single playlists can be excluded for this feature by unchecking the checkbox in the &amp;quot;include&amp;quot; column in the Soundcloud Playlists table (remember to save the table!)&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-style:italic;&quot;&gt;Note:&lt;/span&gt; Which tracks are new is determined based on the DL History from previous program runs. If this data is incorrect, it can be updated in the DL History Updater section or manually edited (in the toolbar under settings)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Only consider the playlists which aren't yet in the download history dataset&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-style:italic;&quot;&gt;Note:&lt;/span&gt; This option reextracts the soundcloud playlists from the soundcloud profile &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                 </property>
                 <property name="text">
-                 <string>Extract Tracks</string>
+                 <string>New playlists</string>
                 </property>
+                <property name="checked">
+                 <bool>false</bool>
+                </property>
+                <attribute name="buttonGroup">
+                 <string notr="true">BtnGroup_dl_hist</string>
+                </attribute>
                </widget>
               </item>
-              <item row="1" column="0">
-               <spacer name="horizontalSpacer_3">
-                <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
-                </property>
-                <property name="sizeHint" stdset="0">
-                 <size>
-                  <width>40</width>
-                  <height>20</height>
-                 </size>
-                </property>
-               </spacer>
-              </item>
-              <item row="1" column="2">
-               <spacer name="horizontalSpacer_4">
-                <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
-                </property>
-                <property name="sizeHint" stdset="0">
-                 <size>
-                  <width>40</width>
-                  <height>20</height>
-                 </size>
-                </property>
-               </spacer>
-              </item>
-              <item row="0" column="1">
-               <widget class="QLabel" name="lbl_track_ext">
+              <item row="5" column="1">
+               <widget class="QRadioButton" name="rbtn_all_pl">
                 <property name="sizePolicy">
-                 <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+                 <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="toolTip">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Update all playlists from the soundcloud profile&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-style:italic;&quot;&gt;Note:&lt;/span&gt; This option &lt;span style=&quot; font-weight:700;&quot;&gt;overwrites&lt;/span&gt; the current information in the dataset. Be careful when using it.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-style:italic;&quot;&gt;Note:&lt;/span&gt; This option reextracts the soundcloud playlists from the soundcloud profile &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                </property>
+                <property name="text">
+                 <string>All playlists</string>
+                </property>
+                <attribute name="buttonGroup">
+                 <string notr="true">BtnGroup_dl_hist</string>
+                </attribute>
+               </widget>
+              </item>
+              <item row="4" column="1">
+               <widget class="QRadioButton" name="rbtn_curr_pl">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="toolTip">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Only consider the playlists which are currently loaded in the Soundcloud Playlists table.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-style:italic;&quot;&gt;Note:&lt;/span&gt; This option &lt;span style=&quot; font-weight:700;&quot;&gt;overwrites&lt;/span&gt; the current information in the dataset. Be careful when using it.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                </property>
+                <property name="text">
+                 <string>Current playlists</string>
+                </property>
+                <property name="checked">
+                 <bool>true</bool>
+                </property>
+                <attribute name="buttonGroup">
+                 <string notr="true">BtnGroup_dl_hist</string>
+                </attribute>
+               </widget>
+              </item>
+              <item row="6" column="1">
+               <spacer name="verticalSpacer_7">
+                <property name="orientation">
+                 <enum>Qt::Vertical</enum>
+                </property>
+                <property name="sizeType">
+                 <enum>QSizePolicy::Expanding</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>20</width>
+                  <height>10</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+              <item row="1" column="0" colspan="3">
+               <widget class="QLabel" name="lbl_hist_up">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                   <horstretch>0</horstretch>
                   <verstretch>0</verstretch>
                  </sizepolicy>
                 </property>
                 <property name="text">
-                 <string>Track Extractor</string>
+                 <string>DL History Updater</string>
                 </property>
                 <property name="alignment">
                  <set>Qt::AlignCenter</set>
                 </property>
                </widget>
               </item>
-             </layout>
-            </item>
-            <item row="1" column="0">
-             <layout class="QGridLayout" name="glayout_pl_search" rowstretch="1,1,1,1,2,1,0,0,0" columnstretch="1,30,1">
-              <item row="1" column="0" rowspan="6">
-               <spacer name="horizontalSpacer">
+              <item row="2" column="0" colspan="3">
+               <widget class="QPushButton" name="btn_dl_hist_up">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="toolTip">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Updates the download history to match the last track of the playlists.&lt;/p&gt;&lt;p&gt;Which playlists are affected by this feature can be selected with the buttons below.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                </property>
+                <property name="text">
+                 <string>Update DL history</string>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="2" rowspan="3">
+               <spacer name="horizontalSpacer_9">
                 <property name="orientation">
                  <enum>Qt::Horizontal</enum>
                 </property>
+                <property name="sizeType">
+                 <enum>QSizePolicy::Fixed</enum>
+                </property>
                 <property name="sizeHint" stdset="0">
                  <size>
-                  <width>40</width>
+                  <width>5</width>
                   <height>20</height>
                  </size>
                 </property>
                </spacer>
               </item>
-              <item row="8" column="1">
-               <spacer name="verticalSpacer_18">
+              <item row="3" column="0" rowspan="3">
+               <spacer name="horizontalSpacer_10">
                 <property name="orientation">
-                 <enum>Qt::Vertical</enum>
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeType">
+                 <enum>QSizePolicy::Fixed</enum>
                 </property>
                 <property name="sizeHint" stdset="0">
                  <size>
-                  <width>20</width>
-                  <height>40</height>
+                  <width>5</width>
+                  <height>20</height>
                  </size>
                 </property>
                </spacer>
               </item>
-              <item row="6" column="1">
-               <widget class="QRadioButton" name="rbtn_pl_search_key">
-                <property name="toolTip">
-                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Extract only the playlists which contain all of the keywords listed in the textfield below (logical and).&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-style:italic;&quot;&gt;Note&lt;/span&gt;: Filtering is not case sensitive. Furthermore, keywords can also be single letters or only part of words&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </layout>
+            </item>
+            <item row="4" column="0">
+             <spacer name="verticalSpacer_3">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeType">
+               <enum>QSizePolicy::Fixed</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>3</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item row="10" column="0">
+             <spacer name="verticalSpacer_5">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeType">
+               <enum>QSizePolicy::Fixed</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>3</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item row="9" column="0">
+             <layout class="QGridLayout" name="glayout_track_dl" rowstretch="0,0,0" columnstretch="1">
+              <property name="sizeConstraint">
+               <enum>QLayout::SetMinimumSize</enum>
+              </property>
+              <item row="1" column="0">
+               <widget class="QLabel" name="lbl_track_dl">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
                 </property>
                 <property name="text">
-                 <string>Specify Name Keywords</string>
+                 <string>Track Downloader</string>
                 </property>
-                <property name="autoExclusive">
-                 <bool>true</bool>
+                <property name="alignment">
+                 <set>Qt::AlignCenter</set>
                 </property>
-                <attribute name="buttonGroup">
-                 <string notr="true">BtnGroup_extr_pl</string>
-                </attribute>
                </widget>
               </item>
+              <item row="2" column="0">
+               <widget class="QPushButton" name="btn_track_dl">
+                <property name="toolTip">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Download all found tracks(cf. &amp;quot;Soundcloud Tracks&amp;quot; in the table dropdown)&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-style:italic;&quot;&gt;Note:&lt;/span&gt; Single Tracks can be excluded for this feature by unchecking the checkbox in the &amp;quot;include&amp;quot; column in the Soundcloud Tracks table (remember to save the table!)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                </property>
+                <property name="text">
+                 <string>Download Tracks</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item row="1" column="0">
+             <layout class="QGridLayout" name="glayout_pl_search" rowstretch="1,0,0,0,0,0,0,0,0" columnstretch="0,1,0">
+              <property name="sizeConstraint">
+               <enum>QLayout::SetMinimumSize</enum>
+              </property>
               <item row="4" column="1">
                <widget class="QRadioButton" name="rbtn_pl_all">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
                 <property name="toolTip">
                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Extract all playlists from the soundcloud profile (No filtering)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                 </property>
@@ -392,47 +535,14 @@
                 </attribute>
                </widget>
               </item>
-              <item row="1" column="2" rowspan="6">
-               <spacer name="horizontalSpacer_2">
-                <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
-                </property>
-                <property name="sizeHint" stdset="0">
-                 <size>
-                  <width>40</width>
-                  <height>20</height>
-                 </size>
-                </property>
-               </spacer>
-              </item>
-              <item row="7" column="1">
-               <widget class="QPlainTextEdit" name="TxtEdit_pl_search">
-                <property name="toolTip">
-                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;For mode &amp;quot;Specify Playlists via Name&amp;quot;: &lt;/span&gt;&lt;/p&gt;&lt;p&gt;Search name&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;For mode &amp;quot;Specifiy Name Keywords&amp;quot;: &lt;/span&gt;&lt;/p&gt;&lt;p&gt;Comma separated keywords&lt;/p&gt;&lt;p&gt;E.g. the input:&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-style:italic;&quot;&gt;Tra, boun&lt;/span&gt;&lt;/p&gt;&lt;p&gt;would filter for all playlists containing &amp;quot;Tra&amp;quot; and &amp;quot;boun&amp;quot;, which could for example return all bouncy trance playlists (depending on the playlist names of the user)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                </property>
-                <property name="placeholderText">
-                 <string>Enter playlist names / search keywords</string>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="0" colspan="3">
-               <widget class="QLabel" name="lbl_pl_search">
+              <item row="5" column="1">
+               <widget class="QRadioButton" name="rbtn_pl_search_name">
                 <property name="sizePolicy">
-                 <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+                 <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                   <horstretch>0</horstretch>
                   <verstretch>0</verstretch>
                  </sizepolicy>
                 </property>
-                <property name="text">
-                 <string>Playlist Search Engine</string>
-                </property>
-                <property name="alignment">
-                 <set>Qt::AlignCenter</set>
-                </property>
-               </widget>
-              </item>
-              <item row="5" column="1">
-               <widget class="QRadioButton" name="rbtn_pl_search_name">
                 <property name="toolTip">
                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Extract only the playlist, which exactly matches the name entered in the text field below&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                 </property>
@@ -447,18 +557,52 @@
                 </attribute>
                </widget>
               </item>
-              <item row="1" column="1">
-               <widget class="QPushButton" name="btn_pl_search">
+              <item row="6" column="1">
+               <widget class="QRadioButton" name="rbtn_pl_search_key">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
                 <property name="toolTip">
-                 <string>Find playlists matchin the search criteria specified below</string>
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Extract only the playlists which contain all of the keywords listed in the textfield below (logical and).&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-style:italic;&quot;&gt;Note&lt;/span&gt;: Filtering is not case sensitive. Furthermore, keywords can also be single letters or only part of words&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                 </property>
                 <property name="text">
-                 <string>Find Playlists</string>
+                 <string>Specify Name Keywords</string>
+                </property>
+                <property name="autoExclusive">
+                 <bool>true</bool>
+                </property>
+                <attribute name="buttonGroup">
+                 <string notr="true">BtnGroup_extr_pl</string>
+                </attribute>
+               </widget>
+              </item>
+              <item row="0" column="0" colspan="3">
+               <widget class="QLabel" name="lbl_pl_search">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="text">
+                 <string>Playlist Search Engine</string>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignCenter</set>
                 </property>
                </widget>
               </item>
               <item row="2" column="1">
                <widget class="QCheckBox" name="cb_use_cached">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
                 <property name="toolTip">
                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Use the found playlists from the last time the playlists were extracted from Soundcloud.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-style:italic;&quot;&gt;Note: &lt;/span&gt;This is specific to the soundcloud account&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                 </property>
@@ -470,7 +614,99 @@
                 </property>
                </widget>
               </item>
-              <item row="3" column="1">
+              <item row="7" column="1">
+               <widget class="QPlainTextEdit" name="TxtEdit_pl_search">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="minimumSize">
+                 <size>
+                  <width>0</width>
+                  <height>50</height>
+                 </size>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>16777215</width>
+                  <height>120</height>
+                 </size>
+                </property>
+                <property name="toolTip">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;For mode &amp;quot;Specify Playlists via Name&amp;quot;: &lt;/span&gt;&lt;/p&gt;&lt;p&gt;Search name&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;For mode &amp;quot;Specifiy Name Keywords&amp;quot;: &lt;/span&gt;&lt;/p&gt;&lt;p&gt;Comma separated keywords&lt;/p&gt;&lt;p&gt;E.g. the input:&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-style:italic;&quot;&gt;Tra, boun&lt;/span&gt;&lt;/p&gt;&lt;p&gt;would filter for all playlists containing &amp;quot;Tra&amp;quot; and &amp;quot;boun&amp;quot;, which could for example return all bouncy trance playlists (depending on the playlist names of the user)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                </property>
+                <property name="placeholderText">
+                 <string>Enter playlist names / search keywords</string>
+                </property>
+               </widget>
+              </item>
+              <item row="8" column="1">
+               <spacer name="verticalSpacer_18">
+                <property name="orientation">
+                 <enum>Qt::Vertical</enum>
+                </property>
+                <property name="sizeType">
+                 <enum>QSizePolicy::Fixed</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>20</width>
+                  <height>1</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+              <item row="1" column="0" colspan="3">
+               <widget class="QPushButton" name="btn_pl_search">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="toolTip">
+                 <string>Find playlists matchin the search criteria specified below</string>
+                </property>
+                <property name="text">
+                 <string>Find Playlists</string>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="0">
+               <spacer name="hSpace_pl_search_l">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeType">
+                 <enum>QSizePolicy::Fixed</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>5</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+              <item row="2" column="2">
+               <spacer name="hSpace_pl_search_r">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeType">
+                 <enum>QSizePolicy::Fixed</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>5</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+              <item row="3" column="0" colspan="3">
                <widget class="Line" name="line_pl_search">
                 <property name="orientation">
                  <enum>Qt::Horizontal</enum>
@@ -479,100 +715,51 @@
               </item>
              </layout>
             </item>
-            <item row="0" column="0">
-             <spacer name="verticalSpacer_1">
-              <property name="orientation">
-               <enum>Qt::Vertical</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>20</width>
-                <height>40</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
-            <item row="7" column="0">
-             <widget class="Line" name="line_2">
+            <item row="3" column="0">
+             <widget class="Line" name="line">
               <property name="orientation">
                <enum>Qt::Horizontal</enum>
               </property>
              </widget>
             </item>
-            <item row="10" column="0">
-             <spacer name="verticalSpacer_5">
+            <item row="11" column="0">
+             <widget class="Line" name="line_3">
               <property name="orientation">
-               <enum>Qt::Vertical</enum>
+               <enum>Qt::Horizontal</enum>
               </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>20</width>
-                <height>40</height>
-               </size>
-              </property>
-             </spacer>
+             </widget>
             </item>
-            <item row="8" column="0">
-             <spacer name="verticalSpacer">
-              <property name="orientation">
-               <enum>Qt::Vertical</enum>
+            <item row="5" column="0">
+             <layout class="QGridLayout" name="glayout_track_ext" rowstretch="10,0" columnstretch="1">
+              <property name="sizeConstraint">
+               <enum>QLayout::SetMinimumSize</enum>
               </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>20</width>
-                <height>40</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
-            <item row="9" column="0">
-             <layout class="QGridLayout" name="glayout_track_dl" rowstretch="0,0,0" columnstretch="1,30,1">
-              <item row="2" column="2">
-               <spacer name="horizontalSpacer_6">
-                <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
+              <item row="1" column="0">
+               <widget class="QPushButton" name="btn_track_ext">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
                 </property>
-                <property name="sizeHint" stdset="0">
-                 <size>
-                  <width>40</width>
-                  <height>20</height>
-                 </size>
-                </property>
-               </spacer>
-              </item>
-              <item row="2" column="1">
-               <widget class="QPushButton" name="btn_track_dl">
                 <property name="toolTip">
-                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Download all found tracks(cf. &amp;quot;Soundcloud Tracks&amp;quot; in the table dropdown)&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-style:italic;&quot;&gt;Note:&lt;/span&gt; Single Tracks can be excluded for this feature by unchecking the checkbox in the &amp;quot;include&amp;quot; column in the Soundcloud Tracks table (remember to save the table!)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Extract all new tracks from the playlists displayed in the found soundcloud playlists (cf. &amp;quot;Soundcloud Playlists&amp;quot; in the table dropdown)&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-style:italic;&quot;&gt;Note:&lt;/span&gt; Single playlists can be excluded for this feature by unchecking the checkbox in the &amp;quot;include&amp;quot; column in the Soundcloud Playlists table (remember to save the table!)&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-style:italic;&quot;&gt;Note:&lt;/span&gt; Which tracks are new is determined based on the DL History from previous program runs. If this data is incorrect, it can be updated in the DL History Updater section or manually edited (in the toolbar under settings)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                 </property>
                 <property name="text">
-                 <string>Download Tracks</string>
+                 <string>Extract Tracks</string>
                 </property>
                </widget>
               </item>
-              <item row="2" column="0">
-               <spacer name="horizontalSpacer_5">
-                <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
-                </property>
-                <property name="sizeHint" stdset="0">
-                 <size>
-                  <width>40</width>
-                  <height>20</height>
-                 </size>
-                </property>
-               </spacer>
-              </item>
-              <item row="1" column="1">
-               <widget class="QLabel" name="lbl_track_dl">
+              <item row="0" column="0">
+               <widget class="QLabel" name="lbl_track_ext">
                 <property name="sizePolicy">
-                 <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+                 <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                   <horstretch>0</horstretch>
                   <verstretch>0</verstretch>
                  </sizepolicy>
                 </property>
                 <property name="text">
-                 <string>Track Downloader</string>
+                 <string>Track Extractor</string>
                 </property>
                 <property name="alignment">
                  <set>Qt::AlignCenter</set>
@@ -586,43 +773,13 @@
               <property name="orientation">
                <enum>Qt::Vertical</enum>
               </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>20</width>
-                <height>40</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
-            <item row="11" column="0">
-             <widget class="Line" name="line_3">
-              <property name="orientation">
-               <enum>Qt::Horizontal</enum>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="0">
-             <spacer name="verticalSpacer_4">
-              <property name="orientation">
-               <enum>Qt::Vertical</enum>
+              <property name="sizeType">
+               <enum>QSizePolicy::Fixed</enum>
               </property>
               <property name="sizeHint" stdset="0">
                <size>
                 <width>20</width>
-                <height>40</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
-            <item row="4" column="0">
-             <spacer name="verticalSpacer_3">
-              <property name="orientation">
-               <enum>Qt::Vertical</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>20</width>
-                <height>40</height>
+                <height>3</height>
                </size>
               </property>
              </spacer>
@@ -632,114 +789,71 @@
               <property name="orientation">
                <enum>Qt::Vertical</enum>
               </property>
+              <property name="sizeType">
+               <enum>QSizePolicy::Fixed</enum>
+              </property>
               <property name="sizeHint" stdset="0">
                <size>
                 <width>20</width>
-                <height>40</height>
+                <height>3</height>
                </size>
               </property>
              </spacer>
             </item>
-            <item row="13" column="0">
-             <layout class="QGridLayout" name="glayout_dl_hist" rowstretch="0,0,0,0,0,0" columnstretch="1,30,1">
-              <item row="1" column="1">
-               <widget class="QLabel" name="lbl_hist_up">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <property name="text">
-                 <string>DL History Updater</string>
-                </property>
-                <property name="alignment">
-                 <set>Qt::AlignCenter</set>
-                </property>
-               </widget>
-              </item>
-              <item row="2" column="0">
-               <spacer name="horizontalSpacer_10">
-                <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
-                </property>
-                <property name="sizeHint" stdset="0">
-                 <size>
-                  <width>40</width>
-                  <height>20</height>
-                 </size>
-                </property>
-               </spacer>
-              </item>
-              <item row="5" column="1">
-               <widget class="QRadioButton" name="rbtn_all_pl">
-                <property name="toolTip">
-                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Update all playlists from the soundcloud profile&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-style:italic;&quot;&gt;Note:&lt;/span&gt; This option &lt;span style=&quot; font-weight:700;&quot;&gt;overwrites&lt;/span&gt; the current information in the dataset. Be careful when using it.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-style:italic;&quot;&gt;Note:&lt;/span&gt; This option reextracts the soundcloud playlists from the soundcloud profile &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                </property>
-                <property name="text">
-                 <string>All playlists</string>
-                </property>
-                <attribute name="buttonGroup">
-                 <string notr="true">BtnGroup_dl_hist</string>
-                </attribute>
-               </widget>
-              </item>
-              <item row="2" column="2">
-               <spacer name="horizontalSpacer_9">
-                <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
-                </property>
-                <property name="sizeHint" stdset="0">
-                 <size>
-                  <width>40</width>
-                  <height>20</height>
-                 </size>
-                </property>
-               </spacer>
-              </item>
-              <item row="4" column="1">
-               <widget class="QRadioButton" name="rbtn_curr_pl">
-                <property name="toolTip">
-                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Only consider the playlists which are currently loaded in the Soundcloud Playlists table.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-style:italic;&quot;&gt;Note:&lt;/span&gt; This option &lt;span style=&quot; font-weight:700;&quot;&gt;overwrites&lt;/span&gt; the current information in the dataset. Be careful when using it.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                </property>
-                <property name="text">
-                 <string>Current playlists</string>
-                </property>
-                <property name="checked">
-                 <bool>true</bool>
-                </property>
-                <attribute name="buttonGroup">
-                 <string notr="true">BtnGroup_dl_hist</string>
-                </attribute>
-               </widget>
-              </item>
-              <item row="2" column="1">
-               <widget class="QPushButton" name="btn_dl_hist_up">
-                <property name="toolTip">
-                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Updates the download history to match the last track of the playlists.&lt;/p&gt;&lt;p&gt;Which playlists are affected by this feature can be selected with the buttons below.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                </property>
-                <property name="text">
-                 <string>Update DL history</string>
-                </property>
-               </widget>
-              </item>
-              <item row="3" column="1">
-               <widget class="QRadioButton" name="rbtn_new_pl">
-                <property name="toolTip">
-                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Only consider the playlists which aren't yet in the download history dataset&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-style:italic;&quot;&gt;Note:&lt;/span&gt; This option reextracts the soundcloud playlists from the soundcloud profile &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                </property>
-                <property name="text">
-                 <string>New playlists</string>
-                </property>
-                <property name="checked">
-                 <bool>false</bool>
-                </property>
-                <attribute name="buttonGroup">
-                 <string notr="true">BtnGroup_dl_hist</string>
-                </attribute>
-               </widget>
-              </item>
-             </layout>
+            <item row="7" column="0">
+             <widget class="Line" name="line_2">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+             </widget>
+            </item>
+            <item row="8" column="0">
+             <spacer name="verticalSpacer">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeType">
+               <enum>QSizePolicy::Fixed</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>3</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item row="0" column="0">
+             <spacer name="verticalSpacer_1">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeType">
+               <enum>QSizePolicy::Fixed</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>3</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item row="2" column="0">
+             <spacer name="verticalSpacer_4">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeType">
+               <enum>QSizePolicy::Fixed</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>3</height>
+               </size>
+              </property>
+             </spacer>
             </item>
            </layout>
           </item>
@@ -754,7 +868,7 @@
          </attribute>
          <layout class="QVBoxLayout" name="verticalLayout_2">
           <item>
-           <layout class="QGridLayout" name="gLayout_LibMan" rowstretch="1,3,5,5,5,1,1,1,3,0,5,5,15,1,1,1,3,5,1">
+           <layout class="QGridLayout" name="gLayout_LibMan">
             <item row="6" column="0">
              <widget class="Line" name="line_libman1">
               <property name="orientation">
@@ -768,7 +882,7 @@
                <enum>Qt::Vertical</enum>
               </property>
               <property name="sizeType">
-               <enum>QSizePolicy::MinimumExpanding</enum>
+               <enum>QSizePolicy::Fixed</enum>
               </property>
               <property name="sizeHint" stdset="0">
                <size>
@@ -783,18 +897,27 @@
               <property name="orientation">
                <enum>Qt::Vertical</enum>
               </property>
+              <property name="sizeType">
+               <enum>QSizePolicy::Fixed</enum>
+              </property>
               <property name="sizeHint" stdset="0">
                <size>
                 <width>20</width>
-                <height>40</height>
+                <height>10</height>
                </size>
               </property>
              </spacer>
             </item>
             <item row="10" column="0">
-             <layout class="QGridLayout" name="gLayout_uni" columnstretch="1,10,1">
+             <layout class="QGridLayout" name="gLayout_uni">
               <item row="1" column="1">
                <widget class="QRadioButton" name="rbtn_nf">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
                 <property name="toolTip">
                  <string>Apply the adjustments to the found new files</string>
                 </property>
@@ -814,9 +937,12 @@
                 <property name="orientation">
                  <enum>Qt::Horizontal</enum>
                 </property>
+                <property name="sizeType">
+                 <enum>QSizePolicy::Fixed</enum>
+                </property>
                 <property name="sizeHint" stdset="0">
                  <size>
-                  <width>40</width>
+                  <width>10</width>
                   <height>20</height>
                  </size>
                 </property>
@@ -824,6 +950,12 @@
               </item>
               <item row="0" column="1">
                <widget class="QRadioButton" name="rbtn_lib">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
                 <property name="toolTip">
                  <string>Apply the adjustments to the found files from the track library</string>
                 </property>
@@ -843,9 +975,12 @@
                 <property name="orientation">
                  <enum>Qt::Horizontal</enum>
                 </property>
+                <property name="sizeType">
+                 <enum>QSizePolicy::Fixed</enum>
+                </property>
                 <property name="sizeHint" stdset="0">
                  <size>
-                  <width>40</width>
+                  <width>10</width>
                   <height>20</height>
                  </size>
                 </property>
@@ -855,6 +990,12 @@
             </item>
             <item row="1" column="0">
              <widget class="QLabel" name="lbl_read_dirs_1">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
               <property name="text">
                <string>Inputs</string>
               </property>
@@ -865,6 +1006,12 @@
             </item>
             <item row="8" column="0">
              <widget class="QLabel" name="lbl_file_uni">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
               <property name="text">
                <string>File Manager</string>
               </property>
@@ -875,6 +1022,12 @@
             </item>
             <item row="16" column="0">
              <widget class="QLabel" name="lbl_music_sync">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
               <property name="text">
                <string>Music Sync</string>
               </property>
@@ -885,6 +1038,12 @@
             </item>
             <item row="11" column="0">
              <widget class="QPushButton" name="btn_file_uni">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
               <property name="toolTip">
                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Adjust the files from either the track library or the new files directory. Individual adjustments can be turned on/off via the checkboxes below&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
               </property>
@@ -895,6 +1054,12 @@
             </item>
             <item row="3" column="0">
              <widget class="QPushButton" name="btn_read_nf_1">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
               <property name="toolTip">
                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Read the files from the new files directory&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-style:italic;&quot;&gt;Note: &lt;/span&gt;The new files directory can temporarily be overwritten by the input in the text field below&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
               </property>
@@ -908,10 +1073,13 @@
               <property name="orientation">
                <enum>Qt::Vertical</enum>
               </property>
+              <property name="sizeType">
+               <enum>QSizePolicy::Expanding</enum>
+              </property>
               <property name="sizeHint" stdset="0">
                <size>
                 <width>20</width>
-                <height>40</height>
+                <height>10</height>
                </size>
               </property>
              </spacer>
@@ -928,10 +1096,13 @@
               <property name="orientation">
                <enum>Qt::Vertical</enum>
               </property>
+              <property name="sizeType">
+               <enum>QSizePolicy::Fixed</enum>
+              </property>
               <property name="sizeHint" stdset="0">
                <size>
                 <width>20</width>
-                <height>40</height>
+                <height>10</height>
                </size>
               </property>
              </spacer>
@@ -948,6 +1119,12 @@
             </item>
             <item row="17" column="0">
              <widget class="QPushButton" name="btn_sync_music">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
               <property name="toolTip">
                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Copy all .mp3 files from the track library to the music directory.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-style:italic;&quot;&gt;Note: &lt;/span&gt;This feature is intended as a way to sync the track library to your phone without blowing up the storage due to the large file sizes of .wav and .aiff files&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
               </property>
@@ -961,16 +1138,25 @@
               <property name="orientation">
                <enum>Qt::Vertical</enum>
               </property>
+              <property name="sizeType">
+               <enum>QSizePolicy::Fixed</enum>
+              </property>
               <property name="sizeHint" stdset="0">
                <size>
                 <width>20</width>
-                <height>40</height>
+                <height>10</height>
                </size>
               </property>
              </spacer>
             </item>
             <item row="2" column="0">
              <widget class="QPushButton" name="btn_read_lib_1">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
               <property name="toolTip">
                <string>Read the files from the track library (excluding files from the excluded folders)</string>
               </property>
@@ -984,24 +1170,30 @@
               <property name="orientation">
                <enum>Qt::Vertical</enum>
               </property>
+              <property name="sizeType">
+               <enum>QSizePolicy::Fixed</enum>
+              </property>
               <property name="sizeHint" stdset="0">
                <size>
                 <width>20</width>
-                <height>40</height>
+                <height>10</height>
                </size>
               </property>
              </spacer>
             </item>
             <item row="12" column="0">
-             <layout class="QGridLayout" name="gridLayout_adjustfiles" rowstretch="1,1,1,0" columnstretch="1,10,1">
+             <layout class="QGridLayout" name="gridLayout_adjustfiles" rowstretch="0,0,0,0" rowminimumheight="10,10,10,10">
               <item row="0" column="0" rowspan="4">
                <spacer name="horizontalSpacer_7">
                 <property name="orientation">
                  <enum>Qt::Horizontal</enum>
                 </property>
+                <property name="sizeType">
+                 <enum>QSizePolicy::Fixed</enum>
+                </property>
                 <property name="sizeHint" stdset="0">
                  <size>
-                  <width>40</width>
+                  <width>10</width>
                   <height>20</height>
                  </size>
                 </property>
@@ -1009,6 +1201,12 @@
               </item>
               <item row="3" column="1">
                <widget class="QCheckBox" name="cb_samplerate">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
                 <property name="toolTip">
                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Assert whether the bit rate is ≤ 48000 Hz and bit depth is 16 bit. If one of these values is exceeded, the file is converted to 44110 Hz / 48000 Hz and 16 bit&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                 </property>
@@ -1022,6 +1220,12 @@
               </item>
               <item row="1" column="1">
                <widget class="QCheckBox" name="cb_metadata">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
                 <property name="toolTip">
                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Insert the artist name(-s) and title into the metadata.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-style:italic;&quot;&gt;Note: &lt;/span&gt;The artist and title are extracted from the filename, which for this feature to work properly needs to be in the format &lt;span style=&quot; font-style:italic;&quot;&gt;&amp;lt;artist&amp;gt; - &amp;lt;title&amp;gt;&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                 </property>
@@ -1035,6 +1239,12 @@
               </item>
               <item row="0" column="1">
                <widget class="QCheckBox" name="cb_fnames">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
                 <property name="toolTip">
                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Unify the filenames to fit the format &lt;span style=&quot; font-style:italic;&quot;&gt;&amp;lt;Artist&amp;gt; - &amp;lt;Title&amp;gt;&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-style:italic;&quot;&gt;For the interested reader: &lt;/span&gt;This feature does the following:&lt;/p&gt;&lt;p&gt;- Remove common obsolete strings such as &amp;quot;premiere&amp;quot; or &amp;quot;free DL&amp;quot;&lt;/p&gt;&lt;p&gt;- Remove content within square brackets (except for if they contain the words &amp;quot;Remix&amp;quot;, &amp;quot;Edit&amp;quot; or &amp;quot;Mashup&amp;quot; or &amp;quot;Bootleg&amp;quot;)&lt;/p&gt;&lt;p&gt;- Remove round brackets which contain the words &amp;quot;ft&amp;quot;, &amp;quot;prod&amp;quot;, &amp;quot;feat&amp;quot; or &amp;quot;records&amp;quot;&lt;/p&gt;&lt;p&gt;- Converts the string to title format&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                 </property>
@@ -1051,9 +1261,12 @@
                 <property name="orientation">
                  <enum>Qt::Horizontal</enum>
                 </property>
+                <property name="sizeType">
+                 <enum>QSizePolicy::Fixed</enum>
+                </property>
                 <property name="sizeHint" stdset="0">
                  <size>
-                  <width>40</width>
+                  <width>10</width>
                   <height>20</height>
                  </size>
                 </property>
@@ -1061,6 +1274,12 @@
               </item>
               <item row="2" column="1">
                <widget class="QCheckBox" name="cb_genre">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
                 <property name="toolTip">
                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Insert the genre into the metadata. The genre is assumed to be the name of the current &lt;span style=&quot; font-style:italic;&quot;&gt;parent directory&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                 </property>
@@ -1365,6 +1584,12 @@
        <layout class="QGridLayout" name="glayout_msg" rowstretch="1,100,1" columnstretch="1">
         <item row="0" column="0">
          <widget class="QLabel" name="lbl_msg">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
           <property name="font">
            <font>
             <pointsize>10</pointsize>
@@ -1378,10 +1603,16 @@
         <item row="2" column="0">
          <widget class="QProgressBar" name="progressBar">
           <property name="sizePolicy">
-           <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>15</height>
+           </size>
           </property>
           <property name="value">
            <number>0</number>
@@ -1402,6 +1633,30 @@
           <property name="enabled">
            <bool>true</bool>
           </property>
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>70</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>150</height>
+           </size>
+          </property>
+          <property name="sizeIncrement">
+           <size>
+            <width>0</width>
+            <height>0</height>
+           </size>
+          </property>
           <property name="readOnly">
            <bool>true</bool>
           </property>
@@ -1418,7 +1673,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1180</width>
+     <width>1166</width>
      <height>22</height>
     </rect>
    </property>
@@ -1472,9 +1727,9 @@
  <resources/>
  <connections/>
  <buttongroups>
-  <buttongroup name="BtnGroup_goal_fld"/>
-  <buttongroup name="BtnGroup_adj_files"/>
-  <buttongroup name="BtnGroup_extr_pl"/>
   <buttongroup name="BtnGroup_dl_hist"/>
+  <buttongroup name="BtnGroup_goal_fld"/>
+  <buttongroup name="BtnGroup_extr_pl"/>
+  <buttongroup name="BtnGroup_adj_files"/>
  </buttongroups>
 </ui>
