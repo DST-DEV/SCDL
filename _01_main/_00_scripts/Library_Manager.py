@@ -17,7 +17,12 @@ import shutil
 import difflib
 import pathlib
 from pathlib import Path
+from pathlib import PurePath
 import time
+
+#GUI Imports
+import PyQt6.QtWidgets as QTW
+from PyQt6.QtCore import Qt
 
 #%% LibManager Class
 class LibManager:
@@ -926,33 +931,40 @@ class LibManager:
                     #If the goal directory is a folder, then move the file 
                     # to this folder (Note: if there is already a file with
                     #the same name in the goal folder, then it is replaced)
-                    
+
                     #Check if goal directory exists and whether it should be 
                     #created if it doesn't exist
-                    if (row.create_missing_dir 
-                        or os.path.isdir (Path(self.lib_dir, row.goal_dir))):
-                        
-                        try:
-                            if not os.path.isdir (Path(self.lib_dir, row.goal_dir)):
-                                os.mkdir(self.lib_dir, row.goal_dir)
+                    if not os.path.isdir (Path(self.lib_dir, row.goal_dir)):
+                        if not row.create_missing_dir:
                             
-                            os.replace(file_path, 
-                                       Path(self.lib_dir, 
-                                            row.goal_dir, 
-                                            file_path.name))
-                        except Exception as e:
-                            self.file_df = self.add_exception(
-                                self.file_df, col = "exceptions",
-                                msg=f"Copying error for goal directory {row.goal_dir}: "
-                                    + f"{e.__class__} : {e}", 
-                                index = index)
-                        else:
-                            self.file_df = self.add_exception(
-                                self.file_df, col = "status",
-                                msg=f"Moved to {row.goal_dir}", 
-                                index = index)
+                            msg = f"The folder {row.goal_dir} does not exist."\
+                                 " Should it be created?"
+                            dlg = MsgDialog(msg)
+                            dlg.exec()
+                            
+                            if not dlg._response:
+                                self.file_df.loc[index, "status"] = \
+                                    "Goal directory not found"
+                                continue #continue with next track
+                            
+                        os.mkdir(Path(self.lib_dir, row.goal_dir))
+                        
+                    try:
+                        os.replace(file_path, 
+                                   Path(self.lib_dir, 
+                                        row.goal_dir, 
+                                        file_path.name))
+                    except Exception as e:
+                        self.file_df = self.add_exception(
+                            self.file_df, col = "exceptions",
+                            msg=f"Copying error for goal directory {row.goal_dir}: "
+                                + f"{e.__class__} : {e}", 
+                            index = index)
                     else:
-                        self.file_df.loc[index, "status"] = "Goal directory not found"
+                        self.file_df = self.add_exception(
+                            self.file_df, col = "status",
+                            msg=f"Moved to {row.goal_dir}", 
+                            index = index)
             else:
                 self.file_df = self.add_exception(
                     self.file_df, col = "exceptions",
@@ -1066,6 +1078,43 @@ class LibManager:
             raise ValueError("no valid index or search key and search column provided")
             
         return df
+    
+#%% Message Dialog
+
+class MsgDialog(QTW.QDialog):
+    def __init__(self, message: str, parent=None):
+        super().__init__(parent)
+        
+        # Set up label and button box
+        self.label = QTW.QLabel(message, self)
+        self.label.setWordWrap(True)  # Allow text to wrap for proper sizing
+        self.buttonBox = QTW.QDialogButtonBox(
+            QTW.QDialogButtonBox.StandardButton.Yes 
+            | QTW.QDialogButtonBox.StandardButton.No,
+            self)
+
+        # Set up the layout
+        layout = QTW.QVBoxLayout()
+        layout.addWidget(self.label)
+        layout.addWidget(self.buttonBox)
+        self.setLayout(layout)
+
+        # Adjust size to fit content
+        self.adjustSize()
+        
+        #Setup buttons and response variable
+        self._response = False 
+        self.buttonBox.accepted.connect(self.on_accept)
+        self.buttonBox.rejected.connect(self.on_reject)
+        
+    def on_accept (self):
+        self._response = True
+        self.accept()
+        
+    def on_reject (self):
+        self._response = False
+        self.reject()
+    
 if __name__ == '__main__':
     # nf_dir = Path("C:/Users", os.environ.get("USERNAME"), "Downloads", "music")
     # path = Path("C:/Users/davis/00_data/04_Track_Library/00_Organization/00_New_files")
@@ -1073,11 +1122,4 @@ if __name__ == '__main__':
     # nf_dir = r"C:\Users\davis\Downloads\SCDL test\00_General\new files"
     # lib_dir = r"C:\Users\davis\Downloads\SCDL test"
     # LibMan = LibManager(lib_dir, nf_dir)
-    nf_dir = r"C:\Users\davis\Downloads\Souncloud Download\test_files"
-    LibMan = LibManager(nf_dir=nf_dir)
-    tdf = LibMan.adjust_sample_rate()
-    
-
-    
-    
-    
+    pass

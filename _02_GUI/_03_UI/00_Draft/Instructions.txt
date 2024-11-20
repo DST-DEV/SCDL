@@ -14,3 +14,4 @@ For instructions see the "Qt Designer for PyQt6.htm" file
 py -3.11 -m PyQt6.uic.pyuic -x Main.ui -o Main.py
 py -3.11 -m PyQt6.uic.pyuic -x Settings.ui -o UI_Settings_window.py
 py -3.11 -m PyQt6.uic.pyuic -x DL_History_Editor.ui -o UI_DL_History_Editor_window.py
+py -3.11 -m PyQt6.uic.pyuic -x Msg_Dialog.ui -o Msg_Dialog.py
