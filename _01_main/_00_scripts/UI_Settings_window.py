@@ -180,7 +180,7 @@ class Ui_SettingsDialog(object):
 
     def retranslateUi(self, SettingsDialog):
         _translate = QtCore.QCoreApplication.translate
-        SettingsDialog.setWindowTitle(_translate("SettingsDialog", "Dialog"))
+        SettingsDialog.setWindowTitle(_translate("SettingsDialog", "Settings"))
         self.lbl_settings.setText(_translate("SettingsDialog", "Webdriver Settings"))
         self.lbl_scuser.setText(_translate("SettingsDialog", "Soundcloud Account Number"))
         self.lineEdit_scuser.setToolTip(_translate("SettingsDialog", "<html><head/><body><p>This is the profile URL of the soundcloud account from which the tracks should be extracted.</p><p>It can be found on the profile page either in the edit window or simply taken from the link to the soundcloud profile (https://soundcloud.com/&lt;profile url&gt;)</p></body></html>"))

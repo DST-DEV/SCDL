@@ -44,7 +44,14 @@ if __name__ == "__main__":
     app = QTW.QApplication(sys.argv)
     message = "This is a r"
     dialog = MsgDialog(message)
+    
+    
+    print("Starting message box now")
     dialog.exec()
+    if dialog._response:
+        print("Positive response")
+    else:
+        print("Negative response")
 
 
 

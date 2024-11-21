@@ -75,7 +75,8 @@ class LibManager:
                 folder of all found files
         """
         self.lib_df = self.read_files(self.lib_dir,
-                                      update_progress_callback = update_progress_callback)
+                                      update_progress_callback 
+                                      = update_progress_callback)
         return self.lib_df
             
     def read_files(self, directory, update_progress_callback=False, 
@@ -106,40 +107,49 @@ class LibManager:
         else:
             excluded_folders = self.excl_lib_folders
         
-        doc = pd.DataFrame(columns=["folder", "filename", "extension"])
+        files_array = np.array(["folder","filename","ext"])[np.newaxis,:]
         
-        n_files = 0
+        n_folders = 0
         for root, _, files in os.walk(directory):
-            n_files+=1
+            if not any(excluded in root for excluded in excluded_folders 
+                   if excluded!=""):
+                n_folders+=1
         
         #Search for all mp3 & wav files in the directory, including subdirectories
         i = 0
         prog = 0
+        
+        results = []
+
+        # Use os.walk with early exclusion of unwanted folders
         for root, _, files in os.walk(directory):
-            #Exclude the excluded folders:
-            if not any(excl in root for excl in excluded_folders if excl!=""):        
-                music_files = np.array([[Path(f).stem, Path(f).suffix] 
-                                        for f in files 
-                                        if f.endswith(".mp3") 
-                                        or f.endswith(".wav")])
-                
-                if music_files.shape[0]>0:            #check if there are files
-                    doc = pd.concat([doc,
-                               pd.DataFrame(
-                                   dict(folder=[root]*len(music_files), 
-                                        filename = music_files[:,0],
-                                        extension = music_files[:,1]
-                                        )
-                                   )
-                               ])
+            #Skip the excluded folders:
+            if any(excluded in root for excluded in excluded_folders 
+                   if excluded!=""):
+                continue
+
+            # Filter relevant files and collect their attributes
+            for file in files:
+                if file.endswith((".mp3", ".wav")):
+                    relative_folder = str(Path(root).relative_to(directory))
+                    file_stem = Path(file).stem
+                    file_ext = Path(file).suffix
+                    results.append((relative_folder, file_stem, file_ext))
+            
             #Update progress bar
             if callable(update_progress_callback):
                 i +=1
-                if i>=.0499*n_files:
-                    prog +=round(i/n_files*100,3)
+                if i>=.0499*n_folders:
+                    prog +=round(i/n_folders*100,3)
                     i=0
                     update_progress_callback(int(np.ceil(prog)))
-        return doc.reset_index(drop=True)    
+                    
+        # Create a DataFrame directly from the results list
+        doc = pd.DataFrame(results, columns=["folder", "filename", "extension"])
+        doc["directory"] = str(directory)
+        doc = doc.loc[:, ["directory", "folder", "filename", "extension"]]
+        
+        return doc
     
     def read_tracks(self, update_progress_callback=False, 
                     directory=None, mode="replace"):
@@ -310,7 +320,8 @@ class LibManager:
                 #standarize filename
                 filename, ext = self.adjust_fname (row["filename"] 
                                                    + row["extension"], 
-                                                   row["folder"])
+                                                   Path(row["directory"], 
+                                                        row["folder"]))
                 df.loc[index, "old_filename"] = row["filename"]
                 df.loc[index, "filename"] = filename
             else:
@@ -318,7 +329,8 @@ class LibManager:
                 
             if adj_art_tit or adj_genre:
                 #Adjust metadata
-                file_path = os.path.join(row["folder"], filename + ext)
+                file_path = Path(row["directory"], row["folder"], 
+                                 filename + ext)
                 try:
                     self.set_metadata_auto(file_path,
                                            adj_art_tit=adj_art_tit,
@@ -543,7 +555,8 @@ class LibManager:
         
         #Iterate over files
         for index, row in tracks.loc[tracks.extension ==".wav"].iterrows():
-            filepath = Path(row.folder, row.filename + ".wav")
+            filepath = Path(row["directory"], row["folder"], 
+                            row["filename"] + ".wav")
             
             try:
                 self.adjust_sr(filepath, max_sr, std_sr)
@@ -890,7 +903,7 @@ class LibManager:
             if "include" in file_df.columns and row.include==False: continue
             
             #Determine the path to the file
-            file_path = Path(self.nf_dir, row["folder"], 
+            file_path = Path(row["directory"], row["folder"], 
                              row["filename"] + row["extension"])
             
             #If a goal directory is specified
@@ -948,7 +961,6 @@ class LibManager:
                                 continue #continue with next track
                             
                         os.mkdir(Path(self.lib_dir, row.goal_dir))
-                        
                     try:
                         os.replace(file_path, 
                                    Path(self.lib_dir, 

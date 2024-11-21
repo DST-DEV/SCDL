@@ -306,15 +306,15 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
             self.SCDL.LinkExt.track_df = self.SCDL.track_df
         elif self.tbl_left_variable == "library":
             data = self.tbl_left._data.copy(deep=True)
-            #Check if there is a common library path prefix (in this case 
-            # this prefix was removed when displaying the data in the tables)
-            if hasattr(self, 'common_lib_path'):
-                # Ensure the prefix ends with a directory separator
-                if not self.common_lib_path.endswith(os.path.sep):
-                    self.common_lib_path += os.path.sep
+            # #Check if there is a common library path prefix (in this case 
+            # # this prefix was removed when displaying the data in the tables)
+            # if hasattr(self, 'common_lib_path'):
+            #     # Ensure the prefix ends with a directory separator
+            #     if not self.common_lib_path.endswith(os.path.sep):
+            #         self.common_lib_path += os.path.sep
                 
-                # Add the prefix back to each path
-                data.folder = self.common_lib_path + data.folder
+            #     # Add the prefix back to each path
+            #     data.folder = self.common_lib_path + data.folder
             
             self.SCDL.LibMan.lib_df = data
         elif self.tbl_left_variable == "new_files":
@@ -546,22 +546,22 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         if not type(data)==pd.core.frame.DataFrame:
             return
         
-        if variable == "library":
-            #Find the common prefix of all folder paths
-            common_lib_path = os.path.commonprefix(list(data.folder))
+        # if variable == "library":
+        #     #Find the common prefix of all folder paths
+        #     common_lib_path = os.path.commonprefix(list(data.folder))
             
-            if common_lib_path:
-                self.common_lib_path = common_lib_path
+        #     if common_lib_path:
+        #         self.common_lib_path = common_lib_path
 
-                #Ensure the common prefix ends at a directory separator
-                # This prevents cases where the prefix might cut off mid-directory
-                if not self.common_lib_path.endswith(os.path.sep):
-                    self.common_lib_path = \
-                    os.path.dirname(self.common_lib_path) + os.path.sep
+        #         #Ensure the common prefix ends at a directory separator
+        #         # This prevents cases where the prefix might cut off mid-directory
+        #         if not self.common_lib_path.endswith(os.path.sep):
+        #             self.common_lib_path = \
+        #             os.path.dirname(self.common_lib_path) + os.path.sep
     
-                #Remove the common prefix from each path
-                data = data.copy(deep=True)
-                data.folder = data.folder.str[len(self.common_lib_path):]
+        #         #Remove the common prefix from each path
+        #         data = data.copy(deep=True)
+        #         data.folder = data.folder.str[len(self.common_lib_path):]
         
         if lr == "left" or lr == "l":
             self.tbl_left.change_data (data, insert_checkboxes=True)
@@ -614,6 +614,9 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
                 for col_ind in cols.get_indexer(['folder', "old_filename", 
                                                          "extension", "status", 
                                                          "create_missing_dir"]):
+                    tbl_view.hideColumn(col_ind)
+            elif variable == "library":
+                for col_ind in cols.get_indexer(["directory"]):
                     tbl_view.hideColumn(col_ind)
         else:
             #Unhide all columns (some might be hidden from earlier calls of this function)
