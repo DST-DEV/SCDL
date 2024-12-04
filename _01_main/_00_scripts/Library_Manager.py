@@ -481,6 +481,10 @@ class LibManager:
             else:
                 raise ValueError("mode must be either 'new' or 'lib' or "
                                  + "tracks parameter must be a dataframe")
+                
+            if not "status" in tracks.columns:
+                tracks["status"] = ""
+                
         #If tracks is a dataframe, it is processed. If it is empty, the 
         # track_df or lib_df are used (if a mode is specified)
         elif type(tracks)==pd.core.frame.DataFrame:
@@ -507,9 +511,8 @@ class LibManager:
             else:
                 save_mode = "None"
                 
-        if not "status" in tracks.columns:
-            tracks["status"] = ""
-        
+            if not "status" in tracks.columns:
+                tracks["status"] = ""
                 
         #If tracks is a non-empty string, it is converted to a Path and it is
         # checked whether the Path exists and it is a wav file
@@ -608,25 +611,21 @@ class LibManager:
             None
         """
         
-        #Read the file  
-        sf = soundfile.SoundFile(filepath, 'r+')
-        sr = sf.samplerate
-        bd = sf.subtype.replace("PCM_", "")
-        bd = int(bd) if not bd=="FLOAT" else 32 
-        #Note: The bid depth of 32 bit files cant be read correctly 
-        # (always returns "FLOAT"). Hence this workaround
-        
-        data = sf.read()
-        
+        #Read the file (Note: rb mode is essential here to not damage the file) 
+        with soundfile.SoundFile(filepath, 'rb') as sf:
+            bd = sf.subtype.replace("PCM_", "")
+            bd = int(bd) if not bd=="FLOAT" else 32 
+            sr = sf.samplerate
+            data= sf.read()
+            #Note: The bid depth of 32 bit files cant be read correctly 
+            # (always returns "FLOAT"). Hence this workaround
+
         if sr>max_sr:
             # Resample the data
             resampled_data = resample(data, int(len(data)*(std_sr/sr)))
             soundfile.write(filepath, resampled_data, std_sr, subtype='PCM_16')
         elif bd > 16:   #If the bit depth is larger than 16 bit
             soundfile.write(filepath, data, sr, subtype='PCM_16')
-            
-        sf.close()
-
             
     def set_metadata_auto (self, filepath, genre = "", 
                            adj_genre=False, adj_art_tit=True,

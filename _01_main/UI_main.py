@@ -149,9 +149,9 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
             lambda callback: self.GUI_read_nf(page=1, 
                                               update_progress_callback=
                                                  callback)))
-        # self.btn_file_uni.clicked.connect(lambda: self.run_fcn_thread(
-        #                                                 self.GUI_prep_files))
-        self.btn_file_uni.clicked.connect(self.GUI_prep_files)
+        self.btn_file_uni.clicked.connect(lambda: self.run_fcn_thread(
+                                                        self.GUI_prep_files))
+        # self.btn_file_uni.clicked.connect(self.GUI_prep_files)
         self.btn_sync_music.clicked.connect(self.SCDL.LibMan.sync_music_lib)
         
         #LibUpdater Buttons
@@ -945,7 +945,6 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
                 prog_bounds = [prog_bounds[1],100] if check_sr else [0,100]
             self.SCDL.LibMan.adjust_sample_rate(mode=df, 
                                                 max_sr=48000, std_sr=44100, 
-                                                auto_genre=False,
                                                 update_progress_callback = 
                                                   update_progress_callback,
                                                 prog_bounds=prog_bounds)
