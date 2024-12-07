@@ -198,7 +198,7 @@ class LibManager:
                                  exceptions=[""]*n_files,
                                  status=[""]*n_files,
                                  create_missing_dir=[False]*n_files)
-        file_df.reindex(columns=["folder", "filename", "old_filename", 
+        file_df.reindex(columns=["directory", "folder", "filename", "old_filename", 
                                  "goal_dir", "goal_name", "extension", 
                                  "exceptions", "status", "create_missing_dir"])
         

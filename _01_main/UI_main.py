@@ -611,9 +611,9 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
                                                          "exceptions"]):
                     tbl_view.hideColumn(col_ind)
             elif variable == "new_files":
-                for col_ind in cols.get_indexer(['folder', "old_filename", 
-                                                         "extension", "status", 
-                                                         "create_missing_dir"]):
+                for col_ind in cols.get_indexer(["directory", "folder", 
+                                                 "old_filename", "status", 
+                                                 "create_missing_dir"]):
                     tbl_view.hideColumn(col_ind)
             elif variable == "library":
                 for col_ind in cols.get_indexer(["directory"]):
