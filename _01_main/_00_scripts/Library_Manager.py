@@ -6,6 +6,7 @@ import pandas as pd
 
 #Soundfile adjustment imports
 import music_tag
+import wave
 import soundfile
 import unicodedata
 from scipy.signal import resample
@@ -211,39 +212,39 @@ class LibManager:
         elif mode=="independent":
             return file_df
     
-    def prepare_new_files(self, update_progress_callback=False):
-        """Runs the prepare files function for the new files dataframe
+    # def prepare_new_files(self, update_progress_callback=False):
+    #     """Runs the prepare files function for the new files dataframe
         
-        Parameters:
-            update_progress_callback (function handle - optional):
-                Function handle to return the progress (Intended for usage in 
-                conjunction with PyQt6 signals). 
+    #     Parameters:
+    #         update_progress_callback (function handle - optional):
+    #             Function handle to return the progress (Intended for usage in 
+    #             conjunction with PyQt6 signals). 
                 
-        Returns:
-            self.file_df (pandas DataFrame): 
-                Pandas Dataframe with the updated files
-        """
+    #     Returns:
+    #         self.file_df (pandas DataFrame): 
+    #             Pandas Dataframe with the updated files
+    #     """
         
-        self.file_df = self.prepare_files(self.file_df.copy(deep=True), 
-                                          update_progress_callback)
-        return self.file_df
+    #     self.file_df = self.prepare_files(self.file_df.copy(deep=True), 
+    #                                       update_progress_callback)
+    #     return self.file_df
     
-    def prepare_lib_files (self, update_progress_callback=False):
-        """Runs the prepare files function for the library files dataframe
+    # def prepare_lib_files (self, update_progress_callback=False):
+    #     """Runs the prepare files function for the library files dataframe
         
-        Parameters:
-            update_progress_callback (function handle - optional):
-                Function handle to return the progress (Intended for usage in 
-                conjunction with PyQt6 signals). 
+    #     Parameters:
+    #         update_progress_callback (function handle - optional):
+    #             Function handle to return the progress (Intended for usage in 
+    #             conjunction with PyQt6 signals). 
                 
-        Returns:
-            self.lib_df (pandas DataFrame): 
-                Pandas Dataframe with the updated files
-        """
+    #     Returns:
+    #         self.lib_df (pandas DataFrame): 
+    #             Pandas Dataframe with the updated files
+    #     """
         
-        self.lib_df = self.prepare_files(self.lib_df.copy(deep=True), 
-                                         update_progress_callback)
-        return self.lib_df
+    #     self.lib_df = self.prepare_files(self.lib_df.copy(deep=True), 
+    #                                      update_progress_callback)
+    #     return self.lib_df
     
     def prepare_files (self, df_sel=None,
                        adj_fnames = True,
@@ -516,21 +517,12 @@ class LibManager:
                 
         #If tracks is a non-empty string, it is converted to a Path and it is
         # checked whether the Path exists and it is a wav file
-        elif type(tracks)==str and not tracks=="":
-            filepath = Path(tracks)
-            
-            if filepath.exists() and filepath.suffix == ".wav":
-                self.adjust_sr(filepath, max_sr, std_sr)
-                
-                #Update progressbar
-                if callable(update_progress_callback):
-                    update_progress_callback(prog_bounds[1])
-                return
-            else:
-                raise OSError("Filepath doesn't point to a wav file")
         #If tracks is a Path it is checked whether the Path exists and it is a 
         # wav file
-        elif type(tracks)== type(Path()):   
+        elif (type(tracks)==str and not tracks=="") or \
+            type(tracks)== type(Path()):
+            filepath = Path(tracks) if type(tracks)== str else tracks
+            
             if filepath.exists() and filepath.suffix == ".wav":
                 self.adjust_sr(filepath, max_sr, std_sr)
                 
@@ -616,6 +608,7 @@ class LibManager:
             bd = sf.subtype.replace("PCM_", "")
             bd = int(bd) if not bd=="FLOAT" else 32 
             sr = sf.samplerate
+            metadata = sf.copy_metadata()
             data= sf.read()
             #Note: The bid depth of 32 bit files cant be read correctly 
             # (always returns "FLOAT"). Hence this workaround
@@ -624,8 +617,10 @@ class LibManager:
             # Resample the data
             resampled_data = resample(data, int(len(data)*(std_sr/sr)))
             soundfile.write(filepath, resampled_data, std_sr, subtype='PCM_16')
+            self.set_metadata(filepath, **metadata)
         elif bd > 16:   #If the bit depth is larger than 16 bit
             soundfile.write(filepath, data, sr, subtype='PCM_16')
+            self.set_metadata(filepath, **metadata)
             
     def set_metadata_auto (self, filepath, genre = "", 
                            adj_genre=False, adj_art_tit=True,
@@ -729,15 +724,23 @@ class LibManager:
                 
             file.save()
         elif filepath.suffix == ".wav":
-            sf = soundfile.SoundFile(filepath, 'r+')
-            data = sf.read()
-            
-            for key, value in kwargs.items():
-                if key in valid_keys:
-                    sf.__setattr__(key, value)
-            
-            sf.write(data)
-            sf.close()
+            #Open file with wave package and rewrite contents (gets rid of any problematic 
+            # header data)
+            filepath_str = str(filepath) #wave package needs string path
+            with wave.open(filepath_str, 'rb') as f_original:
+                # Read the original audio data
+                params = f_original.getparams()
+                audio_frames = f_original.readframes(params.nframes)
+
+            with wave.open(filepath_str, 'wb') as f_adjusted:
+                f_adjusted.setparams(params)
+                f_adjusted.writeframes(audio_frames)
+
+            #Insert metadata with soundfile package
+            with soundfile.SoundFile(filepath, 'r+') as sf:
+                for key, value in kwargs.items():
+                    if key in valid_keys:
+                        sf.__setattr__(key, value)
         else: 
             raise ValueError(f"Invalid file format: {filepath.suffix}")
 
