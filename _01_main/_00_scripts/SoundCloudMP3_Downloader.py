@@ -93,21 +93,36 @@ class SoundcloudMP3Downloader:
             None 
         """
         
-        xpath_reject = "//button[@class='fc-button fc-cta-do-not-consent "\
-        + "fc-secondary-button']/p[@class='fc-button-label']"
-        
+        xpath_manage = "//button[@id='ez-manage-settings']"
+        xpath_cookies = "//label[@class='ez-cmp-purpose-legitimate-interest "\
+                        + "ez-cmp-checkbox-label']"\
+                        + "/input[@class='ez-cmp-li-checkbox ez-cmp-checkbox']"
+
         #Wait until cookie window appears
         try:
             WebDriverWait(self.driver, self.timeout).until(
                 EC.presence_of_element_located(
-                    (By.XPATH, xpath_reject)))
+                    (By.XPATH, xpath_manage)))
         except TimeoutException:
             print ("Loading took too much time!")
         except Exception as e:
             print (e)
             
         try:
-            self.driver.find_element(By.XPATH, xpath_reject).click()
+            #Click on "manage"
+            self.driver.find_element(By.XPATH, xpath_manage).click()
+            
+            #Reject legitimate interest
+            try:
+                cookie_elements = self.driver.find_elements(By.XPATH, 
+                                                            xpath_cookies)
+                for cookie_el in cookie_elements: cookie_el.click()
+            except Exception as e: 
+                print(e)
+                
+            #Save settings
+            self.driver.find_element(By.XPATH, 
+                                     "//button[@id='ez-save-settings']").click()
             self.return_og_window()
         except Exception as e: 
             print(e)
@@ -200,9 +215,7 @@ class SoundcloudMP3Downloader:
                 EC.presence_of_element_located(
                     (By.XPATH, "//a[@class='btn btn-success']"))
                 )
-            
-            #Scroll down to DL button
-            # self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight)")
+            self.driver.implicitly_wait(.5) #To ensure that the website has enough time to react
 
         #Add Track to tracklist (incl. exceptions/errors)
         except TimeoutException:
