@@ -162,7 +162,7 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
                                               update_progress_callback=
                                                  callback)))
         self.btn_goalfld_search.clicked.connect(self.GUI_find_goal_fld)
-        self.btn_del_ex_files.clicked.connect(self.GUI_del_doubles_lib)
+        self.btn_del_ex_files.clicked.connect(self.GUI_del_doubles)
         self.btn_reset_goalfld.clicked.connect(self.GUI_reset_goal_fld)
         self.btn_move_files.clicked.connect(self.GUI_move_files)
         
@@ -611,7 +611,7 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
                                                          "exceptions"]):
                     tbl_view.hideColumn(col_ind)
             elif variable == "new_files":
-                for col_ind in cols.get_indexer(["directory", "folder", 
+                for col_ind in cols.get_indexer(["directory", "goal_dir",
                                                  "old_filename", "status", 
                                                  "create_missing_dir"]):
                     tbl_view.hideColumn(col_ind)
@@ -1005,7 +1005,7 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         #Update table display
         self.update_tbl_display (lr="right", variable = "New Files")
     
-    def GUI_del_doubles_lib(self):
+    def GUI_del_doubles(self):
         """Deletes the files in the file_df for which a corresponding file in 
         the library was found (Looks up the goal folder and goal filename in 
         the file_df). 
@@ -1016,10 +1016,18 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         Returns:
             None
         """
-        self.SCDL.LibMan.del_doubles()
+        if self.rbtn_deldoub_lib.isChecked():
+           df = "lib"
+        elif self.rbtn_deldoub_nf.isChecked():
+           df = "nf"
+        else:
+           df = "ask"
+
+        self.SCDL.LibMan.del_doubles(df_sel=df)
         
         #Update table display
         self.update_tbl_display (lr="right", variable = "New Files")
+        self.update_tbl_display (lr="left", variable = "Library Files")
     
     def GUI_reset_goal_fld (self):
         """Resets the found goal folder and goal filename

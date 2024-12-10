@@ -12,13 +12,13 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 class Ui_MsgDialog(object):
     def setupUi(self, MsgDialog):
         MsgDialog.setObjectName("MsgDialog")
-        MsgDialog.resize(300, 150)
+        MsgDialog.resize(331, 120)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Preferred, QtWidgets.QSizePolicy.Policy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(MsgDialog.sizePolicy().hasHeightForWidth())
         MsgDialog.setSizePolicy(sizePolicy)
-        MsgDialog.setMinimumSize(QtCore.QSize(200, 120))
+        MsgDialog.setMinimumSize(QtCore.QSize(300, 100))
         MsgDialog.setMaximumSize(QtCore.QSize(500, 200))
         self.verticalLayout_2 = QtWidgets.QVBoxLayout(MsgDialog)
         self.verticalLayout_2.setObjectName("verticalLayout_2")
@@ -39,6 +39,7 @@ class Ui_MsgDialog(object):
         sizePolicy.setHeightForWidth(self.msg_lbl.sizePolicy().hasHeightForWidth())
         self.msg_lbl.setSizePolicy(sizePolicy)
         self.msg_lbl.setAlignment(QtCore.Qt.AlignmentFlag.AlignHCenter|QtCore.Qt.AlignmentFlag.AlignTop)
+        self.msg_lbl.setWordWrap(True)
         self.msg_lbl.setObjectName("msg_lbl")
         self.verticalLayout.addWidget(self.msg_lbl)
         self.buttonBox = QtWidgets.QDialogButtonBox(parent=self.verticalWidget)
@@ -47,8 +48,9 @@ class Ui_MsgDialog(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.buttonBox.sizePolicy().hasHeightForWidth())
         self.buttonBox.setSizePolicy(sizePolicy)
-        self.buttonBox.setOrientation(QtCore.Qt.Orientation.Vertical)
+        self.buttonBox.setOrientation(QtCore.Qt.Orientation.Horizontal)
         self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.StandardButton.No|QtWidgets.QDialogButtonBox.StandardButton.Yes)
+        self.buttonBox.setCenterButtons(False)
         self.buttonBox.setObjectName("buttonBox")
         self.verticalLayout.addWidget(self.buttonBox)
         self.verticalLayout_2.addWidget(self.verticalWidget)
@@ -60,7 +62,7 @@ class Ui_MsgDialog(object):
 
     def retranslateUi(self, MsgDialog):
         _translate = QtCore.QCoreApplication.translate
-        MsgDialog.setWindowTitle(_translate("MsgDialog", "Download History Editor"))
+        MsgDialog.setWindowTitle(_translate("MsgDialog", "Message window"))
         self.msg_lbl.setText(_translate("MsgDialog", "TextLabel"))
 
 

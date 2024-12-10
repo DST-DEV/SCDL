@@ -23,7 +23,17 @@ import time
 
 #GUI Imports
 import PyQt6.QtWidgets as QTW
+import PyQt6.QtCore as QTC
 from PyQt6.QtCore import Qt
+
+if __name__ == "__main__": 
+    from Msg_Dialog import Ui_MsgDialog
+else:
+    #If file is imported, use relative import
+    from .Msg_Dialog import Ui_MsgDialog
+
+
+
 
 #%% LibManager Class
 class LibManager:
@@ -55,10 +65,12 @@ class LibManager:
         self.excl_lib_folders = excl_lib_folders
         
         self.file_df = pd.DataFrame(columns=["folder", "filename", "old_filename", 
-                                             "goal_dir", "goal_name", "extension", 
+                                             "goal_dir", "goal_fld", "goal_name", 
+                                             "extension", 
                                              "exceptions", "status", 
                                              "create_missing_dir"])
         self.lib_df = pd.DataFrame(columns=["folder", "filename", "extension"])
+        
 
 
     def read_dir (self, update_progress_callback=False):
@@ -200,7 +212,7 @@ class LibManager:
                                  status=[""]*n_files,
                                  create_missing_dir=[False]*n_files)
         file_df.reindex(columns=["directory", "folder", "filename", "old_filename", 
-                                 "goal_dir", "goal_name", "extension", 
+                                 "goal_dir", "goal_fld", "goal_name", "extension", 
                                  "exceptions", "status", "create_missing_dir"])
         
         if mode == "append":
@@ -283,16 +295,15 @@ class LibManager:
                 updated version of the file_df dataframe
         
         """
-        if type(df_sel)==str:
+        if  isinstance(df_sel, str) and df_sel in ("nf", "lib"):
             if df_sel == "nf":
                 df = self.file_df.copy(deep=True)
             elif df_sel == "lib":
                 df = self.lib_df.copy(deep=True)
-            else:
-                ValueError("Parameter df_sel must be either a string of value 'nf'",
-                           " or 'lib', or a pandas Dataframe")
-        if type(df_sel) == pd.core.frame.DataFrame:
-            if not df.empty:
+            if df.empty:
+                raise ValueError("Dataframe must be non empty")
+        elif isinstance(df_sel, pd.core.frame.DataFrame):
+            if not df_sel.empty:
                 df = df_sel.copy(deep=True)
             else: 
                 raise ValueError("Dataframe must be non empty")
@@ -335,7 +346,8 @@ class LibManager:
                 try:
                     self.set_metadata_auto(file_path,
                                            adj_art_tit=adj_art_tit,
-                                           adj_genre = adj_genre)
+                                           adj_genre = adj_genre,
+                                           directory=row.directory.values)
                 except Exception as e:
                     df = self.add_exception(
                         df, col = "status",
@@ -622,7 +634,7 @@ class LibManager:
             soundfile.write(filepath, data, sr, subtype='PCM_16')
             self.set_metadata(filepath, **metadata)
             
-    def set_metadata_auto (self, filepath, genre = "", 
+    def set_metadata_auto (self, filepath, directory = "", genre = "", 
                            adj_genre=False, adj_art_tit=True,
                            exp_wav=False):
         """Automatically sets the artist, title and genre metadata of the file
@@ -665,8 +677,9 @@ class LibManager:
         
         if genre or adj_genre:
             if not genre:
+                directory = directory if directory else self.lib_dir
                 genre = str(filepath.parents[0]).replace(
-                    (str(self.lib_dir))+"\\","").replace ("\\"," - ")
+                    (str(directory))+"\\","").replace ("\\"," - ")
             
             if not adj_art_tit:
                 self.set_metadata(filepath, genre=genre)
@@ -806,9 +819,10 @@ class LibManager:
                 #Extract the goal directory from the genre metadata
                 try:
                     file = music_tag.load_file(file_path)
-                    library_dir = Path(str(file["genre"].first).replace(" - ", 
+                    library_fld = Path(str(file["genre"].first).replace(" - ", 
                                                                         "/"))
-                    file_df.loc[index, "goal_dir"]=str(library_dir)
+                    file_df.loc[index, "goal_dir"]=str(self.lib_dir)
+                    file_df.loc[index, "goal_fld"]=str(library_fld)
                 except Exception as e:
                     file_df = self.add_exception(
                         file_df, col = "status",
@@ -823,11 +837,10 @@ class LibManager:
                     res = lib_df.loc[lib_df.filename==closest_match[0]]
                     
                     #Only use first match
-                    res_dir = res.folder.to_list()[0]
-                    res_name = res.filename.to_list()[0]\
-                               + res.extension.to_list()[0]
-                    
-                    res_dir = res_dir.replace(str(self.lib_dir) + "\\", "")
+                    file_df.loc[index, "goal_dir"] = res.directory.to_list()[0]
+                    file_df.loc[index, "goal_fld"] = res.folder.to_list()[0]
+                    file_df.loc[index, "goal_name"] = res.filename.to_list()[0]\
+                                                    + res.extension.to_list()[0]
                     
                     #Use all matches that were found
                     # if res.shape[0]==1:
@@ -839,42 +852,92 @@ class LibManager:
                     #                      + row.filename
                     #                      + row.extension
                     #                      for i,row in res.iterrows()])
-                               
-                    file_df.loc[index, "goal_dir"] = res_dir
-                    file_df.loc[index, "goal_name"] = res_name
             else:
-                raise ValueError("mode must me either 'metadata' or 'namesearch,"
-                                 f" not {mode}")
+                raise ValueError("mode must me either 'metadata' or "
+                                 + f"'namesearch, not {mode}")
         
         self.file_df = file_df
         return file_df
     
-    def del_doubles (self, file_df=None):
+    def del_doubles (self, df_sel="nf"):
         """Deletes the files in the file_df for which a corresponding file in 
         the library was found
         
         Parameters:
-            file_df (None or pandas DataFrame):
-                files to process
+            df_sel (str or pandas.DataFrame): 
+                Selection whether the duplicates should be deleted in the 
+                library or the new files directory.
+                - "nf": Delete duplicate files from new files 
+                - "lib": Delete duplicate files from library
+                - "ask": Ask individually for each file 
         
         Returns:
             None
         """
-        
         #Check inputs
-        if type(file_df) != pd.core.frame.DataFrame or file_df.empty:
-            file_df = self.file_df
-            
-        if file_df.empty:
+        if not (isinstance(df_sel, str) and df_sel in ("nf", "lib", "ask")):
+            ValueError("Parameter df_sel must be either a string of value "
+                       "'nf','lib', 'ask', or a pandas Dataframe")
+        if self.file_df.empty:
             return
         
-        for i, row in file_df.loc[file_df.goal_name!=""].iterrows():
-            filepath = Path(row.folder, row.filename + row.extension)
-            if os.path.exists(filepath):
-                os.remove(filepath)
-                file_df.drop(index=i, inplace=True)
-                #Note: since the file_df and self.file_df are still linked (no
-                #copy(deep=True) used), the row is also deleted in the self.file_df
+        msg = "You are about to delete duplicate files in the library.\n"\
+              + "Do you want to continue?"
+        dlg = MsgDialog(msg)
+        dlg.exec()
+        
+        if dlg._response:
+            #
+            if "include" in self.file_df.columns: 
+                file_df = self.file_df.loc[(self.file_df.goal_name!="") 
+                                          & (self.file_df.include==True)]
+            else:
+                file_df = self.file_df.loc[(self.file_df.goal_name!="")]
+            
+            df_sel_i = df_sel
+            for i, row in file_df.iterrows():
+                if df_sel == "ask":
+                    msg = f"Do you want to delete the file \"{row.filename}\" "\
+                          + "from the new files or the library?"
+                    dlg = MsgDialog(message=msg, 
+                                    accept_btn_text="New files", 
+                                    reject_btn_text="Library",
+                                    min_width=350)
+                    dlg.exec()
+                    df_sel_i = "nf" if dlg._response else "lib"
+                
+                if df_sel_i == "nf":
+                    filepath = Path(row.directory, row.folder, 
+                                    row.filename + row.extension)
+                    
+                    if os.path.exists(filepath):
+                        os.remove(filepath)
+                    
+                    #Drop file from file_df
+                    self.file_df.drop(index=i, inplace=True)
+                elif df_sel_i == "lib":
+                    filepath = Path(row.goal_dir, row.goal_fld, row.goal_name)
+                    
+                    if os.path.exists(filepath):
+                        os.remove(filepath)
+                        
+                    #Drop file from lib_df
+                    i_lib = self.lib_df.loc[(self.lib_df.directory
+                                             + self.lib_df.folder
+                                             + self.lib_df.filename
+                                             + self.lib_df.extension
+                                             ==file_df.goal_dir[i]
+                                             +file_df.goal_fld[i]
+                                             +file_df.goal_name[i])].index
+                    self.lib_df.drop(index=i_lib, inplace=True)
+                    
+            #Reset indices of class variables        
+            if df_sel in ("nf", "ask"):
+                self.file_df.reset_index(drop=True, inplace=True)
+            if df_sel in ("lib", "ask"):
+                self.lib_df.reset_index(drop=True, inplace=True)
+        else:
+            print("Deleting of duplicate files canceled by user")
     
     def move_to_library(self, file_df=None, replace_doubles = False):
         """Moves the Tracks in the file_df in their respective folder based on 
@@ -1095,31 +1158,29 @@ class LibManager:
     
 #%% Message Dialog
 
-class MsgDialog(QTW.QDialog):
-    def __init__(self, message: str, parent=None):
-        super().__init__(parent)
+class MsgDialog (QTW.QDialog, Ui_MsgDialog):
+    def __init__(self, message: str, window_title="Message window",
+                 accept_btn_text = "Yes", reject_btn_text = "No", 
+                 min_width=300):
+        super(MsgDialog, self).__init__()
+        self.setupUi(self)
+        
+        #Set up window title
+        self.setWindowTitle(window_title)
         
         # Set up label and button box
-        self.label = QTW.QLabel(message, self)
-        self.label.setWordWrap(True)  # Allow text to wrap for proper sizing
-        self.buttonBox = QTW.QDialogButtonBox(
-            QTW.QDialogButtonBox.StandardButton.Yes 
-            | QTW.QDialogButtonBox.StandardButton.No,
-            self)
-
-        # Set up the layout
-        layout = QTW.QVBoxLayout()
-        layout.addWidget(self.label)
-        layout.addWidget(self.buttonBox)
-        self.setLayout(layout)
-
-        # Adjust size to fit content
-        self.adjustSize()
+        self.msg_lbl.setText(message)
+        self.buttonBox.button(QTW.QDialogButtonBox.StandardButton.Yes).setText(accept_btn_text)
+        self.buttonBox.button(QTW.QDialogButtonBox.StandardButton.No).setText(reject_btn_text)
         
         #Setup buttons and response variable
         self._response = False 
         self.buttonBox.accepted.connect(self.on_accept)
         self.buttonBox.rejected.connect(self.on_reject)
+        
+        # Adjust size to fit content
+        self.setMinimumSize(QTC.QSize(min_width, 100))
+        self.adjustSize()
         
     def on_accept (self):
         self._response = True
@@ -1128,6 +1189,58 @@ class MsgDialog(QTW.QDialog):
     def on_reject (self):
         self._response = False
         self.reject()
+        
+# =============================================================================
+# class MsgDialog(QTW.QDialog):
+#     def __init__(self, message: str, window_title="Message window",
+#                  accept_btn_text = "Yes", reject_btn_text = "No", 
+#                  parent=None):
+#         super().__init__(parent)
+#         
+#         #Set up window title
+#         self.setWindowTitle(window_title)
+#         
+#         #Format window size
+#         sizePolicy = QTW.QSizePolicy(QTW.QSizePolicy.Policy.Preferred, 
+#                                      QTW.QSizePolicy.Policy.Preferred)
+#         sizePolicy.setHorizontalStretch(0)
+#         sizePolicy.setVerticalStretch(0)
+#         sizePolicy.setHeightForWidth(self.sizePolicy().hasHeightForWidth())
+#         self.setSizePolicy(sizePolicy)
+#         self.setMinimumSize(QTC.QSize(300, 120))
+#         self.setMaximumSize(QTC.QSize(500, 200))
+#         
+#         # Set up label and button box
+#         self.label = QTW.QLabel(message, self)
+#         self.label.setWordWrap(True)  # Allow text to wrap for proper sizing
+#         self.buttonBox = QTW.QDialogButtonBox()
+#         self.buttonBox.addButton(accept_btn_text, 
+#                                  QTW.QDialogButtonBox.ButtonRole.AcceptRole)
+#         self.buttonBox.addButton(reject_btn_text, 
+#                                  QTW.QDialogButtonBox.ButtonRole.RejectRole)
+# 
+#         # Set up the layout
+#         layout = QTW.QVBoxLayout()
+#         layout.addWidget(self.label)
+#         layout.addWidget(self.buttonBox)
+#         self.setLayout(layout)
+# 
+#         # Adjust size to fit content
+#         self.adjustSize()
+#         
+#         #Setup buttons and response variable
+#         self._response = False 
+#         self.buttonBox.accepted.connect(self.on_accept)
+#         self.buttonBox.rejected.connect(self.on_reject)
+#         
+#     def on_accept (self):
+#         self._response = True
+#         self.accept()
+#         
+#     def on_reject (self):
+#         self._response = False
+#         self.reject()
+# =============================================================================
     
 if __name__ == '__main__':
     # nf_dir = Path("C:/Users", os.environ.get("USERNAME"), "Downloads", "music")
@@ -1136,4 +1249,12 @@ if __name__ == '__main__':
     # nf_dir = r"C:\Users\davis\Downloads\SCDL test\00_General\new files"
     # lib_dir = r"C:\Users\davis\Downloads\SCDL test"
     # LibMan = LibManager(lib_dir, nf_dir)
+    
+    filename = "Rudeforze - Frontliner Spacer (Technohardbass Remix)"
+    msg = f"Do you want to delete the file \n\"{filename}\"\n"\
+          + "from the new files or the library?"
+    # msg = "You are about to delete duplicate files in the library.\n"\
+    #       + "Do you want to continue?"
+    dlg = MsgDialog(msg, accept_btn_text="Yup", min_width=350)
+    dlg.exec()
     pass
