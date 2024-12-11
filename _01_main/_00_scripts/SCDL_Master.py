@@ -408,11 +408,11 @@ class Soundclouddownloader:
         # Step 2: Replace invalid characters followed by whitespace with an underscore
         track_title = re.sub(rf"({rem_chars_pattern})\s", "_", track_title)
         # Step 3: Replace invalid characters preceded by whitespace with an underscore
-        track_title = re.sub(rf"\s({rem_chars_pattern})", "_", track_title)
-        # Step 4: Replace sequences of invalid characters surrounded by spaces with an underscore
         track_title = re.sub(rf"\s({rem_chars_pattern})+", "_", track_title)
-        # Step 5: Replace remaining individual invalid characters with an underscore
+        # Step 4: Replace remaining individual invalid characters with an underscore
         track_title = re.sub(rf"({rem_chars_pattern})", "_", track_title)
+        #Step 5: Remove "'" 
+        track_title = track_title.replace("'","")
         #Step 6: Remove leading and trailing edges
         track_title = track_title.strip()
         
