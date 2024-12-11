@@ -428,12 +428,20 @@ class LibManager:
                               lambda match: ' (' + match.group(1) + ')', 
                               new_filename)
         
-        #Remove all round brackets which contain the words 'ft', 'prod', 'feat', or 'records'
-        excl = "|".join(np.array([[x.lower(),x.upper(),x.title()] 
-                                  for x in ["ft","prod","feat","records"]]
-                                 ).flatten())
-        new_filename = re.sub(r"\s*\(.*(?:" + excl + r").*\)\s*", '', 
-                              new_filename)
+        #Remove all round brackets which contain the words 'ft', 'ft.', 'feat', 
+        #'feat.', 'prod', 'prod.', or 'records'
+        # Note: the matching is case-insensitive
+        # Note: the brackets are only removed if the words are either:
+        # - At the start of the bracket, followed by a white space
+        # - At the end of the bracket, leaded by a white space
+        # - Somewhere within the bracket, leaded and followed by a white space
+        excl = "|".join(["ft", "ft\\.", "prod\\.", "prod",
+                         "feat", "feat\\.", "records"])
+        pattern1 = r"\s*\([^)]*\s+(?:" + excl + r")\s+[^)]*\)\s*"
+        pattern2 = r"\s*\((?:" + excl + r")\s+[^)]*\)\s*"
+        pattern3 = r"\s*\([^)]*\s+(?:" + excl + r")\)\s*"
+        pattern = "(" + ")|(".join([pattern1, pattern2, pattern3]) + ")"
+        new_filename = re.sub(pattern, '', new_filename, flags=re.IGNORECASE)
         
         #Replace the weird long hyphen that is sometimes used in the track title
         new_filename = new_filename.replace(chr(8211), "-")
