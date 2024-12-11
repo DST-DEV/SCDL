@@ -347,7 +347,7 @@ class LibManager:
                     self.set_metadata_auto(file_path,
                                            adj_art_tit=adj_art_tit,
                                            adj_genre = adj_genre,
-                                           directory=row.directory.values)
+                                           directory=row.directory)
                 except Exception as e:
                     df = self.add_exception(
                         df, col = "status",
@@ -643,7 +643,11 @@ class LibManager:
         
         Paramters:
             filepath (str or type(Path())): 
-                absolute path to the file to be edited
+                Absolute path to the file to be edited
+            directory (str or type(Path())): 
+                Absolute path of the parent directory. If no genre is specified
+                explicitly, this path is removed from the parent path of the 
+                filepath to determine the genre automatically.
             genre (str): 
                 genre of the file (possible to specify manually)
             adj_genre (bool): 
@@ -678,8 +682,8 @@ class LibManager:
         if genre or adj_genre:
             if not genre:
                 directory = directory if directory else self.lib_dir
-                genre = str(filepath.parents[0]).replace(
-                    (str(directory))+"\\","").replace ("\\"," - ")
+                genre = str(filepath.parents[0]).replace(str(directory),"")
+                genre = re.sub(r"^\\", "", genre).replace ("\\"," - ")
             
             if not adj_art_tit:
                 self.set_metadata(filepath, genre=genre)
