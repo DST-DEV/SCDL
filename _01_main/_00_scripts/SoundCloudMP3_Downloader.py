@@ -100,7 +100,7 @@ class SoundcloudMP3Downloader:
 
         #Wait until cookie window appears
         try:
-            WebDriverWait(self.driver, self.timeout).until(
+            WebDriverWait(self.driver, 10).until(
                 EC.presence_of_element_located(
                     (By.XPATH, xpath_manage)))
         except TimeoutException:
@@ -295,7 +295,7 @@ class SoundcloudMP3Downloader:
         """
         self.tracklist = pd.DataFrame(columns=["title", "link", "exceptions"])
         self.return_og_window()
-        self.driver.get('https://soundcloudmp3.org/de')
+        self.driver.get('https://soundcloudtomp3.biz/')
     
     def add_tracklist_info (self, link:str, content:dict):
         """Adds a information provided in the content parameter to the
