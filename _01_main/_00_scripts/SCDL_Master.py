@@ -306,9 +306,10 @@ class Soundclouddownloader:
             history = json.dumps(self.dl_history) #Prepare the dict for the export
             with open(self.history_file, 'w') as f:
                 f.write(history)  
-            try:
-                #Rename the files with their correct filenames
-                for index, track in curr_tracks.iterrows():
+            
+            #Rename the files with their correct filenames
+            for index, track in curr_tracks.iterrows():
+                try:
                     if track.ext:
                         os.replace(Path(self.dl_dir, "tmp", 
                                         track.dl_name + track.ext), 
@@ -321,8 +322,8 @@ class Soundclouddownloader:
                                                       track.title + track.ext), 
                                                  genre=pl_name)
             
-            except:
-                print(f"Warning: Renaming error for file {track.title}")
+                except:
+                    print(f"Warning: Renaming error for file {track.title}")
             
             try:
                 #Move all files in the "tmp" folder to the dl folder
@@ -411,8 +412,9 @@ class Soundclouddownloader:
         track_title = re.sub(rf"\s({rem_chars_pattern})+", "_", track_title)
         # Step 4: Replace remaining individual invalid characters with an underscore
         track_title = re.sub(rf"({rem_chars_pattern})", "_", track_title)
-        #Step 5: Remove "'" 
+        #Step 5: Remove "'" and "."
         track_title = track_title.replace("'","")
+        track_title = track_title.replace(".","")
         #Step 6: Remove leading and trailing edges
         track_title = track_title.strip()
         
