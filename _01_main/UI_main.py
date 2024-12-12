@@ -602,6 +602,10 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
             return
         
         if red_view:
+            #Unhide all columns (some might be hidden from earlier calls of this function)
+            for col_ind in range(len(cols)):
+                tbl_view.showColumn(col_ind)
+            
             #Hide non-essential columns
             if variable == "playlists":
                 for col_ind in cols.get_indexer(['status', "last_track"]):
