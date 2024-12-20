@@ -82,7 +82,6 @@ class LibManager:
         #Step 7: Replace double hypens
         new_filename = re.sub(r"-+", " - ", new_filename)
         
-        
         #Step 8: Change capitalization
         #Artist:
         # - Single letters are converted to lowercase (e.g. "Artist x Artist")
@@ -119,6 +118,7 @@ class LibManager:
             new_filename = artist + " - " + title            
 
 # =============================================================================
+#         #Step 9: rename the file
 #         #Note: os.replace is used instead of os.rename since os.replace 
 #         #automatically overwrites if a file with the new filename already exists
 #         os.replace(os.path.join(folder_path, filename), 
