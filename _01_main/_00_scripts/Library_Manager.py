@@ -390,66 +390,100 @@ class LibManager:
         """
         new_filename, extension = os.path.splitext(filename)
         
-        #Remove obsolete strings
-        for ob_str in self.ob_strs:
-            new_filename = new_filename.replace("(" + ob_str + ")", '')
-            new_filename = new_filename.replace("(" + ob_str.upper() + ")", '')
-            new_filename = new_filename.replace("(" + ob_str.title() + ")", '')
-            
-            new_filename = new_filename.replace("[" + ob_str + "]", '')
-            new_filename = new_filename.replace("[" + ob_str.upper() + "]", '')
-            new_filename = new_filename.replace("[" + ob_str.title() + "]", '')
-            
-            new_filename = new_filename.replace(ob_str, '')
-            new_filename = new_filename.replace(ob_str.upper(), '')
-            new_filename = new_filename.replace(ob_str.title(), '')
-            
+        #Step 1: Remove obsolete strings (both standalone and in round brackets)
+        #Note: Obsolete strings within square brackets do not need to be 
+        # removed in this step since all square brackets are removed anyways 
+        # later
+        ob_strs_pattern = "(" +  "|".join(self.ob_strs) + ")"
+        new_filename = re.sub(r"\([^)]*" + ob_strs_pattern + "[^)]*\)", "", 
+                             new_filename, 
+                             flags=re.IGNORECASE)
+        new_filename = re.sub(ob_strs_pattern + r"[:_]*", "", 
+                             new_filename, 
+                             flags=re.IGNORECASE)
         
-        #Replace lowercase and uppercase variants of "Remix", "Edit", and 
-        # "Mashup" by the title form
+        #Step 2: Replace lowercase and uppercase variants of "Remix", "Edit",
+        #and "Mashup" by the title form
         new_filename = re.sub(r"(remix|edit|mashup|bootleg)", 
                               lambda match: match.group(1).title(), 
                               new_filename,
                               flags=re.IGNORECASE)
         
-        #Remove all content within square brackets (except for the ones which 
-        # include the words 'Remix', 'Edit' or 'Mashup')
+        #Step 3: Remove all content within square brackets (except for the 
+        # ones which include the words 'Remix', 'Edit' or 'Mashup')
         new_filename = re.sub(r'\[(?![^\]]*(Mashup|Edit|Remix|Bootleg)).*?\]', 
                               '', 
                               new_filename,
                               flags=re.IGNORECASE)
         
-        #Replace square  brackets around "Remix", "Edit", or "Mashup"
+        #Step 4: Replace square  brackets around "Remix", "Edit", or "Mashup"
         # by round brackets
         # Note: searching for lowercase and uppercase versions of the string is 
         # not necessary, since they were replaced by the title version in a 
         # previous step
-        new_filename = re.sub(r"\s*\[(.*?(?:Remix|Edit|Mashup|Bootleg).*?)\]\s*", 
+        new_filename = re.sub(r"\[(.*?(?:Remix|Edit|Mashup|Bootleg).*?)\]", 
                               lambda match: ' (' + match.group(1) + ')', 
                               new_filename)
         
-        #Remove all round brackets which contain the words 'ft', 'ft.', 'feat', 
-        #'feat.', 'prod', 'prod.', or 'records'
+        #Step 5: Remove all round brackets which contain the words 'ft', 
+        # 'feat', 'prod',  or 'records'
         # Note: the matching is case-insensitive
         # Note: the brackets are only removed if the words are either:
         # - At the start of the bracket, followed by a white space
         # - At the end of the bracket, leaded by a white space
         # - Somewhere within the bracket, leaded and followed by a white space
-        excl = "|".join(["ft", "ft\\.", "prod\\.", "prod",
-                         "feat", "feat\\.", "records"])
-        pattern1 = r"\s*\([^)]*\s+(?:" + excl + r")\s+[^)]*\)\s*"
-        pattern2 = r"\s*\((?:" + excl + r")\s+[^)]*\)\s*"
-        pattern3 = r"\s*\([^)]*\s+(?:" + excl + r")\)\s*"
+        # Note: The word is also matched if it is followed by a "." (e.g. "ft.")
+        excl = "|".join(["ft", "prod","feat", "records"])
+        pattern1 = r"\([^)]*\s+(" + excl + r")[.]*\s+[^)]*\)"
+        pattern2 = r"\((" + excl + r")[.]*\s+[^)]*\)"
+        pattern3 = r"\([^)]*\s+(" + excl + r")[.]*\)"
         pattern = "(" + ")|(".join([pattern1, pattern2, pattern3]) + ")"
         new_filename = re.sub(pattern, '', new_filename, flags=re.IGNORECASE)
         
-        #Replace the weird long hyphen that is sometimes used in the track title
+        #Step 6: Replace the weird long hyphen that is sometimes used in the 
+        # track title
         new_filename = new_filename.replace(chr(8211), "-")
         
-        #Convert to title type and remove leading and tailing spaces as well 
-        # as double (or more) spaces
-        new_filename = re.sub(r"\s+", " ", new_filename).title().strip()
+        #Step 7: Replace double hypens
+        new_filename = re.sub(r"-+", " - ", new_filename)
         
+        
+        #Step 8: Change capitalization
+        #Artist:
+        # - Single letters are converted to lowercase (e.g. "Artist x Artist")
+        # - Words with 3-4 characters are not changed (E.g. "DJ ...", "MC ...")
+        # - Words with more than 4 characters are capitalized. 
+        #Track title:
+        # - Title is Capitalized
+        # - Content in round brackets is converted to title form (all words 
+        #   capizalized)
+        new_filename = re.sub(r"\s+", " ", new_filename)
+        if " - " in new_filename:
+            artist, *title = new_filename.split(" - ")
+            title = " ".join(title).strip()
+            
+            artist = list(artist.strip().split(" "))
+            for i, artist_i in enumerate(artist):
+                if len(artist_i)==1:
+                    artist[i] = artist_i.lower()
+                elif len(artist_i)>=4:
+                    artist[i] = artist_i.capitalize()
+            artist = " ".join(artist)
+        
+            title_bracket = re.findall(r"(\([^)]*\))", title)
+            if title_bracket:
+                for i, title_bracket_i in enumerate(title_bracket):
+                    title = title.replace(title_bracket_i, "")
+                    
+                    title_bracket[i] = title_bracket_i.title()
+                title = title.strip().capitalize()
+                title += " " + " ".join(title_bracket)
+            else:
+                title = title.strip().capitalize()
+
+            new_filename = artist + " - " + title 
+        
+        #Step 9: rename the file
         #Note: os.replace is used instead of os.rename since os.replace 
         #automatically overwrites if a file with the new filename already exists
         os.replace(os.path.join(folder_path, filename), 
