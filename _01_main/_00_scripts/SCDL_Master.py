@@ -219,57 +219,10 @@ class Soundclouddownloader:
                                      desc = f"Downloading playlist {pl_name} "
                                             + f"({index+1}/{pl_len}): ",
                                      total = len(curr_tracks)):
-                dl_doc = MP3DL.download_track(track.link)
                 
-                #Update status of track in track_df and add to documentation
-                self.track_df.loc[(self.track_df.link==track.link) 
-                                  & (self.track_df.playlist==pl_name),
-                                  "downloaded"]= dl_doc.exceptions==""
-                
-                try: 
-                    #Insert genre
-                    time.sleep(.3)          #Apparently needed in order for the MP3 function to work reliably
-                    
-                    #Determine download name (the Download websites removes & 
-                    #replaces certain characters)
-                    dl_title = self.convert_title(track.title)
-                    
-                    #Determine the file type 
-                    if Path(self.dl_dir, "tmp", dl_title + ".mp3").exists():
-                        curr_tracks.loc[index, "ext"] = ".mp3"
-                    elif Path(self.dl_dir, "tmp", dl_title +".wav").exists():
-                        curr_tracks.loc[index, "ext"] = ".wav"
-                    else:
-                        self.track_df = self.add_exception(self.track_df, 
-                                                           col="exceptions", 
-                                                           msg="Metadata exception: DL name "
-                                                           +"could not be determined", 
-                                                           key = track.link, 
-                                                           search_col="link")
-                    
-                    #Change the filename to the correct format
-                    # (If no artist is specified in the filename, then add the 
-                    # name of the uploader)
-                    if (" - " in track.title) \
-                    or (" "+chr(8211)+" " in track.title):
-                        correct_fname = track.title
-                    else:
-                        correct_fname = track.uploader + " - " +  track.title
-                    
-                    #Remove invalid filename characters for windows
-                    correct_fname = re.sub(r'[<>?:/|\\"]', "", correct_fname)
-                    
-                    #Save the names for later
-                    # Note: the renaming of the files to the correct filenames
-                    # and the insertion of the genre takes place after all files
-                    # are downloaded. Else the code would have to wait for each 
-                    # file to be downloaded before continuing with the next track
-                    curr_tracks.loc[index, "title"] = correct_fname
-                    curr_tracks.loc[index, "dl_name"] = dl_title
-
+                try:
+                    dl_doc = MP3DL.download_track(track.link)
                 except Exception as e:
-                    # print("\n" + str(e))
-                    
                     #Add exception to fhb documentation and self.track_df
                     MP3DL.add_exception(link = track.link, 
                                       exception = f"Metadata exception: {e}")
@@ -279,9 +232,69 @@ class Soundclouddownloader:
                                                        msg=f"Metadata exception: {e}", 
                                                        key = track.link, 
                                                        search_col="link")
-
-                #Update dl_history for last downloaded track
-                self.dl_history[pl_name]=track.link
+                else:
+                    #Update status of track in track_df and add to documentation
+                    self.track_df.loc[(self.track_df.link==track.link) 
+                                      & (self.track_df.playlist==pl_name),
+                                      "downloaded"]= dl_doc.exceptions==""
+                    
+                    #Update dl_history for last downloaded track
+                    self.dl_history[pl_name]=track.link
+                
+                    #Prepare filename
+                    try:
+                        time.sleep(.3)          #Apparently needed in order for the MP3 function to work reliably
+                        
+                        #Determine download name (the Download websites removes & 
+                        #replaces certain characters)
+                        dl_title = self.convert_title(track.title)
+                        
+                        #Determine the file type 
+                        if Path(self.dl_dir, "tmp", dl_title + ".mp3").exists():
+                            curr_tracks.loc[index, "ext"] = ".mp3"
+                        elif Path(self.dl_dir, "tmp", dl_title +".wav").exists():
+                            curr_tracks.loc[index, "ext"] = ".wav"
+                        else:
+                            self.track_df = self.add_exception(
+                                self.track_df, col="exceptions",
+                                msg="Metadata exception: DL name "
+                                    +"could not be determined", 
+                                key = track.link, 
+                                search_col="link")
+                        
+                        #Change the filename to the correct format
+                        # (If no artist is specified in the filename, then add the 
+                        # name of the uploader)
+                        if (" - " in track.title) \
+                        or (" "+chr(8211)+" " in track.title):
+                            correct_fname = track.title
+                        else:
+                            correct_fname = track.uploader+" - "+ track.title
+                        
+                        #Remove invalid filename characters for windows
+                        correct_fname = re.sub(r'[<>?:/|\\"]', "", 
+                                               correct_fname)
+                        
+                        #Save the names for later
+                        # Note: the renaming of the files to the correct filenames
+                        # and the insertion of the genre takes place after all files
+                        # are downloaded. Else the code would have to wait for each 
+                        # file to be downloaded before continuing with the next track
+                        curr_tracks.loc[index, "title"] = correct_fname
+                        curr_tracks.loc[index, "dl_name"] = dl_title
+    
+                    except Exception as e:
+                        # print("\n" + str(e))
+                        
+                        #Add exception to fhb documentation and self.track_df
+                        MP3DL.add_exception(link = track.link, 
+                                          exception = f"Metadata exception: {e}")
+                        
+                        self.track_df = self.add_exception(self.track_df,
+                                                           col="exceptions", 
+                                                           msg=f"Metadata exception: {e}", 
+                                                           key = track.link, 
+                                                           search_col="link")
                 
                 #If the track is the last track in the playlist, wait for the DL
                 #to finish so that all tracks can be moved out of the tmp directory
