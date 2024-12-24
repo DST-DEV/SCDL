@@ -994,20 +994,13 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         Returns:
             None
         """
-        self.SCDL.LibMan.move_to_library()
         
-        if self.lineEdit_nf_dir_2.text():
-            self.SCDL.LibMan.read_tracks(directory=self.lineEdit_nf_dir_2.text(), 
-                                    mode="replace")
-        elif self.lineEdit_nf_dir_1.text():
-            self.SCDL.LibMan.read_tracks(
-                directory=self.lineEdit_nf_dir_1.text(), mode="replace")
-        else:
-            self.SCDL.LibMan.read_tracks(directory=self.settings["nf_dir"],
-                                         mode="replace")
+        repl_doubles = True if self.cb_repl_ex_files.isChecked() else False
+        self.SCDL.LibMan.move_to_library(replace_doubles=repl_doubles)
         
         #Update table display
         self.update_tbl_display (lr="right", variable = "New Files")
+        self.update_tbl_display (lr="left", variable = "Library Files")
     
     def GUI_del_doubles(self):
         """Deletes the files in the file_df for which a corresponding file in 

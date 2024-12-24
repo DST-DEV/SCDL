@@ -109,39 +109,47 @@
 # works => check how to adjust the info chunk before adjusting the metadata 
 # with soundfile
 
-import numpy as np
-import soundfile
-import wave
-from pathlib import Path
-
-# filepath = Path(r"C:\Users\davis\Downloads\test\Wilderch - Sloppy G-Day_modified.wav")
-filepath = str(Path(r"C:\Users\davis\Downloads\test\Sample - File.aiff"))
-
-#Open file with wave package and rewrite contents (gets rid of any problematic 
-# header data)
-with wave.open(filepath, 'rb') as f_original:
-    # Read the original audio data
-    params = f_original.getparams()
-    audio_frames = f_original.readframes(params.nframes)
-
-with wave.open(filepath, 'wb') as f_adjusted:
-    f_adjusted.setparams(params)
-    f_adjusted.writeframes(audio_frames)
-
-#Insert metadata with soundfile package
-with soundfile.SoundFile(filepath, 'r+') as sf:
-    # sr = sf.samplerate
-    # st = sf.subtype
-    # data = sf.read() 
-    sf.__setattr__("artist", "Akon")
-    sf.__setattr__("title", "Bananza (Atzenernst Edit")
+# =============================================================================
+# import numpy as np
+# import soundfile
+# import wave
+# from pathlib import Path
+# 
+# # filepath = Path(r"C:\Users\davis\Downloads\test\Wilderch - Sloppy G-Day_modified.wav")
+# filepath = str(Path(r"C:\Users\davis\Downloads\test\Sample - File.aiff"))
+# 
+# #Open file with wave package and rewrite contents (gets rid of any problematic 
+# # header data)
+# with wave.open(filepath, 'rb') as f_original:
+#     # Read the original audio data
+#     params = f_original.getparams()
+#     audio_frames = f_original.readframes(params.nframes)
+# 
+# with wave.open(filepath, 'wb') as f_adjusted:
+#     f_adjusted.setparams(params)
+#     f_adjusted.writeframes(audio_frames)
+# 
+# #Insert metadata with soundfile package
+# with soundfile.SoundFile(filepath, 'r+') as sf:
+#     # sr = sf.samplerate
+#     # st = sf.subtype
+#     # data = sf.read() 
+#     sf.__setattr__("artist", "Akon")
+#     sf.__setattr__("title", "Bananza (Atzenernst Edit")
+# =============================================================================
 
 #%% Load metadata from file
-# =============================================================================
-# 
+
 # import soundfile
 # from pathlib import Path
-# filepath = str(Path(r"C:\Users\davis\Downloads\test\A-05 - Walking On A Dream.wav"))
-# with soundfile.SoundFile(filepath, 'r+') as sf:
+# filepath = r"C:\Users\davis\Downloads\SCDL Test\Test new files\Trance - Bounce - Low Energy - Vocal\5eurogoldi - Mehr von dem was du liebe nennst.wav"
+
+# with soundfile.SoundFile(filepath, 'r') as sf:
 #     meta = sf.copy_metadata()
-# =============================================================================
+
+import music_tag
+filepath = r"C:\Users\davis\Downloads\SCDL Test\Test new files\Trance - Bounce - Low Energy - Vocal\100 Gecs - Doritos & fritos.mp3"
+
+file = music_tag.load_file(filepath)
+genre = str(file["genre"])
+

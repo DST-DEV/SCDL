@@ -27,13 +27,12 @@ import PyQt6.QtCore as QTC
 from PyQt6.QtCore import Qt
 
 if __name__ == "__main__": 
-    from Msg_Dialog import Ui_MsgDialog
+    from UI_Msg_Dialog import Ui_MsgDialog
+    from UI_Notification_Dialog import Ui_NotificationDialog
 else:
     #If file is imported, use relative import
-    from .Msg_Dialog import Ui_MsgDialog
-
-
-
+    from .UI_Msg_Dialog import Ui_MsgDialog
+    from .UI_Notification_Dialog import Ui_NotificationDialog
 
 #%% LibManager Class
 class LibManager:
@@ -64,7 +63,8 @@ class LibManager:
         
         self.excl_lib_folders = excl_lib_folders
         
-        self.file_df = pd.DataFrame(columns=["folder", "filename", "old_filename", 
+        self.file_df = pd.DataFrame(columns=["directory", "folder", "filename", 
+                                             "old_filename", 
                                              "goal_dir", "goal_fld", "goal_name", 
                                              "extension", 
                                              "exceptions", "status", 
@@ -206,6 +206,7 @@ class LibManager:
         #add additional columns for later
         n_files = len(file_df.index)
         file_df = file_df.assign(goal_dir=[""]*n_files,
+                                 goal_fld=[""]*n_files,
                                  goal_name=[""]*n_files,
                                  old_filename = [""]*n_files,
                                  exceptions=[""]*n_files,
@@ -860,15 +861,26 @@ class LibManager:
             
         for index, row in file_df.iterrows():
             if mode == "metadata":
-                file_path = Path(row["folder"], row.filename + row["extension"])
+                filepath = Path(row["directory"], row["folder"], 
+                                row.filename + row["extension"])
                 
                 #Extract the goal directory from the genre metadata
                 try:
-                    file = music_tag.load_file(file_path)
-                    library_fld = Path(str(file["genre"].first).replace(" - ", 
-                                                                        "/"))
-                    file_df.loc[index, "goal_dir"]=str(self.lib_dir)
-                    file_df.loc[index, "goal_fld"]=str(library_fld)
+                    if row["extension"]==".mp3":
+                        file = music_tag.load_file(filepath)
+                        library_fld = file["genre"].first.replace(" - ", "/")
+                    elif row["extension"]==".wav":
+                        with soundfile.SoundFile(str(filepath), 'r') as sf:
+                            meta = sf.copy_metadata()
+                        
+                        library_fld = meta.get("genre") 
+                        #Note: returns None if no genre data is present
+                        library_fld = library_fld.replace(" - ", "/") \
+                            if library_fld else ""
+                        
+                    if library_fld:
+                        file_df.loc[index, "goal_dir"]=str(self.lib_dir)
+                        file_df.loc[index, "goal_fld"]=library_fld
                 except Exception as e:
                     file_df = self.add_exception(
                         file_df, col = "status",
@@ -878,7 +890,7 @@ class LibManager:
             elif mode=="namesearch":
                 closest_match = difflib.get_close_matches(row.filename, 
                                                           lib_df.filename.tolist(), 
-                                                          n=1, cutoff=0.6)
+                                                          n=1, cutoff=0.9)
                 if closest_match:
                     res = lib_df.loc[lib_df.filename==closest_match[0]]
                     
@@ -927,8 +939,15 @@ class LibManager:
         if self.file_df.empty:
             return
         
-        msg = "You are about to delete duplicate files in the library.\n"\
+        #Ensure that user wants to delete double files
+        msg = "You are about to delete duplicate files{}.\n"\
               + "Do you want to continue?"
+        if df_sel=="nf":
+            msg = msg.format(" in the new files directory")
+        elif df_sel=="lib":
+            msg = msg.format(" in the library directory")
+        else:
+            msg = msg.format("")
         dlg = MsgDialog(msg)
         dlg.exec()
         
@@ -936,9 +955,11 @@ class LibManager:
             #
             if "include" in self.file_df.columns: 
                 file_df = self.file_df.loc[(self.file_df.goal_name!="") 
-                                          & (self.file_df.include==True)]
+                                          & (self.file_df.include==True)
+                                          ].copy(deep=True)
             else:
-                file_df = self.file_df.loc[(self.file_df.goal_name!="")]
+                file_df = self.file_df.loc[(self.file_df.goal_name!="")
+                                           ].copy(deep=True)
             
             df_sel_i = df_sel
             for i, row in file_df.iterrows():
@@ -1005,16 +1026,21 @@ class LibManager:
         
         #Check inputs
         if type(file_df) != pd.core.frame.DataFrame or file_df.empty:
-            file_df = self.file_df if not self.file_df.empty else self.read_tracks()
-        
-        lib_df = self.lib_df if not self.lib_df.empty else self.read_dir()
+            file_df = self.file_df if not self.file_df.empty \
+                        else self.read_tracks()
+        file_df = file_df.copy(deep=True)
+        lib_df = self.lib_df.copy(deep=True) if not self.lib_df.empty \
+            else self.read_dir().copy(deep=True)
         
         #Iterate over all tracks
+        if "include" in file_df.columns:
+            file_df = file_df.loc[file_df.include==True]
+        n_moved = 0
         for index, row in file_df.iterrows():
-            if "include" in file_df.columns and row.include==False: continue
+            # if "include" in file_df.columns and row.include==False: continue
             
             #Determine the path to the file
-            file_path = Path(row["directory"], row["folder"], 
+            filepath = Path(row["directory"], row["folder"], 
                              row["filename"] + row["extension"])
             
             #If a goal directory is specified
@@ -1026,20 +1052,12 @@ class LibManager:
                         continue
                     try:
                         #Move the new file to the library
-                        os.replace(file_path, 
-                                   Path(self.lib_dir,
-                                        row.goal_dir,
-                                        Path(row.goal_name).with_suffix("") 
-                                        + row["extension"])
+                        os.replace(filepath, 
+                                   Path(row.goal_dir,
+                                        row.goal_fld,
+                                        Path(row.goal_name
+                                             ).with_suffix(row["extension"]))
                                    )
-                        
-                        #If the old file in the library had a different 
-                        # extension than the new file, delete the old file
-                        if not Path(row.goal_name).suffix == row["extension"]:
-                            os.remove(Path(self.lib_dir,
-                                           row.goal_dir,
-                                           row.goal_name))
-                            
                     except Exception as e:
                         self.file_df = self.add_exception(
                             self.file_df, col = "exceptions",
@@ -1047,10 +1065,32 @@ class LibManager:
                                 + f"{e.__class__} : {e}", 
                             index = index)
                     else:
-                        self.file_df = self.add_exception(
-                            self.file_df, col = "status",
-                            msg=f"Moved to {row.goal_dir}", 
-                            index = index)
+                        n_moved +=1
+                        self.file_df.drop(index = index, inplace=True)
+
+                        #If the old file in the library had a different 
+                        # extension than the new file, delete the old file
+                        if not Path(row.goal_name).suffix == row["extension"]:
+                            i_lib = self.lib_df.loc[(self.lib_df.directory
+                                                    + self.lib_df.folder
+                                                    + self.lib_df.filename
+                                                    + self.lib_df.extension
+                                                     ==row.goal_dir
+                                                     + row.goal_fld
+                                                     + row.goal_name)].index
+                            if len(i_lib)>0:
+                                try:
+                                    os.remove(Path(row.goal_dir,
+                                                   row.goal_fld,
+                                                   row.goal_name))
+                                except Exception as e:
+                                    msg = f"The file {row.goal_name} could "\
+                                          + "not be removed from the library"
+                                    note = NotificationDialog(msg)
+                                    note.exec()
+                                else:
+                                    #Drop file from lib_df
+                                    self.lib_df.drop(index=i_lib, inplace=True)
                 else:
                     #If the goal directory is a folder, then move the file 
                     # to this folder (Note: if there is already a file with
@@ -1058,42 +1098,54 @@ class LibManager:
 
                     #Check if goal directory exists and whether it should be 
                     #created if it doesn't exist
-                    if not os.path.isdir (Path(self.lib_dir, row.goal_dir)):
+                    if not os.path.isdir (Path(row.goal_dir, row.goal_fld)):
                         if not row.create_missing_dir:
-                            
-                            msg = f"The folder {row.goal_dir} does not exist."\
+                            msg = f"The folder {row.goal_fld} does not exist."\
                                  " Should it be created?"
                             dlg = MsgDialog(msg)
                             dlg.exec()
                             
                             if not dlg._response:
                                 self.file_df.loc[index, "status"] = \
-                                    "Goal directory not found"
+                                    "Goal folder not found"
                                 continue #continue with next track
                             
-                        os.mkdir(Path(self.lib_dir, row.goal_dir))
-                    try:
-                        os.replace(file_path, 
-                                   Path(self.lib_dir, 
-                                        row.goal_dir, 
-                                        file_path.name))
-                    except Exception as e:
+                        os.mkdir(Path(row.goal_dir, row.goal_fld))
+                    
+                    goal_path = Path(row.goal_dir, row.goal_fld, 
+                                     filepath.name)
+                    
+                    if os.path.isfile(goal_path) and not replace_doubles:
                         self.file_df = self.add_exception(
                             self.file_df, col = "exceptions",
-                            msg=f"Copying error for goal directory {row.goal_dir}: "
-                                + f"{e.__class__} : {e}", 
+                            msg=f"File already exists in library", 
                             index = index)
+                        continue
                     else:
-                        self.file_df = self.add_exception(
-                            self.file_df, col = "status",
-                            msg=f"Moved to {row.goal_dir}", 
-                            index = index)
+                        try:
+                            os.replace(filepath, goal_path)
+                        except Exception as e:
+                            self.file_df = self.add_exception(
+                                self.file_df, col = "exceptions",
+                                msg=f"Copying error for goal folder {row.goal_fld}: "
+                                    + f"{e.__class__} : {e}", 
+                                index = index)
+                        else:
+                            n_moved +=1
+                            self.file_df.drop(index = index, inplace=True)
             else:
                 self.file_df = self.add_exception(
                     self.file_df, col = "exceptions",
                     msg="No goal directory specified", 
                     index = index)
-                
+        
+        self.file_df.reset_index(drop=True, inplace=True)
+        
+        #Notifiy about successfully moved files
+        msg = f"Moved {n_moved} files"
+        note = NotificationDialog(msg)
+        note.exec()
+        
         return self.file_df
     
     def sync_music_lib(self, music_dir=None):
@@ -1201,6 +1253,24 @@ class LibManager:
             raise ValueError("no valid index or search key and search column provided")
             
         return df
+
+#%% Notifications Dialog
+class NotificationDialog (QTW.QDialog, Ui_NotificationDialog):
+    def __init__(self, message: str, window_title="Notification",
+                 min_width=300):
+        super(NotificationDialog, self).__init__()
+        self.setupUi(self)
+        
+        #Set up window title
+        self.setWindowTitle(window_title)
+        
+        # Set up label and button box
+        self.msg_lbl.setText(message)
+        
+        # Adjust size to fit content
+        self.setMinimumSize(QTC.QSize(min_width, 100))
+        self.adjustSize()
+
     
 #%% Message Dialog
 
