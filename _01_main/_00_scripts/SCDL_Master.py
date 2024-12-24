@@ -1,15 +1,34 @@
+#%% Imports
+#General imports
+import re
+import pandas as pd
+from tqdm import tqdm
+
+#File Handling imports
+import os
+import pathlib
+from pathlib import Path
+import time
+import json
+
+#Webdriver imports
+from selenium.webdriver.support.ui import WebDriverWait
+
+#GUI Imports
+import PyQt6.QtWidgets as QTW
+import PyQt6.QtCore as QTC
+from PyQt6.QtCore import Qt
+
+#Custom imports
 from _00_scripts.Link_Extractor import PlaylistLinkExtractor
 from _00_scripts.SoundCloudMP3_Downloader import SoundcloudMP3Downloader
 from _00_scripts.Library_Manager import LibManager
-from selenium.webdriver.support.ui import WebDriverWait
-from pathlib import Path
-from tqdm import tqdm
-import pandas as pd
-import pathlib
-import time
-import json
-import os
-import re
+
+if __name__ == "__main__": 
+    from UI_Notification_Dialog import Ui_NotificationDialog
+else:
+    #If file is imported, use relative import
+    from .UI_Notification_Dialog import Ui_NotificationDialog
 
 class Soundclouddownloader:
     def __init__(self, 
@@ -225,13 +244,16 @@ class Soundclouddownloader:
                 except Exception as e:
                     #Add exception to fhb documentation and self.track_df
                     MP3DL.add_exception(link = track.link, 
-                                      exception = f"Metadata exception: {e}")
+                                      exception = f"Download exception: {e}")
                     
                     self.track_df = self.add_exception(self.track_df,
                                                        col="exceptions", 
-                                                       msg=f"Metadata exception: {e}", 
+                                                       msg=f"Download exception: {e}", 
                                                        key = track.link, 
                                                        search_col="link")
+                    msg = f"Track {track.link} could not be downloaded"
+                    note = NotificationDialog(msg)
+                    note.exec()
                 else:
                     #Update status of track in track_df and add to documentation
                     self.track_df.loc[(self.track_df.link==track.link) 
@@ -468,7 +490,25 @@ class Soundclouddownloader:
             raise ValueError("no valid index or search key and search column provided")
             
         return df
-    
+
+#%% Notifications Dialog
+class NotificationDialog (QTW.QDialog, Ui_NotificationDialog):
+    def __init__(self, message: str, window_title="Notification",
+                 min_width=300):
+        super(NotificationDialog, self).__init__()
+        self.setupUi(self)
+        
+        #Set up window title
+        self.setWindowTitle(window_title)
+        
+        # Set up label and button box
+        self.msg_lbl.setText(message)
+        
+        # Adjust size to fit content
+        self.setMinimumSize(QTC.QSize(min_width, 100))
+        self.adjustSize()
+
+#%% Main    
 if __name__ == '__main__':
 
     scdl = Soundclouddownloader(hist_file="C:\\Users\\davis\\00_data\\01_Projects\\Personal\\SCDL\\_01_main\\_01_rsc\\Download_history.txt")
