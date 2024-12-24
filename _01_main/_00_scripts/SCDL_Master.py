@@ -325,6 +325,7 @@ class Soundclouddownloader:
                 #If the track is the last track in the playlist, wait for the DL
                 #to finish so that all tracks can be moved out of the tmp directory
                 if index == curr_tracks.iloc[-1].name:
+                    #Short wait to ensure that the download has time to start
                     try:
                         WebDriverWait(MP3DL.driver, 2).until(
                             lambda x: any(file.endswith(".part") 
@@ -333,13 +334,17 @@ class Soundclouddownloader:
                     except:
                         pass
                     
+                    #Longer wait to ensure that the download had reasonable 
+                    # time to finish
                     try:
                         WebDriverWait(MP3DL.driver, 12).until(
                             lambda x: not any(file.endswith(".part") 
                                               for file in os.listdir(self.dl_dir))
                             )
                     except:
-                        pass
+                        msg = f"Download timeout for playlist \"{pl_name}\""
+                        note = NotificationDialog(msg)
+                        note.exec()
             
             #Update the history file
             history = json.dumps(dl_history) #Prepare the dict for the export
