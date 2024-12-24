@@ -786,6 +786,8 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
             print(f"Error while downloading tracks {e.__class__}: {e}")
         finally:
             #Update table display
+            self.update_tbl_display (lr="left", 
+                                     variable = "Soundcloud Playlists")
             self.update_tbl_display (lr="right", 
                                      variable = "Soundcloud Tracks")
             
@@ -979,7 +981,7 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         """
         mode = "metadata" if self.rbtn_meta.isChecked() else "namesearch"
         
-        file_df = self.SCDL.LibMan.determine_goal_folder(mode=mode)
+        self.SCDL.LibMan.determine_goal_folder(mode=mode)
         
         #Update table display
         self.update_tbl_display (lr="right", variable = "New Files")
@@ -1050,7 +1052,10 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
             None
         """
         
-        dl_hist_df = pd.DataFrame.from_dict(self.SCDL.dl_history, 
+        #Open the download history
+        with open(self.SCDL.history_file) as f:
+            dl_history = json.loads(f.read())
+        dl_hist_df = pd.DataFrame.from_dict(dl_history, 
                                             orient='index', 
                                             columns=["last_track"]
                                             ).reset_index(names="playlist")
@@ -1071,17 +1076,15 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         #Extract the modified dl history as a dict
         history = self.DLHistoryEditor.dl_history.copy(deep=True)
         history = dict(zip(history["playlist"], history["last_track"]))
-        
-        #Update SCDL dl_history dict
-        self.SCDL.dl_history = history
-        
+               
         #Update the history file
         with open(self.SCDL.history_file, 'w') as f:
             f.write(json.dumps(history)) 
         
         #Update the playlists dataframe
         if self.DLHistoryEditor.cb_update_pl_df.isChecked():
-            pl_names = set(history.keys()).intersection(self.SCDL.playlists["name"])
+            pl_names = set(history.keys()).intersection(
+                                    self.SCDL.playlists["name"])
             
             if not pl_names:
                 return

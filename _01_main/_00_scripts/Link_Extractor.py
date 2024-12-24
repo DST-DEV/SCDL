@@ -54,19 +54,6 @@ class PlaylistLinkExtractor:
         pl_path = Path(self.pl_dir,  f"playlists_{self.sc_account}.feather")
         if pl_path.exists():
             self.playlists_cache = pd.read_feather(pl_path)
-            
-            #Load the Download history
-            with open(self.history_file, "r") as f:
-                history = json.loads(f.read())
-            
-            #Insert the last saved "last track" into the dataframe
-            for index, pl in self.playlists_cache.iterrows():
-                if pl["name"] in history:
-                    self.playlists_cache.loc[index, "last_track"] = \
-                        history[pl["name"]]
-            
-            #Save updated playlists
-            self.playlists_cache.to_feather(pl_path)
         else:
             self.playlists_cache = pd.DataFrame(columns=["name", "link", 
                                                          "last_track", 
@@ -223,7 +210,7 @@ class PlaylistLinkExtractor:
         
         #Filter playlists according to user specifications
         if search_type=="all":
-            self.playlists = playlists
+            self.playlists = playlists.copy(deep=True)
         else:
             if not search_key:
                 raise ValueError('No search keys provided for search mode '
@@ -249,16 +236,23 @@ class PlaylistLinkExtractor:
                 self.playlists = playlists.loc[
                     playlists["name"].str.contains(pat = search_key,
                                                    flags = re.IGNORECASE)
-                    ]
+                    ].copy(deep=True)
             if search_type == "exact":    
                 # search_key = [s.title() for s in search_key]
                 
                 self.playlists = playlists.loc[
                         playlists["name"].isin(search_key)
-                        ]
-        
+                        ].copy(deep=True)
+                
         self.playlists.reset_index(drop=True, inplace=True)
         print (f"Extracted {self.playlists.shape[0]} playlists")
+        
+        #Insert the last saved "last track" into the dataframe
+        with open(self.history_file, "r") as f:
+            history = json.loads(f.read())
+        self.playlists["last_track"] = self.playlists["name"].map(
+                                        lambda name: history.get(name, ""))
+
         return self.playlists
     
     def extr_track(self, index):
@@ -620,7 +614,8 @@ class PlaylistLinkExtractor:
                          the Download history (including new playlists))
                               
         Returns:
-            None
+            history (dict):
+                The updated download history dictionary
         """
         
         if not type(mode)==str:
@@ -664,23 +659,25 @@ class PlaylistLinkExtractor:
             return
         
         #Update DL History and self.playlists df
+        self.playlists.reset_index(drop=True, inplace=True)
+        pl_names = list(self.playlists["name"])
         for index, row in tracks.iterrows():
             history[row.playlist] = row.link
-            if row.playlist in list(self.playlists["name"]):
-                index = self.playlists.loc[
-                    self.playlists["name"] == row.playlist].index.values[0]
-                
-                self.playlists.loc[index, "last_track"] =  row.link
+            if row.playlist in pl_names:
+                self.playlists.loc[self.playlists["name"] == row.playlist, 
+                                   "last_track"] =  row.link
             else:
                 pl_link = pl.loc[pl["name"] == row.playlist].link
                 
                 self.playlists.loc[-1] = [row.playlist, pl_link, row.link, ""]
-                self.playlists = self.playlists.reset_index(drop=True)
+                self.playlists.reset_index(drop=True, inplace=True)
         
         #Save the updated DL History as a txt file
-        history = json.dumps(history)      #Prepare the dict for the export
+        history_json = json.dumps(history)      #Prepare the dict for the export
         with open(self.history_file, 'w') as f:
-            f.write(history)
+            f.write(history_json)
+            
+        return history
         
     def reject_cookies(self):
         """Rejects all Cookies of the https://www.forhub.io/soundcloud/en/ 

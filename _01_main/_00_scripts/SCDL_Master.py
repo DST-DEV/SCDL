@@ -54,12 +54,16 @@ class Soundclouddownloader:
                              + "str or type(Path()), not "
                              + f"{type(dl_dir)}")
         
-        if type(hist_file) in [str, type(Path())] and hist_file:
+        #Load the Download history
+        if type(hist_file) in [str, type(Path())] and os.path.isfile(hist_file)\
+            and Path(hist_file).suffix == ".txt":
             self.history_file = Path(hist_file)
-        else: 
+        else:
             self.history_file = os.path.join(os.getcwd(), 
                                   '_01_rsc\\Download_history.txt')
-        
+            if not os.path.isfile(self.history_file): 
+                with open(self.history_file, 'w') as f:
+                    f.write("{}")
         
         self.LibMan = LibManager(dl_dir = dl_dir, 
                                  hist_file = self.history_file,
@@ -67,12 +71,6 @@ class Soundclouddownloader:
         self.LinkExt = PlaylistLinkExtractor(driver_choice=self.driver_choice,
                                              sc_account = self.sc_account,
                                              hist_file = self.history_file)
-        
-        
-        #Open the download history (in order to update it later)
-        with open(self.history_file) as f:
-            self.dl_history = json.loads(f.read())
-        
         
     def extr_playlists(self, search_key=[], search_type="all", 
                        use_cache = True,
@@ -181,7 +179,9 @@ class Soundclouddownloader:
                 The track Dataframe with updated information on the status of 
                 the  download
         """
-       
+        #Open the download history (in order to update it later)
+        with open(self.history_file) as f:
+            dl_history = json.loads(f.read())
         
         if self.track_df.empty or self.track_df.downloaded.all():
             print ("Error: No tracks found / All tracks are already downloaded")
@@ -238,8 +238,12 @@ class Soundclouddownloader:
                                       & (self.track_df.playlist==pl_name),
                                       "downloaded"]= dl_doc.exceptions==""
                     
-                    #Update dl_history for last downloaded track
-                    self.dl_history[pl_name]=track.link
+                    #Update dl_history and playlist dataframe for last 
+                    # downloaded track
+                    dl_history[pl_name]=track.link
+                    self.LinkExt.playlists.loc[self.LinkExt.playlists["name"] 
+                                               == pl_name, 
+                                               "last_track"] = track.link
                 
                     #Prepare filename
                     try:
@@ -316,7 +320,7 @@ class Soundclouddownloader:
                         pass
             
             #Update the history file
-            history = json.dumps(self.dl_history) #Prepare the dict for the export
+            history = json.dumps(dl_history) #Prepare the dict for the export
             with open(self.history_file, 'w') as f:
                 f.write(history)  
             
