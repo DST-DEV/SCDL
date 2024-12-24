@@ -322,13 +322,11 @@ class LibManager:
             prog=prog_bounds[0]
             update_fac = (prog_bounds[1]-prog_bounds[0])/100
         
+        df_incl = df.loc[df.include].copy(deep=True) \
+            if "include" in df.columns else df.copy(deep=True)
+        
         #Iterate over Dataframe
-        for index, row in df.iterrows():
-            #Skip entries, which are already processed or which were chosen
-            # explicitly not to be included
-            if row.status != "": continue
-            if "include" in df.columns and row.include==False: continue
-            
+        for index, row in df_incl.iterrows():
             if adj_fnames:
                 #standarize filename
                 filename, ext = self.adjust_fname (row["filename"] 
