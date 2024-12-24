@@ -784,6 +784,14 @@ class LibManager:
                 
             file.save()
         elif filepath.suffix == ".wav":
+            #Copy current metadata
+            with soundfile.SoundFile(filepath, 'r') as sf:
+                meta = sf.copy_metadata()
+            
+            #Add metadata which isn't updated to the kwargs
+            for key in ["genre", "artist", "title"]:
+                kwargs.setdefault(key, meta.get(key))
+            
             #Open file with wave package and rewrite contents (gets rid of any problematic 
             # header data)
             filepath_str = str(filepath) #wave package needs string path

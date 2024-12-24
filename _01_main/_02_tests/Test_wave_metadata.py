@@ -140,16 +140,19 @@
 
 #%% Load metadata from file
 
-# import soundfile
-# from pathlib import Path
-# filepath = r"C:\Users\davis\Downloads\SCDL Test\Test new files\Trance - Bounce - Low Energy - Vocal\5eurogoldi - Mehr von dem was du liebe nennst.wav"
+import soundfile
+from pathlib import Path
+filepath = r"C:\Users\davis\Downloads\SCDL Test\Wilderích X Idcs - Sloppy G-Day.wav"
 
-# with soundfile.SoundFile(filepath, 'r') as sf:
-#     meta = sf.copy_metadata()
+with soundfile.SoundFile(filepath, 'r') as sf:
+    meta = sf.copy_metadata()
 
-import music_tag
-filepath = r"C:\Users\davis\Downloads\SCDL Test\Test new files\Trance - Bounce - Low Energy - Vocal\100 Gecs - Doritos & fritos.mp3"
-
-file = music_tag.load_file(filepath)
-genre = str(file["genre"])
-
+# =============================================================================
+# import music_tag
+# filepath = r"C:\Users\davis\Downloads\SCDL Test\Test new files\Trance - Bounce - Low Energy - Vocal\100 Gecs - Doritos & fritos.mp3"
+# 
+# file = music_tag.load_file(filepath)
+# genre = str(file["genre"])
+# 
+# 
+# =============================================================================
