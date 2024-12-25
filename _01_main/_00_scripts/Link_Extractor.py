@@ -88,7 +88,8 @@ class PlaylistLinkExtractor:
         self.sc_account = sc_account
         
     def extr_playlists(self, search_key=[], search_type="all", use_cache=True,
-                       sc_account = None, update_progress_callback=False):
+                       sc_account = None, update_progress_callback=False,
+                       **kwargs):
         """Extract the links to the playlists from the soundcloud playlist 
         website for a specified soundcloud account. Results can be 
         filtered using the search_key via the full name of the playlists or a 
@@ -346,7 +347,9 @@ class PlaylistLinkExtractor:
     
     
     def extr_links(self, playlists = pd.DataFrame(), mode="new", autosave=True,
-                   update_progress_callback=False):
+                   update_progress_callback=False, 
+                   exec_msg=False, edit_msg_lbl=False, 
+                   **kwargs):
         """Extract the links to the tracks within the specified playlists. 
         
         Parameters: 
@@ -364,6 +367,11 @@ class PlaylistLinkExtractor:
             update_progress_callback (function handle - optional):
                 Function handle to return the progress (Intended for usage in 
                 conjunction with PyQt6 signals). 
+            exec_msg (PyQt Signal - optional):
+                PyQt6 signal to launch a message window
+            edit_msg_lbl (PyQt Signal - optional):
+                PyQt6 signal to edit the text of the message window from the 
+                exec_msg parameter
         
         Returns:
             self.track_df (pandas DataFrame): 
@@ -475,7 +483,6 @@ class PlaylistLinkExtractor:
                         By.CLASS_NAME, 
                         "trackList__item.sc-border-light-bottom.sc-px-2x"))
                     for i in range(n_tracks-1,-1,-1):
-                    
                         track_link, title, uploader = self.extr_track(i)
                         
                         #If track is last downloaded track, exit loop
@@ -489,32 +496,37 @@ class PlaylistLinkExtractor:
                         #If last track is not an empty string and if it wasn't
                         # found in the playlist, ask the user whether the found
                         # tracks should be kept or discarded
+                        pl_name = pl["name"]
                         msg = f"The last saved track \"{last_track_hist}\" was"\
-                              " not found in the playlist."\
+                              " not found in the playlist \""+pl["name"]+"\"."\
                               "\nDiscard the found files?"
-                        dlg = MsgDialog(message=msg, 
-                                        min_width=400)
-                        dlg.exec()
-                        if dlg._response:
+                        if edit_msg_lbl and exec_msg:
+                            edit_msg_lbl(msg)
+                            response = exec_msg("Track Extraction Warning")
+                        else:
+                            response = False
+
+                        if response:
                             self.playlists.loc[index, "status"] = \
                                 "Last track not found. Results discarded" 
+                            continue
                         else:
-                            #Invert the order of the curr_tracks
-                            curr_tracks = curr_tracks.iloc[::-1]
-                            curr_tracks.reset_index(inplace=True, drop=True)
-                                    
-                            #Save tracks
-                            # curr_tracks.insert (1, "title", "")
-                            curr_tracks.insert (4, "exceptions", "")
-                            curr_tracks.insert (5, "downloaded", False)
-                            
-                            tracks = pd.concat ([tracks, curr_tracks])
-        
-                            if autosave: self.track_df = \
-                                pd.concat ([self.track_df, curr_tracks])
                             self.playlists.loc[index, "status"] = \
                                 "Last track not found. Full playlist extracted"\
                                 f" ({len(curr_tracks)} tracks)" 
+                    #Invert the order of the curr_tracks
+                    curr_tracks = curr_tracks.iloc[::-1]
+                    curr_tracks.reset_index(inplace=True, drop=True)
+                            
+                    #Save tracks
+                    # curr_tracks.insert (1, "title", "")
+                    curr_tracks.insert (4, "exceptions", "")
+                    curr_tracks.insert (5, "downloaded", False)
+                    
+                    tracks = pd.concat ([tracks, curr_tracks])
+
+                    if autosave: self.track_df = \
+                        pd.concat ([self.track_df, curr_tracks])
             
             #Update progress bar
             if callable(update_progress_callback) and (i_prog>=.0499*n_pls):

@@ -73,7 +73,7 @@ class LibManager:
         
 
 
-    def read_dir (self, update_progress_callback=False):
+    def read_dir (self, update_progress_callback=False, **kwargs):
         """Finds all mp3 & wav files within the library directory and its 
         substructure.
         
@@ -93,7 +93,7 @@ class LibManager:
         return self.lib_df
             
     def read_files(self, directory, update_progress_callback=False, 
-                   excluded_folders = []):
+                   excluded_folders = [], **kwargs):
         """Finds all mp3 & wav files within a directory and its substructure.
         
         Parameters:
@@ -165,7 +165,7 @@ class LibManager:
         return doc
     
     def read_tracks(self, update_progress_callback=False, 
-                    directory=None, mode="replace"):
+                    directory=None, mode="replace", **kwargs):
         """Finds all mp3, wav and aiff files within a directory and its substructure.
         
         Parameters:
@@ -264,7 +264,7 @@ class LibManager:
                        adj_art_tit = True,
                        adj_genre = True, 
                        update_progress_callback=False,
-                       prog_bounds = [0,100]):
+                       prog_bounds = [0,100], **kwargs):
         """Strips the filename of predefined obsolete strings and inserts the 
         artist and title in the metadata.
         If the file is in the .wav format, then the sample rate is adjusted to 
@@ -493,7 +493,7 @@ class LibManager:
     def adjust_sample_rate(self, tracks=pd.DataFrame(), max_sr=48000, 
                            std_sr=44100, mode="nf", 
                            update_progress_callback=False, 
-                           prog_bounds = [0,100]):
+                           prog_bounds = [0,100], **kwargs):
         """Finds all .wav files and checks if their sample_rate is below max_sr. 
         If not so, the respective files are converted to the user specified
         sample rate std_sr

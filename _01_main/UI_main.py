@@ -1,3 +1,13 @@
+#%% Imports
+#General imports
+from pathlib import Path
+import warnings
+import pandas as pd
+import pathlib
+import time
+import json
+import os 
+
 #SCDL Imports
 from _00_scripts.SCDL_Master import Soundclouddownloader
 
@@ -17,19 +27,13 @@ import sys
 import win32con    # part of the pywin32 package
 import win32gui    # part of the pywin32 package 
 
-#Additional Imports
-# from mutagen.easyid3 import EasyID3
-# from mutagen.mp3 import MP3
-from pathlib import Path
-import warnings
-# from tqdm import tqdm
-import pandas as pd
-import pathlib
-import time
-import json
-import os 
+if __name__ == "__main__": 
+    from _00_scripts.UI_Msg_Dialog import Ui_MsgDialog
+else:
+    #If file is imported, use relative import
+    from ._00_scripts.UI_Msg_Dialog import Ui_MsgDialog
 
-
+#%% Main Window
 class MainWindow(QTW.QMainWindow, Ui_MainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
@@ -75,6 +79,9 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         #DL History Editor
         self.DLHistoryEditor = DLHistoryEditor()
         
+        #Message window
+        self.msg_window = MsgDialog(message="")
+        
         #Setup the Threadpool
         self.threadpool = QTC.QThreadPool()
         
@@ -110,7 +117,8 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         #SCDL buttons
         self.btn_pl_search.clicked.connect(
             lambda: self.run_fcn_thread(self.GUI_extr_playlists))
-        self.btn_track_ext.clicked.connect(self.GUI_extr_tracks)
+        self.btn_track_ext.clicked.connect(
+            lambda: self.run_fcn_thread(self.GUI_extr_tracks))
         self.btn_track_dl.clicked.connect(self.GUI_download_tracks)
         self.btn_dl_hist_up.clicked.connect(
             lambda: self.run_fcn_thread(self.GUI_update_dl_history))
@@ -694,14 +702,18 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
             # updated
             comboBox.currentTextChanged.emit(comboBox.currentText())
         
-    def GUI_extr_playlists (self, update_progress_callback=False):
+    def GUI_extr_playlists (self, update_progress_callback=False, **kwargs):
         """Exctracts the soundcloud playlists from the sc-account (c.f. 
         settings variable) and displays them in the left table widget
     
         Parameters:
-            update_progress_callback (function handle - optional):
-                Function handle to return the progress (Intended for usage in 
-                conjunction with PyQt6 signals). 
+            update_progress_callback (PyQt Signal - optional):
+                PyQt6 signal to update the progress 
+            exec_msg (PyQt Signal - optional):
+                PyQt6 signal to launch a message window
+            edit_msg_lbl (PyQt Signal - optional):
+                PyQt6 signal to edit the text of the message window from the 
+                exec_msg parameter
         
         Returns:
             None
@@ -735,14 +747,14 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         if callable(update_progress_callback):
             update_progress_callback(100)
 
-    def GUI_extr_tracks(self, update_progress_callback=False):
+    def GUI_extr_tracks(self, update_progress_callback=False, 
+                        exec_msg=False, edit_msg_lbl=False, **kwargs):
         """Extracts the links of the tracks from the soundcloud playlists
         and displays the results in the right table widget
         
         Parameters:
-            update_progress_callback (function handle - optional):
-                Function handle to return the progress (Intended for usage in 
-                conjunction with PyQt6 signals). 
+            update_progress_callback (PyQt Signal - optional):
+                PyQt6 signal to update the progress 
         
         Returns:
             None
@@ -755,7 +767,9 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
                                   autosave=True, 
                                   reextract=True,
                                   update_progress_callback = 
-                                      update_progress_callback)
+                                      update_progress_callback,
+                                  exec_msg=exec_msg,
+                                  edit_msg_lbl=edit_msg_lbl)
         else:
             print("No Playlists to extract tracks from found")
         
@@ -765,14 +779,13 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         if callable(update_progress_callback):
             update_progress_callback(100)
         
-    def GUI_download_tracks(self, update_progress_callback=False):
+    def GUI_download_tracks(self, update_progress_callback=False, **kwargs):
         """Downloads the Downloads in the track DataFrame
         and displays the results in the right table widget
         
         Parameters:
-            update_progress_callback (function handle - optional):
-                Function handle to return the progress (Intended for usage in 
-                conjunction with PyQt6 signals). 
+            update_progress_callback (PyQt Signal - optional):
+                PyQt6 signal to update the progress 
         
         Returns:
             None
@@ -816,7 +829,7 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
             if callable(update_progress_callback):
                 update_progress_callback(100)
     
-    def GUI_update_dl_history(self, update_progress_callback):
+    def GUI_update_dl_history(self, update_progress_callback, **kwargs):
         """Updates the Download history file with the last tracks from either
         the currently extracted playlists, or all playlists from the soundcloud
         profile
@@ -850,14 +863,13 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
             update_progress_callback(100)
     
     
-    def GUI_read_dir (self, update_progress_callback=False):
+    def GUI_read_dir (self, update_progress_callback=False, **kwargs):
         """Reads all .mp3 and .wav file from the track library directory (
         including subfolders)
         
         Parameters:
-            update_progress_callback (function handle - optional):
-                Function handle to return the progress (Intended for usage in 
-                conjunction with PyQt6 signals). 
+            update_progress_callback (PyQt Signal - optional):
+                PyQt6 signal to update the progress 
         
         Returns:
             None
@@ -874,19 +886,20 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         if callable(update_progress_callback):
             update_progress_callback(100)
     
-    def GUI_read_nf(self, page, update_progress_callback=False):
+    def GUI_read_nf(self, page, update_progress_callback=False, **kwargs):
         """Reads all .mp3 and .wav file from the new files directory (
         including subfolders)
         
         Parameters:
-            update_progress_callback (function handle - optional):
-                Function handle to return the progress (Intended for usage in 
-                conjunction with PyQt6 signals). 
+            update_progress_callback (PyQt Signal - optional):
+                PyQt6 signal to update the progress 
         
         Returns:
             None
         """
-        update_progress_callback(0)
+        #Update the progress bar
+        if callable(update_progress_callback):
+            update_progress_callback(0)
         if page == 1:
             nf_dir_cust = self.lineEdit_nf_dir_1.text()
         elif page == 2: 
@@ -912,15 +925,14 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         if callable(update_progress_callback):
             update_progress_callback(100)
 
-    def GUI_prep_files(self, update_progress_callback=False):
+    def GUI_prep_files(self, update_progress_callback=False, **kwargs):
         """Preps the files in either the new file directory or the track library.
         It can be selected whether the filenames should be unified, the metadata
         inserted and the samplerate checked.
         
         Parameters:
-            update_progress_callback (function handle - optional):
-                Function handle to return the progress (Intended for usage in 
-                conjunction with PyQt6 signals). 
+            update_progress_callback (PyQt Signal - optional):
+                PyQt6 signal to update the progress 
         
         Returns:
             None
@@ -987,7 +999,7 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         if callable(update_progress_callback):
             update_progress_callback(100)
     
-    def GUI_find_goal_fld(self):
+    def GUI_find_goal_fld(self, **kwargs):
         """Finds the folder (and file name) where the files in the new files
         directory should be moved to within the track library directory. 
         Determination of the folder & filename is either based on the metadata
@@ -1007,7 +1019,7 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         #Update table display
         self.update_tbl_display (lr="right", variable = "New Files")
     
-    def GUI_move_files(self):
+    def GUI_move_files(self, **kwargs):
         """Moves the files in the new files directory to the goal folder and 
         goal file specified in the file_df
         
@@ -1025,7 +1037,7 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         self.update_tbl_display (lr="right", variable = "New Files")
         self.update_tbl_display (lr="left", variable = "Library Files")
     
-    def GUI_del_doubles(self):
+    def GUI_del_doubles(self, **kwargs):
         """Deletes the files in the file_df for which a corresponding file in 
         the library was found (Looks up the goal folder and goal filename in 
         the file_df). 
@@ -1049,7 +1061,7 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         self.update_tbl_display (lr="right", variable = "New Files")
         self.update_tbl_display (lr="left", variable = "Library Files")
     
-    def GUI_reset_goal_fld (self):
+    def GUI_reset_goal_fld (self, **kwargs):
         """Resets the found goal folder and goal filename
         
         Parameters:
@@ -1279,6 +1291,10 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         """
         worker = Worker(fcn)
         worker.signals.progress_updated.connect(self.update_progress)
+        worker.signals.update_label.connect(self.change_msg_label)
+        worker.signals.show_message.connect(self.show_msg_dialog)
+        worker.signals.msg_accept_txt.connect(self.change_msg_accept_txt)
+        worker.signals.msg_reject_txt.connect(self.change_msg_reject_txt)
         self.threadpool.start(worker)
         
     def update_progress(self, value):
@@ -1296,7 +1312,27 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         if value < 0:
             value = 0
         self.progressBar.setValue(value)
+        
+    def change_msg_label(self, text):
+        self.msg_window.msg_lbl.setText(text)
+    
+    def change_msg_accept_txt(self, text):
+        self.msg_window.buttonBox.button(
+            QTW.QDialogButtonBox.StandardButton.Yes).setText(text)
+        
+    def change_msg_reject_txt(self, text):
+        self.msg_window.buttonBox.button(
+            QTW.QDialogButtonBox.StandardButton.No).setText(text)
+        
+    def show_msg_dialog (self, window_title="Message window"):
+        self.msg_window.exec()
 
+        # Emit the response back to the worker thread
+        sender = self.sender()  # Identify the signal sender
+        if isinstance(sender, WorkerSignals):  # Verify it's a WorkerSignals instance
+            sender.user_response.emit(self.msg_window._response)
+        
+        
 #%% SettingsWindow
 
 class SettingsWindow (QTW.QDialog, Ui_SettingsDialog):
@@ -1669,11 +1705,56 @@ class OutputLogger:
     def flush(self):
         pass  # No need to implement this for a QTextEdit
 
+#%% Message Dialog
+
+class MsgDialog (QTW.QDialog, Ui_MsgDialog):
+    def __init__(self, message: str, window_title="Message window",
+                 accept_btn_text = "Yes", reject_btn_text = "No", 
+                 min_width=300):
+        super(MsgDialog, self).__init__()
+        self.setupUi(self)
+        
+        #Set up window title
+        self.setWindowTitle(window_title)
+        
+        # Set up label and button box
+        self.msg_lbl.setText(message)
+        self.buttonBox.button(QTW.QDialogButtonBox.StandardButton.Yes
+                              ).setText(accept_btn_text)
+        self.buttonBox.button(QTW.QDialogButtonBox.StandardButton.No
+                              ).setText(reject_btn_text)
+        
+        #Setup buttons and response variable
+        self._response = False 
+        self.buttonBox.accepted.connect(self.on_accept)
+        self.buttonBox.rejected.connect(self.on_reject)
+        
+        # Adjust size to fit content
+        self.setMinimumSize(QTC.QSize(min_width, 100))
+        self.adjustSize()
+        
+    def on_accept (self):
+        self._response = True
+        self.accept()
+        
+    def on_reject (self):
+        self._response = False
+        self.reject()
+
 #%% Worker 
 
 # A class for emitting signals (since QRunnable does not support signals directly)
 class WorkerSignals(QTC.QObject):
     progress_updated = QTC.pyqtSignal(int)  # Signal to update progress bar
+    update_label = QTC.pyqtSignal(str)      # Signal to update label text
+    show_message = QTC.pyqtSignal(str)      # Signal to open a message window
+    user_response = QTC.pyqtSignal(bool)      # Signal to send user response
+    msg_accept_txt = QTC.pyqtSignal(str)      # Signal to change the text of 
+                                              # the accept button of the 
+                                              # message window
+    msg_reject_txt = QTC.pyqtSignal(str)      # Signal to change the text of 
+                                              # the reject button of the 
+                                              # message window
 
 class Worker(QTC.QRunnable):
     """
@@ -1713,7 +1794,12 @@ class Worker(QTC.QRunnable):
             None
         """
         # Execute the function with the provided arguments
-        self.fn(self.emit_progress, *self.args, **self.kwargs)
+        self.fn(update_progress_callback = self.emit_progress, 
+                exec_msg = self.emit_show_message,
+                edit_msg_lbl = self.emit_update_label,
+                edit_accept_txt = self.emit_accept_text,
+                edit_reject_txt = self.emit_reject_text,
+                *self.args, **self.kwargs)
 
     def emit_progress(self, value):
         """Emit progress signal to update progress bar.
@@ -1726,6 +1812,32 @@ class Worker(QTC.QRunnable):
             None
         """
         self.signals.progress_updated.emit(value)
+    
+    def emit_update_label(self, text):
+        self.signals.update_label.emit(text)
+
+    def emit_show_message(self, message="Message Window"):
+        # Emit a signal to request user input
+        self.signals.show_message.emit(message)
+
+        # Wait for the user response
+        loop = QTC.QEventLoop()
+        self.signals.user_response.connect(lambda response: 
+                                           self._set_user_response(response, 
+                                                                   loop))
+        loop.exec()  # Block until the user responds
+
+        return self.user_response
+
+    def _set_user_response(self, response, loop):
+        self.user_response = response
+        loop.quit()  # Exit the event loop
+        
+    def emit_accept_text(self, text):
+        self.signals.msg_accept_txt.emit(text)
+        
+    def emit_reject_text(self, text):
+        self.signals.msg_reject_txt.emit(text)
 
 #%% Main
 

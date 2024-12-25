@@ -97,7 +97,8 @@ class Soundclouddownloader:
     def extr_playlists(self, search_key=[], search_type="all", 
                        use_cache = True,
                        sc_account = None,
-                       update_progress_callback=False):
+                       update_progress_callback=False,
+                       **kwargs):
         """Extract the links to the playlists from the soundcloud playlist 
         website for a specified soundcloud account. Results can be 
         filtered using the search_key via the full name of the playlists or a 
@@ -141,7 +142,10 @@ class Soundclouddownloader:
     
     def extr_tracks(self, playlists = pd.DataFrame(), mode="new", 
                     autosave=True, reextract=False,
-                    update_progress_callback=False):
+                    update_progress_callback=False,
+                    exec_msg=False,
+                    edit_msg_lbl=False,
+                    **kwargs):
         """Extract the links to the tracks within the specified playlists
         
         Parameters: 
@@ -156,9 +160,13 @@ class Soundclouddownloader:
             autosave (bool - optional): 
                 whether the results should automatically be saved to the 
                 self.track_df (default: yes)
-            update_progress_callback (function handle - optional):
-                Function handle to return the progress (Intended for usage in 
-                conjunction with PyQt6 signals). 
+            update_progress_callback (PyQt Signal - optional):
+                PyQt6 signal to update the progress 
+            exec_msg (PyQt Signal - optional):
+                PyQt6 signal to launch a message window
+            edit_msg_lbl (PyQt Signal - optional):
+                PyQt6 signal to edit the text of the message window from the 
+                exec_msg parameter
         
         Returns:
             self.track_df (pandas DataFrame): 
@@ -181,7 +189,9 @@ class Soundclouddownloader:
                                                 mode=mode, 
                                                 autosave=autosave,
                                                 update_progress_callback = 
-                                                    update_progress_callback)
+                                                    update_progress_callback,
+                                                exec_msg=exec_msg,
+                                                edit_msg_lbl=edit_msg_lbl)
             # self.track_df.insert(len(self.track_df.columns), "downloaded", False)
             return self.track_df
         else:
@@ -331,7 +341,6 @@ class Soundclouddownloader:
                                           ext=curr_tracks.loc[index, "ext"],
                                           corr_name=correct_fname)
                 
-                raise ValueError()
                 #If the track is the last track in the playlist, wait for the DL
                 #to finish so that all tracks can be moved out of the tmp directory
                 if index == curr_tracks.iloc[-1].name:
