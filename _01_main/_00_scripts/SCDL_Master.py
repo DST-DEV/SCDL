@@ -56,7 +56,10 @@ class Soundclouddownloader:
             self.track_df = pd.DataFrame(columns=["playlist", "title", 
                                                   "link", "uploader",
                                                   "exceptions", "downloaded"])
-       
+        #Prepare dl_tracks dictionary for the downloader function
+        self.dl_tracks = dict(pl_name=[], dl_name=[], ext=[], corr_name=[])
+        
+        
         #Determine new file directory
         if type(dl_dir)==type(None):
             self.dl_dir = Path("C:/Users", 
@@ -225,7 +228,11 @@ class Soundclouddownloader:
         print (f"\nDownloading {len(tracks_tbd)} new tracks from {pl_len} playlists")
         MP3DL = SoundcloudMP3Downloader(driver=self.driver_choice,
                                         dl_folder = self.dl_dir)
- 
+        
+        #Prepare list of files for downloaded tracks
+        self.dl_tracks = dict(pl_name=[], dl_name=[], ext=[], corr_name=[])
+        
+        #Iterate over the playlists
         for index, pl_name in playlists.items():
             curr_tracks = tracks_tbd.loc[tracks_tbd.playlist==pl_name]
             
@@ -275,19 +282,6 @@ class Soundclouddownloader:
                         #replaces certain characters)
                         dl_title = self.convert_title(track.title)
                         
-                        #Determine the file type 
-                        if Path(self.dl_dir, "tmp", dl_title + ".mp3").exists():
-                            curr_tracks.loc[index, "ext"] = ".mp3"
-                        elif Path(self.dl_dir, "tmp", dl_title +".wav").exists():
-                            curr_tracks.loc[index, "ext"] = ".wav"
-                        else:
-                            self.track_df = self.add_exception(
-                                self.track_df, col="exceptions",
-                                msg="Metadata exception: DL name "
-                                    +"could not be determined", 
-                                key = track.link, 
-                                search_col="link")
-                        
                         #Change the filename to the correct format
                         # (If no artist is specified in the filename, then add the 
                         # name of the uploader)
@@ -308,7 +302,15 @@ class Soundclouddownloader:
                         # file to be downloaded before continuing with the next track
                         curr_tracks.loc[index, "title"] = correct_fname
                         curr_tracks.loc[index, "dl_name"] = dl_title
-    
+                        
+                        #Determine the file type 
+                        if Path(self.dl_dir, "tmp", dl_title + ".mp3").exists():
+                            curr_tracks.loc[index, "ext"] = ".mp3"
+                        elif Path(self.dl_dir, "tmp", dl_title +".wav").exists():
+                            curr_tracks.loc[index, "ext"] = ".wav"
+                        else:
+                            raise OSError("DL name could not be determined")
+
                     except Exception as e:
                         # print("\n" + str(e))
                         
@@ -321,7 +323,15 @@ class Soundclouddownloader:
                                                            msg=f"Metadata exception: {e}", 
                                                            key = track.link, 
                                                            search_col="link")
+                    else:
+                        #Add the track to the dl_tracks dictionary
+                        self.add_dict_row(self.dl_tracks, 
+                                          pl_name=pl_name, 
+                                          dl_name=dl_title,
+                                          ext=curr_tracks.loc[index, "ext"],
+                                          corr_name=correct_fname)
                 
+                raise ValueError()
                 #If the track is the last track in the playlist, wait for the DL
                 #to finish so that all tracks can be moved out of the tmp directory
                 if index == curr_tracks.iloc[-1].name:
@@ -355,7 +365,7 @@ class Soundclouddownloader:
             for index, track in curr_tracks.iterrows():
                 try:
                     if track.ext:
-                        os.replace(Path(self.dl_dir, "tmp", 
+                        os.rename(Path(self.dl_dir, "tmp", 
                                         track.dl_name + track.ext), 
                                    Path(self.dl_dir, "tmp", 
                                         track.title + track.ext)
@@ -368,13 +378,13 @@ class Soundclouddownloader:
             
                 except:
                     print(f"Warning: Renaming error for file {track.title}")
-            
             try:
                 #Move all files in the "tmp" folder to the dl folder
                 files = [f for f in os.listdir(Path(self.dl_dir, "tmp")) 
                          if os.path.isfile(Path(self.dl_dir, "tmp", f))]
                 for file in files:
                     try:
+                        #Try to insert the metadata again to be sure
                         self.LibMan.set_metadata(Path(self.dl_dir, "tmp", file), 
                                                  genre=pl_name)
                     except:
@@ -386,7 +396,6 @@ class Soundclouddownloader:
                     print("Warning: Moving files error for file {file}")
                 else:
                     print("Warning: Moving files error for file")
-            
             
             #Update the playlists dataframe
             self.playlists.loc[self.playlists["name"]==pl_name, 
@@ -495,6 +504,24 @@ class Soundclouddownloader:
             raise ValueError("no valid index or search key and search column provided")
             
         return df
+    
+    def add_dict_row(self, dictionary, **kwargs):
+        """Add a entry to a dictionary in which the value for each key is a 
+        list. If no data is specified for one of the keys, then an empty string
+        is inserted
+        
+        Parameters:
+            dictionary (dict):
+                The dictionary to add the data to
+           kwargs (key-value pairs):
+               The data to add in the new row given as key-value pairs with 
+               scalar values
+               
+        Returns:
+            None
+        """
+        for key in dictionary.keys():
+            dictionary[key].append(kwargs.get(key, ""))
 
 #%% Notifications Dialog
 class NotificationDialog (QTW.QDialog, Ui_NotificationDialog):

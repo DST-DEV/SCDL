@@ -784,6 +784,28 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
             self.SCDL.download_tracks()
         except Exception as e:
             print(f"Error while downloading tracks {e.__class__}: {e}")
+            
+            #If downloading failed, try to rename and move the files
+            for index, track in pd.DataFrame(self.SCDL.dl_tracks).iterrows():
+                if track.ext:
+                    try:
+                        #Rename the file
+                        new_path = Path(self.SCDL.dl_dir, "tmp", 
+                                        track.corr_name + track.ext)
+                        os.rename(Path(self.SCDL.dl_dir, "tmp", 
+                                        track.dl_name + track.ext), 
+                                  new_path) 
+                    except: pass
+                    else:
+                        try:
+                            #Insert the genre metadata
+                            self.SCDL.LibMan.set_metadata(new_path, 
+                                                          genre=track.pl_name)
+                        except: pass
+                        else:
+                            #Move the file out of the tmp folder
+                            os.replace(new_path, 
+                                       Path(self.SCDL.dl_dir, new_path.name))
         finally:
             #Update table display
             self.update_tbl_display (lr="left", 
