@@ -1312,58 +1312,6 @@ class MsgDialog (QTW.QDialog, Ui_MsgDialog):
         self._response = False
         self.reject()
         
-# =============================================================================
-# class MsgDialog(QTW.QDialog):
-#     def __init__(self, message: str, window_title="Message window",
-#                  accept_btn_text = "Yes", reject_btn_text = "No", 
-#                  parent=None):
-#         super().__init__(parent)
-#         
-#         #Set up window title
-#         self.setWindowTitle(window_title)
-#         
-#         #Format window size
-#         sizePolicy = QTW.QSizePolicy(QTW.QSizePolicy.Policy.Preferred, 
-#                                      QTW.QSizePolicy.Policy.Preferred)
-#         sizePolicy.setHorizontalStretch(0)
-#         sizePolicy.setVerticalStretch(0)
-#         sizePolicy.setHeightForWidth(self.sizePolicy().hasHeightForWidth())
-#         self.setSizePolicy(sizePolicy)
-#         self.setMinimumSize(QTC.QSize(300, 120))
-#         self.setMaximumSize(QTC.QSize(500, 200))
-#         
-#         # Set up label and button box
-#         self.label = QTW.QLabel(message, self)
-#         self.label.setWordWrap(True)  # Allow text to wrap for proper sizing
-#         self.buttonBox = QTW.QDialogButtonBox()
-#         self.buttonBox.addButton(accept_btn_text, 
-#                                  QTW.QDialogButtonBox.ButtonRole.AcceptRole)
-#         self.buttonBox.addButton(reject_btn_text, 
-#                                  QTW.QDialogButtonBox.ButtonRole.RejectRole)
-# 
-#         # Set up the layout
-#         layout = QTW.QVBoxLayout()
-#         layout.addWidget(self.label)
-#         layout.addWidget(self.buttonBox)
-#         self.setLayout(layout)
-# 
-#         # Adjust size to fit content
-#         self.adjustSize()
-#         
-#         #Setup buttons and response variable
-#         self._response = False 
-#         self.buttonBox.accepted.connect(self.on_accept)
-#         self.buttonBox.rejected.connect(self.on_reject)
-#         
-#     def on_accept (self):
-#         self._response = True
-#         self.accept()
-#         
-#     def on_reject (self):
-#         self._response = False
-#         self.reject()
-# =============================================================================
-    
 if __name__ == '__main__':
     # nf_dir = Path("C:/Users", os.environ.get("USERNAME"), "Downloads", "music")
     # path = Path("C:/Users/davis/00_data/04_Track_Library/00_Organization/00_New_files")
