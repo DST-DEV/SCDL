@@ -1,6 +1,7 @@
 #%% Imports
 #General imports
 import re
+import time
 import numpy as np
 import pandas as pd
 
@@ -19,7 +20,6 @@ import difflib
 import pathlib
 from pathlib import Path
 from pathlib import PurePath
-import time
 
 #GUI Imports
 import PyQt6.QtWidgets as QTW
@@ -858,14 +858,20 @@ class LibManager:
         """
         
         if type(file_df) != pd.core.frame.DataFrame or file_df.empty:
-            file_df = self.file_df if not self.file_df.empty else self.read_tracks()
+            file_df = self.file_df if not self.file_df.empty \
+                        else self.read_tracks()
         else:
             self.file_df = file_df
-            
+
+        if "include" in file_df.columns: 
+            files_tbd = file_df.loc[file_df.include==True].copy(deep=True)
+        else:
+            files_tbd = file_df.copy(deep=True)
+        
         if mode=="namesearch":
             lib_df = self.lib_df if not self.lib_df.empty else self.read_dir()
             
-        for index, row in file_df.iterrows():
+        for index, row in files_tbd.iterrows():
             if mode == "metadata":
                 filepath = Path(row["directory"], row["folder"], 
                                 row.filename + row["extension"])
@@ -887,6 +893,9 @@ class LibManager:
                     if library_fld:
                         file_df.loc[index, "goal_dir"]=str(self.lib_dir)
                         file_df.loc[index, "goal_fld"]=library_fld
+                    else:
+                        file_df.loc[index, "goal_dir"]=""
+                        file_df.loc[index, "goal_fld"]=""
                 except Exception as e:
                     file_df = self.add_exception(
                         file_df, col = "status",
@@ -916,6 +925,10 @@ class LibManager:
                     #                      + row.filename
                     #                      + row.extension
                     #                      for i,row in res.iterrows()])
+                else:
+                    file_df.loc[index, "goal_dir"] = ""
+                    file_df.loc[index, "goal_fld"] = ""
+                    file_df.loc[index, "goal_name"] = ""
             else:
                 raise ValueError("mode must me either 'metadata' or "
                                  + f"'namesearch, not {mode}")
@@ -958,7 +971,7 @@ class LibManager:
         dlg.exec()
         
         if dlg._response:
-            #
+            #Filter for rows to include
             if "include" in self.file_df.columns: 
                 file_df = self.file_df.loc[(self.file_df.goal_name!="") 
                                           & (self.file_df.include==True)
@@ -1311,7 +1324,8 @@ class MsgDialog (QTW.QDialog, Ui_MsgDialog):
     def on_reject (self):
         self._response = False
         self.reject()
-        
+
+#%% Main        
 if __name__ == '__main__':
     # nf_dir = Path("C:/Users", os.environ.get("USERNAME"), "Downloads", "music")
     # path = Path("C:/Users/davis/00_data/04_Track_Library/00_Organization/00_New_files")
