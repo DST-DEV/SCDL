@@ -110,8 +110,7 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         #SCDL buttons
         self.btn_pl_search.clicked.connect(
             lambda: self.run_fcn_thread(self.GUI_extr_playlists))
-        self.btn_track_ext.clicked.connect(
-            lambda: self.run_fcn_thread(self.GUI_extr_tracks))
+        self.btn_track_ext.clicked.connect(self.GUI_extr_tracks)
         self.btn_track_dl.clicked.connect(self.GUI_download_tracks)
         self.btn_dl_hist_up.clicked.connect(
             lambda: self.run_fcn_thread(self.GUI_update_dl_history))

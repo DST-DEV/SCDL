@@ -1,20 +1,37 @@
+#%% Imports
+#General imports
 import re
-import os
-import threading
+import time
 import numpy as np
 import pandas as pd
 from functools import reduce
-import pathlib
-from pathlib import Path
+# import threading
+
+#Webdriver imports
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.firefox.options import Options
-import unicodedata
+
+#File Handling imports
+import os
 import json
-import time
+import pathlib
+from pathlib import Path
+import unicodedata
+
+#GUI Imports
+import PyQt6.QtWidgets as QTW
+import PyQt6.QtCore as QTC
+from PyQt6.QtCore import Qt
+
+if __name__ == "__main__": 
+    from UI_Msg_Dialog import Ui_MsgDialog
+else:
+    #If file is imported, use relative import
+    from .UI_Msg_Dialog import Ui_MsgDialog
 
 class PlaylistLinkExtractor:
     timeout = 10
@@ -454,11 +471,10 @@ class PlaylistLinkExtractor:
                 else:
                     #Extract tracks (starting with the newest one, i.e. the 
                     # last one in the track container)
-                    for i in range(len(self.driver.find_elements(
+                    n_tracks = len(self.driver.find_elements(
                         By.CLASS_NAME, 
-                        "trackList__item.sc-border-light-bottom.sc-px-2x"))-1,
-                                    -1,
-                                   -1):
+                        "trackList__item.sc-border-light-bottom.sc-px-2x"))
+                    for i in range(n_tracks-1,-1,-1):
                     
                         track_link, title, uploader = self.extr_track(i)
                         
@@ -469,22 +485,36 @@ class PlaylistLinkExtractor:
                                                              title,
                                                              track_link,
                                                              uploader]
-                    
-                    #Invert the order of the curr_tracks
-                    curr_tracks = curr_tracks.iloc[::-1]
-                    curr_tracks.reset_index(inplace=True, drop=True)
+                    if len(curr_tracks)==n_tracks and last_track_hist:
+                        #If last track is not an empty string and if it wasn't
+                        # found in the playlist, ask the user whether the found
+                        # tracks should be kept or discarded
+                        msg = f"The last saved track \"{last_track_hist}\" was"\
+                              " not found in the playlist."\
+                              "\nDiscard the found files?"
+                        dlg = MsgDialog(message=msg, 
+                                        min_width=400)
+                        dlg.exec()
+                        if dlg._response:
+                            self.playlists.loc[index, "status"] = \
+                                "Last track not found. Results discarded" 
+                        else:
+                            #Invert the order of the curr_tracks
+                            curr_tracks = curr_tracks.iloc[::-1]
+                            curr_tracks.reset_index(inplace=True, drop=True)
+                                    
+                            #Save tracks
+                            # curr_tracks.insert (1, "title", "")
+                            curr_tracks.insert (4, "exceptions", "")
+                            curr_tracks.insert (5, "downloaded", False)
                             
-                    #Save tracks
-                    # curr_tracks.insert (1, "title", "")
-                    curr_tracks.insert (4, "exceptions", "")
-                    curr_tracks.insert (5, "downloaded", False)
-                    
-                    tracks = pd.concat ([tracks, curr_tracks])
-# =============================================================================
-#                     #self.playlists.loc[index, "last_track"] = curr_tracks.iloc[-1].link
-# =============================================================================
-                    if autosave: self.track_df = pd.concat ([self.track_df, curr_tracks])
-                    self.playlists.loc[index, "status"] = f"{len(curr_tracks)} new tracks found" 
+                            tracks = pd.concat ([tracks, curr_tracks])
+        
+                            if autosave: self.track_df = \
+                                pd.concat ([self.track_df, curr_tracks])
+                            self.playlists.loc[index, "status"] = \
+                                "Last track not found. Full playlist extracted"\
+                                f" ({len(curr_tracks)} tracks)" 
             
             #Update progress bar
             if callable(update_progress_callback) and (i_prog>=.0499*n_pls):
@@ -869,6 +899,41 @@ class PlaylistLinkExtractor:
             
         return df
 
+#%% Message Dialog
+
+class MsgDialog (QTW.QDialog, Ui_MsgDialog):
+    def __init__(self, message: str, window_title="Message window",
+                 accept_btn_text = "Yes", reject_btn_text = "No", 
+                 min_width=300):
+        super(MsgDialog, self).__init__()
+        self.setupUi(self)
+        
+        #Set up window title
+        self.setWindowTitle(window_title)
+        
+        # Set up label and button box
+        self.msg_lbl.setText(message)
+        self.buttonBox.button(QTW.QDialogButtonBox.StandardButton.Yes).setText(accept_btn_text)
+        self.buttonBox.button(QTW.QDialogButtonBox.StandardButton.No).setText(reject_btn_text)
+        
+        #Setup buttons and response variable
+        self._response = False 
+        self.buttonBox.accepted.connect(self.on_accept)
+        self.buttonBox.rejected.connect(self.on_reject)
+        
+        # Adjust size to fit content
+        self.setMinimumSize(QTC.QSize(min_width, 100))
+        self.adjustSize()
+        
+    def on_accept (self):
+        self._response = True
+        self.accept()
+        
+    def on_reject (self):
+        self._response = False
+        self.reject()
+        
+#%% Main
 if __name__ == '__main__':
     ple = PlaylistLinkExtractor(hist_file = r"C:\Users\davis\00_data\01_Projects\Personal\SCDL\_01_main\_01_rsc\Download_history.txt")
     
