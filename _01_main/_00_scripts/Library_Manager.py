@@ -722,7 +722,7 @@ class LibManager:
             self.set_metadata(filepath, artist=artist, title=title)
 
         
-    def set_metadata(self, filepath, exp_wav=False, **kwargs):
+    def set_metadata(self, filepath, **kwargs):
         """Writes the metadata provided via the **kwargs parameter into the 
             file provided by the filename
             Note: Supported file formats: .mp3, .wav, .aiff
@@ -730,15 +730,6 @@ class LibManager:
         Parameters:
             filepath (str or type(Path())): 
                 absolute path to the file to be edited
-            exp_wav (bool):
-                Whether the track should be imported and exported in Audacity.
-                This option is only relevant for .wav files as their metadata
-                is not correctly displayed in the Windows Explorer and Recordbox
-                after the adjustment via the music_tag package.
-                
-                Note: For this feature, Audacity must be opened and the 
-                "mod-script-pipe" option in the Edit->Preferences->Modules must 
-                be enabled
             **kwargs: 
                 metadata to be edited. Valid metadata fields are:
                 - artist
@@ -775,7 +766,7 @@ class LibManager:
             
             #Add metadata which isn't updated to the kwargs
             for key in ["genre", "artist", "title"]:
-                kwargs.setdefault(key, meta.get(key))
+                kwargs.setdefault(key, meta.get(key, ""))
             
             #Open file with wave package and rewrite contents (gets rid of any problematic 
             # header data)
@@ -792,12 +783,13 @@ class LibManager:
             #Insert metadata with soundfile package
             with soundfile.SoundFile(filepath, 'r+') as sf:
                 for key, value in kwargs.items():
-                    if key in valid_keys:
+                    if key in valid_keys and not value=="":
                         sf.__setattr__(key, value)
         else: 
             raise ValueError(f"Invalid file format: {filepath.suffix}")
 
-    def convert_to_alphanumeric(self, input_string):
+    @staticmethod
+    def convert_to_alphanumeric(input_string):
         """Convert an arbitrary string to its closest alphanumeric 
         representation  in standard ascii characters (remove non ascii 
         characters and convert diacritics to standard characters)
@@ -1289,4 +1281,33 @@ if __name__ == '__main__':
     # nf_dir = r"C:\Users\davis\Downloads\SCDL test\00_General\new files"
     # lib_dir = r"C:\Users\davis\Downloads\SCDL test"
     # LibMan = LibManager(lib_dir, nf_dir)
+    
+    fnames = ["Latex Dreams @Syndiakt Sessions Skate Park Outdoor  3.9.22",
+              "ACOUPHÈNES - Alerte Rouge",
+              "æsmå - ode à l'anarchie",
+              "GØWTHER - Tears Of The Crow",
+              "A2XBY - Scorpio (B̶L̸E̶K̸J̵A̶C̸K̴ Remix)",
+              "Karl Schwarz - Spasmodic Craving (Køzløv Remix)",
+              "YÅ - Step Back In Time",
+              "Brutalismus 3000 - Diskotéka",
+              "Melissa D'Lima - Paralysed By My Own Emotion",
+              "Bnzo - Nächte Im Park (Tiktok Hypertechno Remix)",
+              "Impuls - Отменяй (Hardtechno Remix)",
+              "Paulindaclub - Je sais ce que je fais (AD†AM Remix)",
+              "WILLOW - Wait A Minute!(ANØMALY Edit)",
+              "B.unq! - Got that booty (Original Mix)",
+              "$uicideboy$ - Carrollton (Jawis Fallon Edit)",
+              "Marsi - Нас Не Догонят",
+              "IC3PEAK - Плак Плак (R Dude & TwoTypeZ Hard Remix)",
+              "Toxic Machinery x ÆRES x MOROS - Funeral",
+              "Brutalismus3000 - Atmosféra",
+              "Je$$e - Barbie (Hardtechno Edit)",
+              "molchat doma  - cудно (pete posteuropa edit)",
+              "Глеб Крижановский - Гуляю, Рассветы Встречаю",
+              "Wilderích X Idcs - Sloppy G-Day",
+              "Elley Duhé - Money",
+              "Céleste - The Shot",
+              "brvder jakob & YËDM - Girl Boss [FREE DL]",
+              ]
+    
     pass
