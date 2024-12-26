@@ -119,7 +119,7 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         
 # =============================================================================
 #         # Set the custom icon for the application
-#         icon = QTG.QIcon(r"./_01_rsc/SCDLO_V1_icon.ico")  # Replace with the actual path to your icon file
+#         icon = QTG.QIcon(r"./_01_rsc/SCDLO_V1_icon.ico")
 #         self.setWindowIcon(icon)
 # =============================================================================
         
@@ -133,9 +133,6 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         Returns:
             None
         """
-        # Redirect stdout and stderr
-        sys.stdout = OutputLogger(self.txtedit_messages)
-        sys.stderr = OutputLogger(self.txtedit_messages)
         
         #SCDL buttons
         self.btn_pl_search.clicked.connect(
