@@ -83,7 +83,8 @@ class PlaylistLinkExtractor:
         self.sc_account = sc_account
         
     def extr_playlists(self, search_key=[], search_type="all", use_cache=True,
-                       sc_account = None, update_progress_callback=False,
+                       sc_account = None, replace = True, 
+                       update_progress_callback=False,
                        **kwargs):
         """Extract the links to the playlists from the soundcloud playlist 
         website for a specified soundcloud account. Results can be 
@@ -107,6 +108,9 @@ class PlaylistLinkExtractor:
                 profile
             sc_account (str):
                 soundcloud profile from which the playlists should be extracted
+            replace (bool):
+                Selection whether results should replace the current playlists 
+                list or append to it (default: True)
             update_progress_callback (function handle - optional):
                 Function handle to return the progress (Intended for usage in 
                 conjunction with PyQt6 signals). 
@@ -222,9 +226,7 @@ class PlaylistLinkExtractor:
             playlists = self.playlists_cache.copy(deep=True)
         
         #Filter playlists according to user specifications
-        if search_type=="all":
-            self.playlists = playlists.copy(deep=True)
-        else:
+        if not search_type=="all":
             if not search_key:
                 raise ValueError('No search keys provided for search mode '
                                  + f'"{search_type}"')
@@ -236,26 +238,34 @@ class PlaylistLinkExtractor:
                             + r')'
                 
                 #Filter the dataframe (case insensitive)
-                self.playlists = playlists.loc[
+                playlists = playlists.loc[
                     playlists["name"].str.contains(pat = search_key,
                                                    flags = re.IGNORECASE)
-                    ].copy(deep=True)
+                    ]
             if search_type == "exact":    
-                # search_key = [s.title() for s in search_key]
-                
-                self.playlists = playlists.loc[
+                playlists = playlists.loc[
                         playlists["name"].isin(search_key)
-                        ].copy(deep=True)
-                
-        self.playlists.reset_index(drop=True, inplace=True)
-        print (f"Extracted {self.playlists.shape[0]} playlists")
+                        ]
         
         #Insert the last saved "last track" into the dataframe
         with open(self.history_file, "r") as f:
             history = json.loads(f.read())
-        self.playlists["last_track"] = self.playlists["name"].map(
+        playlists["last_track"] = playlists["name"].map(
                                         lambda name: history.get(name, ""))
-
+        
+        if replace:
+            self.playlists = playlists.copy(deep=True)
+        else:
+            if "last_track" not in self.playlists.columns:
+                self.playlists["last_track"]=""
+            
+            self.playlists = pd.concat(
+                [self.playlists, playlists]).drop_duplicates(
+                    ['name'],keep='first')
+                
+        self.playlists.reset_index(drop=True, inplace=True)
+        print (f"Extracted {self.playlists.shape[0]} playlists")
+        
         return self.playlists
     
     def extr_track(self, index):

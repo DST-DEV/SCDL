@@ -97,6 +97,7 @@ class Soundclouddownloader:
     def extr_playlists(self, search_key=[], search_type="all", 
                        use_cache = True,
                        sc_account = None,
+                       replace = True,
                        **kwargs):
         """Extract the links to the playlists from the soundcloud playlist 
         website for a specified soundcloud account. Results can be 
@@ -120,6 +121,9 @@ class Soundclouddownloader:
                 profile
             sc_account (str):
                 soundcloud profile from which the playlists should be extracted
+            replace (bool):
+                Selection whether results should replace the current playlists 
+                list or append to it (default: True)
             
             
         Returns:
@@ -131,6 +135,7 @@ class Soundclouddownloader:
                                                      search_type=search_type,
                                                      sc_account=sc_account,
                                                      use_cache=use_cache,
+                                                     replace=replace,
                                                      **kwargs)
             
         return self.playlists

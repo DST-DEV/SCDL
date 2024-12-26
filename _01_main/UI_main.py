@@ -730,22 +730,31 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         """
         if callable(update_progress_callback):
             update_progress_callback(0)
+            
+        #Get selection of whether to use cached playlists
         use_cache = self.cb_use_cached.isChecked()
         
+        #Determine the search mode for the playlists
         if self.rbtn_pl_all.isChecked():
             self.pl_extr_mode = "all"
         elif self.rbtn_pl_search_name.isChecked():
             self.pl_extr_mode = "exact"
         else:
             self.pl_extr_mode = "key"
-            
+           
+        #Get the search key
         search_key = self.TxtEdit_pl_search.toPlainText()
         if search_key: search_key = search_key.split(", ")
+        
+        #Get selection whether new results should replace the exisiting 
+        #playlists dataframe
+        replace_pl = self.rbtn_pl_search_repl.isChecked()
         
         self.SCDL.extr_playlists(search_key=search_key, 
                                  search_type=self.pl_extr_mode, 
                                  sc_account = self.settings["sc_account"],
                                  use_cache=use_cache,
+                                 replace = replace_pl,
                                  update_progress_callback=
                                      update_progress_callback)
         

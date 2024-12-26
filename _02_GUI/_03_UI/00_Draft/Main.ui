@@ -739,7 +739,7 @@
                  <enum>QLayout::SetMinimumSize</enum>
                 </property>
                 <item>
-                 <widget class="QRadioButton" name="radioButton_3">
+                 <widget class="QRadioButton" name="rbtn_pl_search_repl">
                   <property name="sizePolicy">
                    <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                     <horstretch>0</horstretch>
@@ -761,7 +761,7 @@
                  </widget>
                 </item>
                 <item>
-                 <widget class="QRadioButton" name="radioButton_4">
+                 <widget class="QRadioButton" name="rbtn_pl_search_append">
                   <property name="sizePolicy">
                    <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                     <horstretch>0</horstretch>
@@ -1821,11 +1821,11 @@
  <resources/>
  <connections/>
  <buttongroups>
-  <buttongroup name="BtnGroup_extr_pl_search_mode"/>
-  <buttongroup name="BtnGroup_dl_hist"/>
-  <buttongroup name="BtnGroup_goal_fld"/>
-  <buttongroup name="BtnGroup_adj_files"/>
   <buttongroup name="BtnGroup_del_doubles"/>
   <buttongroup name="BtnGroup_extr_pl_save_mode"/>
+  <buttongroup name="BtnGroup_dl_hist"/>
+  <buttongroup name="BtnGroup_adj_files"/>
+  <buttongroup name="BtnGroup_extr_pl_search_mode"/>
+  <buttongroup name="BtnGroup_goal_fld"/>
  </buttongroups>
 </ui>
