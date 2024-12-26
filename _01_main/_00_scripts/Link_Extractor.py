@@ -786,6 +786,31 @@ class PlaylistLinkExtractor:
                self.driver = webdriver.Safari()
                
            self.cookies_removed = False
+           
+    def convert_to_alphanumeric(self, input_string):
+        """Convert an arbitrary string to its closest alphanumeric 
+        representation  in standard ascii characters (remove non ascii 
+        characters and convert diacritics to standard characters)
+        
+        Parameters:
+            input_string (str): 
+                the string to be converted
+        
+        Returns:
+            alphanumeric_string (str): 
+                the alphanumeric ascii representation of the string
+        """
+        
+        # Normalize the string to ensure compatibility with ASCII characters
+        normalized_string = unicodedata.normalize(
+            'NFKD', input_string).encode('ascii', 'ignore').decode('ascii')
+        
+        # Remove non-alphanumeric characters
+        alphanumeric_string = ''.join(char for char in normalized_string 
+                                      if char.isalnum() or char.isspace() 
+                                      or char =='-' or char =='.')
+        
+        return alphanumeric_string
     
     def extr_all(self):
         """Extract all playlists from the soundcloud profile

@@ -142,7 +142,8 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
             lambda: self.run_fcn_thread(self.GUI_extr_playlists))
         self.btn_track_ext.clicked.connect(
             lambda: self.run_fcn_thread(self.GUI_extr_tracks))
-        self.btn_track_dl.clicked.connect(self.GUI_download_tracks)
+        self.btn_track_dl.clicked.connect(lambda: self.run_fcn_w_dialog(
+                                                    self.GUI_download_tracks))
         self.btn_dl_hist_up.clicked.connect(
             lambda: self.run_fcn_thread(self.GUI_update_dl_history))
         
@@ -801,7 +802,7 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         if callable(update_progress_callback):
             update_progress_callback(0)
         try:
-            self.SCDL.download_tracks()
+            self.SCDL.download_tracks(**kwargs)
         except Exception as e:
             print(f"Error while downloading tracks {e.__class__}: {e}")
             

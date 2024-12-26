@@ -97,7 +97,6 @@ class Soundclouddownloader:
     def extr_playlists(self, search_key=[], search_type="all", 
                        use_cache = True,
                        sc_account = None,
-                       update_progress_callback=False,
                        **kwargs):
         """Extract the links to the playlists from the soundcloud playlist 
         website for a specified soundcloud account. Results can be 
@@ -121,9 +120,6 @@ class Soundclouddownloader:
                 profile
             sc_account (str):
                 soundcloud profile from which the playlists should be extracted
-            update_progress_callback (function handle - optional):
-                Function handle to return the progress (Intended for usage in 
-                conjunction with PyQt6 signals). 
             
             
         Returns:
@@ -135,8 +131,7 @@ class Soundclouddownloader:
                                                      search_type=search_type,
                                                      sc_account=sc_account,
                                                      use_cache=use_cache,
-                                                     update_progress_callback=
-                                                     update_progress_callback)
+                                                     **kwargs)
             
         return self.playlists
     
@@ -185,11 +180,16 @@ class Soundclouddownloader:
             print("\nPlaylists already extracted, continuing with existing data\n")
             return self.track_df
 
-    def download_tracks(self):
+    def download_tracks(self, exec_note=False, note_signals=None,**kwargs):
         """Downloads the tracks from the links in the track_df dataframe
         
         Parameters:
-            None
+            exec_note (PyQt Signal):
+                Function handle to launch a notification window (Intended for 
+                usage in conjunction with PyQt6 signals).
+            note_signals (PyQt Signal - optional):
+                Notification signals class for further customization of the 
+                notifications window
             
         Returns:
             self.track_df (pandas DataFrame):
@@ -253,9 +253,12 @@ class Soundclouddownloader:
                                                        msg=f"Download exception: {e}", 
                                                        key = track.link, 
                                                        search_col="link")
-                    msg = f"Track {track.link} could not be downloaded"
-                    note = NotificationDialog(msg)
-                    note.exec()
+
+                    if not type(note_signals)==type(None) \
+                        and exec_note:
+                        msg = f"Track {track.link} could not be downloaded"
+                        note_signals.edit_label_txt.emit(msg)
+                        exec_note("Download error")
                 else:
                     #Update status of track in track_df and add to documentation
                     self.track_df.loc[(self.track_df.link==track.link) 
