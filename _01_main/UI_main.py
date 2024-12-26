@@ -67,6 +67,12 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         self.tbl_data_right = pd.DataFrame()
         self.tbl_right_variable = ""
         
+        #Enable table sort by column
+        #Note: this calls the internal sort() function of the self.tbl_left 
+        # and self.tbl_right when the header is clicked
+        self.tbl_view_left.setSortingEnabled(True)
+        self.tbl_view_right.setSortingEnabled(True)
+        
         #Create instance of Soundcloud Downloader
         self.SCDL = Soundclouddownloader(pl_dir = Path(os.getcwd(),"_01_rsc"),
                                          **self.settings)
@@ -169,16 +175,6 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         #Table selected index Button
         self.selectionModel = self.tbl_view_left.selectionModel() 
         self.selectionModel.selectionChanged.connect(self.update_content_right)
-        
-        #Table sort by column
-        self.tbl_view_left.setSortingEnabled(True)
-        self.tbl_view_left.horizontalHeader().sectionClicked.connect(
-            lambda index: self.tbl_left.sort(index, 
-                                             QTC.Qt.SortOrder.AscendingOrder))
-        self.tbl_view_right.setSortingEnabled(True)
-        self.tbl_view_right.horizontalHeader().sectionClicked.connect(
-            lambda index: self.tbl_right.sort(index, 
-                                             QTC.Qt.SortOrder.AscendingOrder))
         
         #LibManager Buttons
         self.btn_read_lib_1.clicked.connect(lambda: self.run_fcn_thread(
@@ -745,7 +741,6 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
             
         search_key = self.TxtEdit_pl_search.toPlainText()
         if search_key: search_key = search_key.split(", ")
-        
         
         self.SCDL.extr_playlists(search_key=search_key, 
                                  search_type=self.pl_extr_mode, 
