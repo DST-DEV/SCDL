@@ -29,9 +29,11 @@ import win32gui    # part of the pywin32 package
 
 if __name__ == "__main__": 
     from _00_scripts.UI_Msg_Dialog import Ui_MsgDialog
+    from _00_scripts.UI_Notification_Dialog import Ui_NotificationDialog
 else:
     #If file is imported, use relative import
     from ._00_scripts.UI_Msg_Dialog import Ui_MsgDialog
+    from ._00_scripts.UI_Notification_Dialog import Ui_NotificationDialog
 
 #%% Main Window
 class MainWindow(QTW.QMainWindow, Ui_MainWindow):
@@ -79,8 +81,29 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         #DL History Editor
         self.DLHistoryEditor = DLHistoryEditor()
         
-        #Message window
+        #Message & Notification window
         self.msg_window = MsgDialog(message="")
+        self.note_window = NotificationDialog(message="")
+        
+        #Setup Notification window signals
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            self.note_signals = NoteSignals()
+        self.note_signals.edit_label_txt.connect(self.change_note_label)
+        self.note_signals.show_message.connect(self.show_notification)
+        # self.note_signals.user_response.connect(lambda: None) 
+        #Placeholder user_response signal since this signal is not needed when 
+        # the notification is not launched from a parallel thread
+        
+        #Setup Message dialog signals
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            self.msg_signals = MsgSignals()
+        self.msg_signals.edit_label_txt.connect(self.change_msg_label)
+        self.msg_signals.show_message.connect(self.show_msg_dialog)
+        self.msg_signals.msg_accept_txt.connect(self.change_msg_accept_txt)
+        self.msg_signals.msg_reject_txt.connect(self.change_msg_reject_txt)
+        self.msg_signals.user_response.connect(self.msg_signals._set_user_response)
         
         #Setup the Threadpool
         self.threadpool = QTC.QThreadPool()
@@ -153,9 +176,7 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         self.btn_read_lib_1.clicked.connect(lambda: self.run_fcn_thread(
                                                         self.GUI_read_dir))
         self.btn_read_nf_1.clicked.connect(lambda: self.run_fcn_thread(
-            lambda callback: self.GUI_read_nf(page=1, 
-                                              update_progress_callback=
-                                                 callback)))
+            lambda **kwargs: self.GUI_read_nf(page=1,**kwargs)))
         self.btn_file_uni.clicked.connect(lambda: self.run_fcn_thread(
                                                         self.GUI_prep_files))
         # self.btn_file_uni.clicked.connect(self.GUI_prep_files)
@@ -165,13 +186,13 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         self.btn_read_lib_2.clicked.connect(lambda: self.run_fcn_thread(
                                                         self.GUI_read_dir))
         self.btn_read_nf_2.clicked.connect(lambda: self.run_fcn_thread(
-            lambda callback: self.GUI_read_nf(page=2, 
-                                              update_progress_callback=
-                                                 callback)))
+            lambda **kwargs: self.GUI_read_nf(page=2,**kwargs)))
         self.btn_goalfld_search.clicked.connect(self.GUI_find_goal_fld)
-        self.btn_del_ex_files.clicked.connect(self.GUI_del_doubles)
+        self.btn_del_ex_files.clicked.connect(lambda: self.run_fcn_w_dialog(
+                                                        self.GUI_del_doubles))
         self.btn_reset_goalfld.clicked.connect(self.GUI_reset_goal_fld)
-        self.btn_move_files.clicked.connect(self.GUI_move_files)
+        self.btn_move_files.clicked.connect(lambda: self.run_fcn_w_dialog(
+                                                        self.GUI_move_files))
         
         #Settings
         self.SettingsChange.triggered.connect(self.open_settings)
@@ -747,14 +768,18 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         if callable(update_progress_callback):
             update_progress_callback(100)
 
-    def GUI_extr_tracks(self, update_progress_callback=False, 
-                        exec_msg=False, edit_msg_lbl=False, **kwargs):
+    def GUI_extr_tracks(self, update_progress_callback=False, **kwargs):
         """Extracts the links of the tracks from the soundcloud playlists
         and displays the results in the right table widget
         
         Parameters:
             update_progress_callback (PyQt Signal - optional):
                 PyQt6 signal to update the progress 
+            exec_msg (PyQt Signal - optional):
+                PyQt6 signal to launch a message window
+            msg_signals (PyQt Signal - optional):
+                Message signals class for further customization of the message 
+                window
         
         Returns:
             None
@@ -768,8 +793,7 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
                                   reextract=True,
                                   update_progress_callback = 
                                       update_progress_callback,
-                                  exec_msg=exec_msg,
-                                  edit_msg_lbl=edit_msg_lbl)
+                                  **kwargs)
         else:
             print("No Playlists to extract tracks from found")
         
@@ -829,7 +853,7 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
             if callable(update_progress_callback):
                 update_progress_callback(100)
     
-    def GUI_update_dl_history(self, update_progress_callback, **kwargs):
+    def GUI_update_dl_history(self, update_progress_callback=False, **kwargs):
         """Updates the Download history file with the last tracks from either
         the currently extracted playlists, or all playlists from the soundcloud
         profile
@@ -886,7 +910,8 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         if callable(update_progress_callback):
             update_progress_callback(100)
     
-    def GUI_read_nf(self, page, update_progress_callback=False, **kwargs):
+    def GUI_read_nf(self, page, update_progress_callback=False, 
+                        exec_msg=False, edit_msg_lbl=False, **kwargs):
         """Reads all .mp3 and .wav file from the new files directory (
         including subfolders)
         
@@ -906,6 +931,13 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
             nf_dir_cust = self.lineEdit_nf_dir_2.text()
         else:
             return
+        
+        ###############################################
+        if exec_msg and edit_msg_lbl:
+            edit_msg_lbl("Continue?")
+            res = exec_msg ("Question")
+            print(f"Response: {res}")
+        ###############################################
         
         if nf_dir_cust:
             self.SCDL.LibMan.read_tracks(
@@ -1024,14 +1056,19 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         goal file specified in the file_df
         
         Parameters:
-            None
+            exec_msg (PyQt Signal - optional):
+                PyQt6 signal to launch a message window
+            msg_signals (PyQt Signal - optional):
+                Message signals class for further customization of the message 
+                window
         
         Returns:
             None
         """
         
         repl_doubles = True if self.cb_repl_ex_files.isChecked() else False
-        self.SCDL.LibMan.move_to_library(replace_doubles=repl_doubles)
+        self.SCDL.LibMan.move_to_library(replace_doubles=repl_doubles, 
+                                         **kwargs)
         
         #Update table display
         self.update_tbl_display (lr="right", variable = "New Files")
@@ -1043,7 +1080,11 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         the file_df). 
         
         Parameters:
-            None
+            exec_msg (PyQt Signal - optional):
+                PyQt6 signal to launch a message window
+            msg_signals (PyQt Signal - optional):
+                Message signals class for further customization of the message 
+                window
         
         Returns:
             None
@@ -1055,7 +1096,7 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         else:
            df = "ask"
 
-        self.SCDL.LibMan.del_doubles(df_sel=df)
+        self.SCDL.LibMan.del_doubles(df_sel=df, **kwargs)
         
         #Update table display
         self.update_tbl_display (lr="right", variable = "New Files")
@@ -1279,6 +1320,23 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
             icon = QTG.QIcon(r"./_01_rsc/SCDLO_V1_icon_black.ico")
             self.setWindowIcon(icon)
     
+    def run_fcn_w_dialog (self, fcn, *args, **kwargs):
+        """Runs a function and gives it access to launch the message dialog 
+        window via signals
+        
+        Parameters:
+            fcn (function handle):
+                Function to run
+        
+        Returns:
+            None
+        """
+        fcn(exec_msg = self.msg_signals.emit_show_message,
+            msg_signals = self.msg_signals,
+            exec_note = self.note_signals.show_message.emit,
+            note_signals = self.note_signals,
+            *args, **kwargs)
+        
     def run_fcn_thread(self, fcn):
         """Creates a worker for the passed function and starts it
         
@@ -1290,11 +1348,12 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
             None
         """
         worker = Worker(fcn)
-        worker.signals.progress_updated.connect(self.update_progress)
-        worker.signals.update_label.connect(self.change_msg_label)
-        worker.signals.show_message.connect(self.show_msg_dialog)
-        worker.signals.msg_accept_txt.connect(self.change_msg_accept_txt)
-        worker.signals.msg_reject_txt.connect(self.change_msg_reject_txt)
+        worker.worker_signals.progress_updated.connect(self.update_progress)
+        worker.msg_signals.edit_label_txt.connect(self.change_msg_label)
+        worker.msg_signals.show_message.connect(self.show_msg_dialog)
+        worker.msg_signals.msg_accept_txt.connect(self.change_msg_accept_txt)
+        worker.msg_signals.msg_reject_txt.connect(self.change_msg_reject_txt)
+        worker.msg_signals.msg_set_min_width.connect(self.change_msg_min_width)
         self.threadpool.start(worker)
         
     def update_progress(self, value):
@@ -1315,6 +1374,9 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         
     def change_msg_label(self, text):
         self.msg_window.msg_lbl.setText(text)
+        
+    def change_note_label(self, text):
+        self.note_window.msg_lbl.setText(text)
     
     def change_msg_accept_txt(self, text):
         self.msg_window.buttonBox.button(
@@ -1323,14 +1385,32 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
     def change_msg_reject_txt(self, text):
         self.msg_window.buttonBox.button(
             QTW.QDialogButtonBox.StandardButton.No).setText(text)
+    
+    def change_msg_min_width (self, width):
+        # Adjust size to fit content
+        self.msg_window.setMinimumSize(QTC.QSize(width, 100))
+        self.msg_window.adjustSize()
+        
+    def change_note_min_width (self, width):
+        # Adjust size to fit content
+        self.note_window.setMinimumSize(QTC.QSize(width, 100))
+        self.note_window.adjustSize()
         
     def show_msg_dialog (self, window_title="Message window"):
         self.msg_window.exec()
 
         # Emit the response back to the worker thread
         sender = self.sender()  # Identify the signal sender
-        if isinstance(sender, WorkerSignals):  # Verify it's a WorkerSignals instance
+        if isinstance(sender, MsgSignals):  # Verify it's a WorkerSignals instance
             sender.user_response.emit(self.msg_window._response)
+            
+    def show_notification (self, window_title="Notification"):
+        self.note_window.exec()
+
+        # # Emit the response back to the worker thread
+        # sender = self.sender()  # Identify the signal sender
+        # if isinstance(sender, NoteSignals):  # Verify it's a WorkerSignals instance
+        #     sender.user_response.emit(True)
         
         
 #%% SettingsWindow
@@ -1704,7 +1784,24 @@ class OutputLogger:
 
     def flush(self):
         pass  # No need to implement this for a QTextEdit
-
+        
+#%% Notifications Dialog
+class NotificationDialog (QTW.QDialog, Ui_NotificationDialog):
+    def __init__(self, message: str, window_title="Notification",
+                 min_width=300):
+        super(NotificationDialog, self).__init__()
+        self.setupUi(self)
+        
+        #Set up window title
+        self.setWindowTitle(window_title)
+        
+        # Set up label and button box
+        self.msg_lbl.setText(message)
+        
+        # Adjust size to fit content
+        self.setMinimumSize(QTC.QSize(min_width, 100))
+        self.adjustSize()
+        
 #%% Message Dialog
 
 class MsgDialog (QTW.QDialog, Ui_MsgDialog):
@@ -1741,20 +1838,51 @@ class MsgDialog (QTW.QDialog, Ui_MsgDialog):
         self._response = False
         self.reject()
 
-#%% Worker 
+#%% Msg & Notification Signals 
 
-# A class for emitting signals (since QRunnable does not support signals directly)
-class WorkerSignals(QTC.QObject):
-    progress_updated = QTC.pyqtSignal(int)  # Signal to update progress bar
-    update_label = QTC.pyqtSignal(str)      # Signal to update label text
-    show_message = QTC.pyqtSignal(str)      # Signal to open a message window
+# Class for emitting the message box signals  
+class NoteSignals(QTC.QObject):
+    edit_label_txt = QTC.pyqtSignal(str)      # Signal to update label text
+    show_message = QTC.pyqtSignal(str)        # Signal to open a message window
+    user_response = QTC.pyqtSignal(bool)      # Signal to send user response
+    msg_set_min_width = QTC.pyqtSignal(int)   # Signal to update the minimum 
+                                              # window width
+
+# Class for emitting the message box signals  
+class MsgSignals(QTC.QObject):
+    edit_label_txt = QTC.pyqtSignal(str)      # Signal to update label text
+    show_message = QTC.pyqtSignal(str)        # Signal to open a message window
     user_response = QTC.pyqtSignal(bool)      # Signal to send user response
     msg_accept_txt = QTC.pyqtSignal(str)      # Signal to change the text of 
                                               # the accept button of the 
                                               # message window
     msg_reject_txt = QTC.pyqtSignal(str)      # Signal to change the text of 
                                               # the reject button of the 
-                                              # message window
+                                              # message window     
+    msg_set_min_width = QTC.pyqtSignal(int)   # Signal to update the minimum 
+                                              # window width
+                                              
+    def __init__(self):
+        super().__init__()
+        self.response = False
+    
+    def emit_show_message(self, message="Message Window"):
+        #Reset the response to False (for safety)
+        self.response = False
+        
+        # Emit a signal to request user input
+        self.show_message.emit(message)
+
+        return self.response
+
+    def _set_user_response(self, response):
+        self.response = response
+
+#%% Worker
+# Class for emitting the progress signal for threaded funtions (since 
+# QRunnable does not support signals directly)
+class WorkerSignals(QTC.QObject):
+    progress_updated = QTC.pyqtSignal(int)  # Signal to update progress bar
 
 class Worker(QTC.QRunnable):
     """
@@ -1772,8 +1900,6 @@ class Worker(QTC.QRunnable):
     """
     
     def __init__(self, fn, *args, **kwargs):
-        
-        
         super(Worker, self).__init__()
         # Store constructor arguments (re-used for processing)
         self.fn = fn
@@ -1781,7 +1907,9 @@ class Worker(QTC.QRunnable):
         self.kwargs = kwargs
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            self.signals = WorkerSignals()  # Use a separate object to handle signals
+            self.worker_signals = WorkerSignals()
+            self.msg_signals = MsgSignals()
+            self.note_signals = NoteSignals()
 
     @pyqtSlot()
     def run(self):
@@ -1794,50 +1922,47 @@ class Worker(QTC.QRunnable):
             None
         """
         # Execute the function with the provided arguments
-        self.fn(update_progress_callback = self.emit_progress, 
+        self.fn(update_progress_callback = self.worker_signals.progress_updated.emit,
                 exec_msg = self.emit_show_message,
-                edit_msg_lbl = self.emit_update_label,
-                edit_accept_txt = self.emit_accept_text,
-                edit_reject_txt = self.emit_reject_text,
+                msg_signals = self.msg_signals,
+                exec_mote = self.emit_show_notification,
+                note_signals = self.note_signals,
                 *self.args, **self.kwargs)
 
-    def emit_progress(self, value):
-        """Emit progress signal to update progress bar.
+    def emit_show_message (self, message="Message Window"):
+        #Reset the response to False (for safety)
+        self.user_response = False
         
-        Parameters:
-            value(int or float):
-                Progress bar value (Should be within [0,100])
-        
-        Returns:
-            None
-        """
-        self.signals.progress_updated.emit(value)
-    
-    def emit_update_label(self, text):
-        self.signals.update_label.emit(text)
-
-    def emit_show_message(self, message="Message Window"):
         # Emit a signal to request user input
-        self.signals.show_message.emit(message)
+        self.msg_signals.show_message.emit(message)
 
         # Wait for the user response
         loop = QTC.QEventLoop()
-        self.signals.user_response.connect(lambda response: 
+        self.msg_signals.user_response.connect(lambda response: 
                                            self._set_user_response(response, 
                                                                    loop))
         loop.exec()  # Block until the user responds
 
         return self.user_response
+    
+    def emit_show_notification (self, message="Message Window"):
+        # Emit a signal to request user input
+        self.note_signals.show_message.emit(message)
 
-    def _set_user_response(self, response, loop):
+        # Wait for the user response
+        loop = QTC.QEventLoop()
+        self.note_signals.user_response.connect(lambda response: 
+                                           self._set_user_notified(response, 
+                                                                   loop))
+        loop.exec()  # Block until the user responds
+
+    def _set_user_response (self, response, loop):
         self.user_response = response
         loop.quit()  # Exit the event loop
         
-    def emit_accept_text(self, text):
-        self.signals.msg_accept_txt.emit(text)
-        
-    def emit_reject_text(self, text):
-        self.signals.msg_reject_txt.emit(text)
+    def _set_user_notified (self, response, loop):
+        loop.quit()  # Exit the event loop
+
 
 #%% Main
 

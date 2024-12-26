@@ -143,8 +143,7 @@ class Soundclouddownloader:
     def extr_tracks(self, playlists = pd.DataFrame(), mode="new", 
                     autosave=True, reextract=False,
                     update_progress_callback=False,
-                    exec_msg=False,
-                    edit_msg_lbl=False,
+                    exec_msg=False, msg_signals=None,
                     **kwargs):
         """Extract the links to the tracks within the specified playlists
         
@@ -164,9 +163,9 @@ class Soundclouddownloader:
                 PyQt6 signal to update the progress 
             exec_msg (PyQt Signal - optional):
                 PyQt6 signal to launch a message window
-            edit_msg_lbl (PyQt Signal - optional):
-                PyQt6 signal to edit the text of the message window from the 
-                exec_msg parameter
+            msg_signals (PyQt Signal - optional):
+                Message signals class for further customization of the message 
+                window
         
         Returns:
             self.track_df (pandas DataFrame): 
@@ -191,7 +190,7 @@ class Soundclouddownloader:
                                                 update_progress_callback = 
                                                     update_progress_callback,
                                                 exec_msg=exec_msg,
-                                                edit_msg_lbl=edit_msg_lbl)
+                                                msg_signals=msg_signals)
             # self.track_df.insert(len(self.track_df.columns), "downloaded", False)
             return self.track_df
         else:

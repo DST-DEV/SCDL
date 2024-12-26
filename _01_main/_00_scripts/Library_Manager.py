@@ -21,19 +21,6 @@ import pathlib
 from pathlib import Path
 from pathlib import PurePath
 
-#GUI Imports
-import PyQt6.QtWidgets as QTW
-import PyQt6.QtCore as QTC
-from PyQt6.QtCore import Qt
-
-if __name__ == "__main__": 
-    from UI_Msg_Dialog import Ui_MsgDialog
-    from UI_Notification_Dialog import Ui_NotificationDialog
-else:
-    #If file is imported, use relative import
-    from .UI_Msg_Dialog import Ui_MsgDialog
-    from .UI_Notification_Dialog import Ui_NotificationDialog
-
 #%% LibManager Class
 class LibManager:
     ob_strs = ["premiere", "P R E M I E R E", "free download", "free dl", 
@@ -936,7 +923,7 @@ class LibManager:
         self.file_df = file_df
         return file_df
     
-    def del_doubles (self, df_sel="nf"):
+    def del_doubles (self, exec_msg, msg_signals, df_sel="nf"):
         """Deletes the files in the file_df for which a corresponding file in 
         the library was found
         
@@ -947,6 +934,11 @@ class LibManager:
                 - "nf": Delete duplicate files from new files 
                 - "lib": Delete duplicate files from library
                 - "ask": Ask individually for each file 
+            exec_msg (PyQt Signal):
+                PyQt6 signal to launch a message window
+            msg_signals (PyQt Signal):
+                Message signals class for further customization of the message 
+                window
         
         Returns:
             None
@@ -967,10 +959,10 @@ class LibManager:
             msg = msg.format(" in the library directory")
         else:
             msg = msg.format("")
-        dlg = MsgDialog(msg)
-        dlg.exec()
+        msg_signals.edit_label_txt.emit(msg)
+        response = exec_msg("Track Extraction Warning")
         
-        if dlg._response:
+        if response:
             #Filter for rows to include
             if "include" in self.file_df.columns: 
                 file_df = self.file_df.loc[(self.file_df.goal_name!="") 
@@ -985,12 +977,14 @@ class LibManager:
                 if df_sel == "ask":
                     msg = f"Do you want to delete the file \"{row.filename}\" "\
                           + "from the new files or the library?"
-                    dlg = MsgDialog(message=msg, 
-                                    accept_btn_text="New files", 
-                                    reject_btn_text="Library",
-                                    min_width=350)
-                    dlg.exec()
-                    df_sel_i = "nf" if dlg._response else "lib"
+                    msg_signals.edit_label_txt.emit(msg)
+                    msg_signals.msg_accept_txt.emit("New files")
+                    msg_signals.msg_reject_txt.emit("Library")
+                    msg_signals.msg_set_min_width.emit(350)
+                    
+                    df_sel_response = exec_msg("Track Extraction Warning")
+
+                    df_sel_i = "nf" if df_sel_response else "lib"
                 
                 if df_sel_i == "nf":
                     filepath = Path(row.directory, row.folder, 
@@ -1025,7 +1019,9 @@ class LibManager:
         else:
             print("Deleting of duplicate files canceled by user")
     
-    def move_to_library(self, file_df=None, replace_doubles = False):
+    def move_to_library(self, file_df=None, replace_doubles = False,
+                        exec_msg=False, msg_signals=None, 
+                        exec_note=False, note_signals=None,**kwargs):
         """Moves the Tracks in the file_df in their respective folder based on 
         the entries in the goal folder column of the file_df
         
@@ -1036,6 +1032,11 @@ class LibManager:
             replace_doubles (bool):
                 Whether new files which already exist in the library should be 
                 replaced
+            exec_msg (PyQt Signal - optional):
+                PyQt6 signal to launch a message window
+            msg_signals (PyQt Signal - optional):
+                Message signals class for further customization of the message 
+                window
             
         Returns:
             file_df (pandas DataFrame):  
@@ -1103,10 +1104,13 @@ class LibManager:
                                                    row.goal_fld,
                                                    row.goal_name))
                                 except Exception as e:
-                                    msg = f"The file {row.goal_name} could "\
-                                          + "not be removed from the library"
-                                    note = NotificationDialog(msg)
-                                    note.exec()
+                                    if not type(note_signals)==type(None) \
+                                        and exec_note:
+                                        msg = f"The file {row.goal_name} "\
+                                              + "could not be removed from "\
+                                              + "the library"
+                                        note_signals.edit_label_txt.emit(msg)
+                                        exec_note("File removal error")
                                 else:
                                     #Drop file from lib_df
                                     self.lib_df.drop(index=i_lib, inplace=True)
@@ -1119,12 +1123,15 @@ class LibManager:
                     #created if it doesn't exist
                     if not os.path.isdir (Path(row.goal_dir, row.goal_fld)):
                         if not row.create_missing_dir:
-                            msg = f"The folder {row.goal_fld} does not exist."\
-                                 " Should it be created?"
-                            dlg = MsgDialog(msg)
-                            dlg.exec()
+                            if not type(msg_signals)==type(None) and exec_msg:
+                                msg = f"The folder {row.goal_fld} does not "\
+                                    "exist. Should it be created?"
+                                msg_signals.edit_label_txt.emit(msg)
+                                response = exec_msg("File moving warning")
+                            else:
+                                response=False
                             
-                            if not dlg._response:
+                            if not response:
                                 self.file_df.loc[index, "status"] = \
                                     "Goal folder not found"
                                 continue #continue with next track
@@ -1161,9 +1168,10 @@ class LibManager:
         self.file_df.reset_index(drop=True, inplace=True)
         
         #Notifiy about successfully moved files
-        msg = f"Moved {n_moved} files"
-        note = NotificationDialog(msg)
-        note.exec()
+        if not type(note_signals)==type(None) and exec_note:
+            msg = f"Moved {n_moved} files"
+            note_signals.edit_label_txt.emit(msg)
+            exec_note("File moving success")
         
         return self.file_df
     
@@ -1273,58 +1281,6 @@ class LibManager:
             
         return df
 
-#%% Notifications Dialog
-class NotificationDialog (QTW.QDialog, Ui_NotificationDialog):
-    def __init__(self, message: str, window_title="Notification",
-                 min_width=300):
-        super(NotificationDialog, self).__init__()
-        self.setupUi(self)
-        
-        #Set up window title
-        self.setWindowTitle(window_title)
-        
-        # Set up label and button box
-        self.msg_lbl.setText(message)
-        
-        # Adjust size to fit content
-        self.setMinimumSize(QTC.QSize(min_width, 100))
-        self.adjustSize()
-
-    
-#%% Message Dialog
-
-class MsgDialog (QTW.QDialog, Ui_MsgDialog):
-    def __init__(self, message: str, window_title="Message window",
-                 accept_btn_text = "Yes", reject_btn_text = "No", 
-                 min_width=300):
-        super(MsgDialog, self).__init__()
-        self.setupUi(self)
-        
-        #Set up window title
-        self.setWindowTitle(window_title)
-        
-        # Set up label and button box
-        self.msg_lbl.setText(message)
-        self.buttonBox.button(QTW.QDialogButtonBox.StandardButton.Yes).setText(accept_btn_text)
-        self.buttonBox.button(QTW.QDialogButtonBox.StandardButton.No).setText(reject_btn_text)
-        
-        #Setup buttons and response variable
-        self._response = False 
-        self.buttonBox.accepted.connect(self.on_accept)
-        self.buttonBox.rejected.connect(self.on_reject)
-        
-        # Adjust size to fit content
-        self.setMinimumSize(QTC.QSize(min_width, 100))
-        self.adjustSize()
-        
-    def on_accept (self):
-        self._response = True
-        self.accept()
-        
-    def on_reject (self):
-        self._response = False
-        self.reject()
-
 #%% Main        
 if __name__ == '__main__':
     # nf_dir = Path("C:/Users", os.environ.get("USERNAME"), "Downloads", "music")
@@ -1333,12 +1289,4 @@ if __name__ == '__main__':
     # nf_dir = r"C:\Users\davis\Downloads\SCDL test\00_General\new files"
     # lib_dir = r"C:\Users\davis\Downloads\SCDL test"
     # LibMan = LibManager(lib_dir, nf_dir)
-    
-    filename = "Rudeforze - Frontliner Spacer (Technohardbass Remix)"
-    msg = f"Do you want to delete the file \n\"{filename}\"\n"\
-          + "from the new files or the library?"
-    # msg = "You are about to delete duplicate files in the library.\n"\
-    #       + "Do you want to continue?"
-    dlg = MsgDialog(msg, accept_btn_text="Yup", min_width=350)
-    dlg.exec()
     pass

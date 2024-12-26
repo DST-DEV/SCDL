@@ -27,12 +27,7 @@ import PyQt6.QtWidgets as QTW
 import PyQt6.QtCore as QTC
 from PyQt6.QtCore import Qt
 
-if __name__ == "__main__": 
-    from UI_Msg_Dialog import Ui_MsgDialog
-else:
-    #If file is imported, use relative import
-    from .UI_Msg_Dialog import Ui_MsgDialog
-
+#%% Extractor Class
 class PlaylistLinkExtractor:
     timeout = 10
     
@@ -348,7 +343,7 @@ class PlaylistLinkExtractor:
     
     def extr_links(self, playlists = pd.DataFrame(), mode="new", autosave=True,
                    update_progress_callback=False, 
-                   exec_msg=False, edit_msg_lbl=False, 
+                   exec_msg=False, msg_signals=None, 
                    **kwargs):
         """Extract the links to the tracks within the specified playlists. 
         
@@ -369,9 +364,9 @@ class PlaylistLinkExtractor:
                 conjunction with PyQt6 signals). 
             exec_msg (PyQt Signal - optional):
                 PyQt6 signal to launch a message window
-            edit_msg_lbl (PyQt Signal - optional):
-                PyQt6 signal to edit the text of the message window from the 
-                exec_msg parameter
+            msg_signals (PyQt Signal - optional):
+                Message signals class for further customization of the message 
+                window
         
         Returns:
             self.track_df (pandas DataFrame): 
@@ -496,15 +491,17 @@ class PlaylistLinkExtractor:
                         #If last track is not an empty string and if it wasn't
                         # found in the playlist, ask the user whether the found
                         # tracks should be kept or discarded
-                        pl_name = pl["name"]
-                        msg = f"The last saved track \"{last_track_hist}\" was"\
-                              " not found in the playlist \""+pl["name"]+"\"."\
-                              "\nDiscard the found files?"
-                        if edit_msg_lbl and exec_msg:
-                            edit_msg_lbl(msg)
+                        if not type(msg_signals)==type(None) and exec_msg:
+                            pl_name = pl["name"]
+                            msg = f"The last saved track \"{last_track_hist}\""\
+                                  + " wasnot found in the playlist \""\
+                                  + pl["name"]+"\".\nDiscard the found files?"
+                        
+                            msg_signals.edit_label_txt.emit(msg)
                             response = exec_msg("Track Extraction Warning")
                         else:
                             response = False
+                            print("no msg_signals")
 
                         if response:
                             self.playlists.loc[index, "status"] = \
@@ -911,40 +908,6 @@ class PlaylistLinkExtractor:
             
         return df
 
-#%% Message Dialog
-
-class MsgDialog (QTW.QDialog, Ui_MsgDialog):
-    def __init__(self, message: str, window_title="Message window",
-                 accept_btn_text = "Yes", reject_btn_text = "No", 
-                 min_width=300):
-        super(MsgDialog, self).__init__()
-        self.setupUi(self)
-        
-        #Set up window title
-        self.setWindowTitle(window_title)
-        
-        # Set up label and button box
-        self.msg_lbl.setText(message)
-        self.buttonBox.button(QTW.QDialogButtonBox.StandardButton.Yes).setText(accept_btn_text)
-        self.buttonBox.button(QTW.QDialogButtonBox.StandardButton.No).setText(reject_btn_text)
-        
-        #Setup buttons and response variable
-        self._response = False 
-        self.buttonBox.accepted.connect(self.on_accept)
-        self.buttonBox.rejected.connect(self.on_reject)
-        
-        # Adjust size to fit content
-        self.setMinimumSize(QTC.QSize(min_width, 100))
-        self.adjustSize()
-        
-    def on_accept (self):
-        self._response = True
-        self.accept()
-        
-    def on_reject (self):
-        self._response = False
-        self.reject()
-        
 #%% Main
 if __name__ == '__main__':
     ple = PlaylistLinkExtractor(hist_file = r"C:\Users\davis\00_data\01_Projects\Personal\SCDL\_01_main\_01_rsc\Download_history.txt")
