@@ -761,6 +761,10 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
                                  update_progress_callback=
                                      update_progress_callback)
         
+        #Bring SCDL window to top again
+        self.raise_()
+        self.activateWindow()
+        
         #Update table display
         self.update_tbl_display (lr="left", variable = "Soundcloud Playlists")
         
@@ -796,6 +800,10 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
                                   **kwargs)
         else:
             print("No Playlists to extract tracks from found")
+        
+        #Bring SCDL window to top again
+        self.raise_()
+        self.activateWindow()
         
         #Update table display
         self.update_tbl_display (lr="right", variable = "Soundcloud Tracks")
@@ -843,6 +851,10 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
                             os.replace(new_path, 
                                        Path(self.SCDL.dl_dir, new_path.name))
         finally:
+            #Bring SCDL window to top again
+            self.raise_()
+            self.activateWindow()
+            
             #Update table display
             self.update_tbl_display (lr="left", 
                                      variable = "Soundcloud Playlists")
@@ -1801,6 +1813,14 @@ class NotificationDialog (QTW.QDialog, Ui_NotificationDialog):
         # Adjust size to fit content
         self.setMinimumSize(QTC.QSize(min_width, 100))
         self.adjustSize()
+    
+    def showEvent(self, event):
+        #When window is launched, bring to the top and flash taskbar icon 
+        # if not on top
+        super().showEvent(event)
+        self.raise_()
+        self.activateWindow()
+        QApplication.alert(self)
         
 #%% Message Dialog
 
@@ -1829,6 +1849,14 @@ class MsgDialog (QTW.QDialog, Ui_MsgDialog):
         # Adjust size to fit content
         self.setMinimumSize(QTC.QSize(min_width, 100))
         self.adjustSize()
+        
+    def showEvent(self, event):
+        #When window is launched, bring to the top and flash taskbar icon 
+        # if not on top
+        super().showEvent(event)
+        self.raise_()
+        self.activateWindow()
+        QApplication.alert(self)
         
     def on_accept (self):
         self._response = True
