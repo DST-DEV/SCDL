@@ -26,6 +26,7 @@ class CustomTableModel (QTC.QAbstractTableModel):
         # QTC.QAbstractTableModel.__init__(self, parent)
         self._checkbox_enabled = False
         self._data = data
+        self._ascending = True  # Track sort order
         
 
     def rowCount(self, parent=None):
@@ -175,6 +176,15 @@ class CustomTableModel (QTC.QAbstractTableModel):
         self._checkbox_enabled = insert_checkboxes
         self._data = data.copy(deep=True)
         self.endResetModel()
+    
+    def sort(self, column: int, order: QTC.Qt.SortOrder):
+        if not self._data.empty:
+            col_name = self._data.columns[column]
+            self._ascending = (order == QTC.Qt.SortOrder.AscendingOrder)
+            self.layoutAboutToBeChanged.emit()
+            self._data = self._data.sort_values(
+                by=col_name, ascending=self._ascending)
+            self.layoutChanged.emit()
  
 
 #%% Custom Table View (not used)

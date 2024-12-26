@@ -173,6 +173,16 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         self.selectionModel = self.tbl_view_left.selectionModel() 
         self.selectionModel.selectionChanged.connect(self.update_content_right)
         
+        #Table sort by column
+        self.tbl_view_left.setSortingEnabled(True)
+        self.tbl_view_left.horizontalHeader().sectionClicked.connect(
+            lambda index: self.tbl_left.sort(index, 
+                                             QTC.Qt.SortOrder.AscendingOrder))
+        self.tbl_view_right.setSortingEnabled(True)
+        self.tbl_view_right.horizontalHeader().sectionClicked.connect(
+            lambda index: self.tbl_right.sort(index, 
+                                             QTC.Qt.SortOrder.AscendingOrder))
+        
         #LibManager Buttons
         self.btn_read_lib_1.clicked.connect(lambda: self.run_fcn_thread(
                                                         self.GUI_read_dir))
@@ -318,6 +328,9 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
             None
         """
         self.tbl_data_left = self.tbl_left._data.copy(deep=True)
+        
+        #Sort by index (data might be sorted by a column)
+        self.tbl_data_left.sort_index(inplace=True) 
         if self.tbl_left_variable == "playlists":
             self.SCDL.playlists = self.tbl_left._data.copy(deep=True)
             #Note: No copy with deep=True. Changes in one of the subclasses 
@@ -360,6 +373,9 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
             None
         """
         self.tbl_data_right = self.tbl_right._data.copy(deep=True)
+        
+        #Sort by index (data might be sorted by a column)
+        self.tbl_data_right.sort_index(inplace=True) 
         if self.tbl_right_variable == "playlists":
             self.SCDL.playlists = self.tbl_right._data.copy(deep=True)
             #Note: No copy with deep=True. Changes in one of the subclasses 
