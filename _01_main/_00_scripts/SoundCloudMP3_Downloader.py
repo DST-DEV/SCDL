@@ -202,11 +202,7 @@ class SoundcloudMP3Downloader:
                               "//button[@class='btn btn-primary']")
         # self.driver.execute_script("arguments[0].scrollIntoView();", conv_btn)
         self.driver.execute_script(f"arguments[0].click();", conv_btn)
-        
-        
-        # url_box.clear()
-        # url_box.send_keys(track_link)
-        # url_box.send_keys(Keys.ENTER)
+
         self.return_og_window()
 
         # Wait for the Site (more specifically the track information & DL button)

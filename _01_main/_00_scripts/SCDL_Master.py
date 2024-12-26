@@ -142,8 +142,6 @@ class Soundclouddownloader:
     
     def extr_tracks(self, playlists = pd.DataFrame(), mode="new", 
                     autosave=True, reextract=False,
-                    update_progress_callback=False,
-                    exec_msg=False, msg_signals=None,
                     **kwargs):
         """Extract the links to the tracks within the specified playlists
         
@@ -159,13 +157,6 @@ class Soundclouddownloader:
             autosave (bool - optional): 
                 whether the results should automatically be saved to the 
                 self.track_df (default: yes)
-            update_progress_callback (PyQt Signal - optional):
-                PyQt6 signal to update the progress 
-            exec_msg (PyQt Signal - optional):
-                PyQt6 signal to launch a message window
-            msg_signals (PyQt Signal - optional):
-                Message signals class for further customization of the message 
-                window
         
         Returns:
             self.track_df (pandas DataFrame): 
@@ -187,18 +178,13 @@ class Soundclouddownloader:
                                                 playlists = playlists, 
                                                 mode=mode, 
                                                 autosave=autosave,
-                                                update_progress_callback = 
-                                                    update_progress_callback,
-                                                exec_msg=exec_msg,
-                                                msg_signals=msg_signals)
+                                                **kwargs)
             # self.track_df.insert(len(self.track_df.columns), "downloaded", False)
             return self.track_df
         else:
             print("\nPlaylists already extracted, continuing with existing data\n")
             return self.track_df
-        
 
-    
     def download_tracks(self):
         """Downloads the tracks from the links in the track_df dataframe
         

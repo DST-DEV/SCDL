@@ -574,23 +574,6 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         if not type(data)==pd.core.frame.DataFrame:
             return
         
-        # if variable == "library":
-        #     #Find the common prefix of all folder paths
-        #     common_lib_path = os.path.commonprefix(list(data.folder))
-            
-        #     if common_lib_path:
-        #         self.common_lib_path = common_lib_path
-
-        #         #Ensure the common prefix ends at a directory separator
-        #         # This prevents cases where the prefix might cut off mid-directory
-        #         if not self.common_lib_path.endswith(os.path.sep):
-        #             self.common_lib_path = \
-        #             os.path.dirname(self.common_lib_path) + os.path.sep
-    
-        #         #Remove the common prefix from each path
-        #         data = data.copy(deep=True)
-        #         data.folder = data.folder.str[len(self.common_lib_path):]
-        
         if lr == "left" or lr == "l":
             self.tbl_left.change_data (data, insert_checkboxes=True)
             self.tbl_data_left = self.tbl_left._data.copy(deep=True)
@@ -729,12 +712,8 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
     
         Parameters:
             update_progress_callback (PyQt Signal - optional):
-                PyQt6 signal to update the progress 
-            exec_msg (PyQt Signal - optional):
-                PyQt6 signal to launch a message window
-            edit_msg_lbl (PyQt Signal - optional):
-                PyQt6 signal to edit the text of the message window from the 
-                exec_msg parameter
+                Function handle to return the progress (Intended for usage in 
+                conjunction with PyQt6 signals).
         
         Returns:
             None
@@ -778,12 +757,8 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         
         Parameters:
             update_progress_callback (PyQt Signal - optional):
-                PyQt6 signal to update the progress 
-            exec_msg (PyQt Signal - optional):
-                PyQt6 signal to launch a message window
-            msg_signals (PyQt Signal - optional):
-                Message signals class for further customization of the message 
-                window
+                Function handle to return the progress (Intended for usage in 
+                conjunction with PyQt6 signals).
         
         Returns:
             None
@@ -817,7 +792,8 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         
         Parameters:
             update_progress_callback (PyQt Signal - optional):
-                PyQt6 signal to update the progress 
+                Function handle to return the progress (Intended for usage in 
+                conjunction with PyQt6 signals).
         
         Returns:
             None
@@ -871,8 +847,10 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         profile
         
         Parameters:
-            None
-        
+            update_progress_callback (PyQt Signal - optional):
+                Function handle to return the progress (Intended for usage in 
+                conjunction with PyQt6 signals).
+                
         Returns:
             None
         """
@@ -905,7 +883,8 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         
         Parameters:
             update_progress_callback (PyQt Signal - optional):
-                PyQt6 signal to update the progress 
+                Function handle to return the progress (Intended for usage in 
+                conjunction with PyQt6 signals).
         
         Returns:
             None
@@ -929,7 +908,8 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         
         Parameters:
             update_progress_callback (PyQt Signal - optional):
-                PyQt6 signal to update the progress 
+                Function handle to return the progress (Intended for usage in 
+                conjunction with PyQt6 signals).
         
         Returns:
             None
@@ -943,13 +923,6 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
             nf_dir_cust = self.lineEdit_nf_dir_2.text()
         else:
             return
-        
-        ###############################################
-        if exec_msg and edit_msg_lbl:
-            edit_msg_lbl("Continue?")
-            res = exec_msg ("Question")
-            print(f"Response: {res}")
-        ###############################################
         
         if nf_dir_cust:
             self.SCDL.LibMan.read_tracks(
@@ -976,7 +949,8 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         
         Parameters:
             update_progress_callback (PyQt Signal - optional):
-                PyQt6 signal to update the progress 
+                Function handle to return the progress (Intended for usage in 
+                conjunction with PyQt6 signals).
         
         Returns:
             None
@@ -1068,11 +1042,7 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         goal file specified in the file_df
         
         Parameters:
-            exec_msg (PyQt Signal - optional):
-                PyQt6 signal to launch a message window
-            msg_signals (PyQt Signal - optional):
-                Message signals class for further customization of the message 
-                window
+            None
         
         Returns:
             None
@@ -1092,11 +1062,7 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         the file_df). 
         
         Parameters:
-            exec_msg (PyQt Signal - optional):
-                PyQt6 signal to launch a message window
-            msg_signals (PyQt Signal - optional):
-                Message signals class for further customization of the message 
-                window
+            None
         
         Returns:
             None
@@ -1349,7 +1315,7 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
             note_signals = self.note_signals,
             *args, **kwargs)
         
-    def run_fcn_thread(self, fcn):
+    def run_fcn_thread(self, fcn, *args, **kwargs):
         """Creates a worker for the passed function and starts it
         
         Parameters:
@@ -1359,7 +1325,7 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         Returns:
             None
         """
-        worker = Worker(fcn)
+        worker = Worker(fcn, *args, **kwargs)
         worker.worker_signals.progress_updated.connect(self.update_progress)
         worker.msg_signals.edit_label_txt.connect(self.change_msg_label)
         worker.msg_signals.show_message.connect(self.show_msg_dialog)

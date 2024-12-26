@@ -230,20 +230,10 @@ class PlaylistLinkExtractor:
                                  + f'"{search_type}"')
             
             if search_type == "key":
-                # search_key = r'(?=.*\b' \
-                #             + r'\b)(?=.*\b'.join(map(re.escape, 
-                #                                      search_key)) \
-                #             + r'\b)'
                 search_key = r'(?=.*' \
                             + r')(?=.*'.join(map(re.escape, 
                                                      search_key)) \
                             + r')'
-
-                
-                #Old code (basically an "Or" query instead of an and)
-                # search_key = '|'.join(r"\b{}\b".format(x) 
-                #                       for xs in search_key_enriched
-                #                       for x in xs)
                 
                 #Filter the dataframe (case insensitive)
                 self.playlists = playlists.loc[
@@ -338,9 +328,7 @@ class PlaylistLinkExtractor:
         
         
         return link, title, uploader   
-    
-    
-    
+
     def extr_links(self, playlists = pd.DataFrame(), mode="new", autosave=True,
                    update_progress_callback=False, 
                    exec_msg=False, msg_signals=None, 
@@ -362,8 +350,9 @@ class PlaylistLinkExtractor:
             update_progress_callback (function handle - optional):
                 Function handle to return the progress (Intended for usage in 
                 conjunction with PyQt6 signals). 
-            exec_msg (PyQt Signal - optional):
-                PyQt6 signal to launch a message window
+            exec_msg (PyQt Signal):
+                Function handle to launch a message window (Intended for usage 
+                in conjunction with PyQt6 signals).
             msg_signals (PyQt Signal - optional):
                 Message signals class for further customization of the message 
                 window
@@ -548,6 +537,9 @@ class PlaylistLinkExtractor:
             index (int or index-like object):
                 index of the row in the self.playlists dataframe
         
+        Returns:
+            bool:
+                Response whether the playlist was opened successfully
         """
         
         url = pl.link
@@ -794,31 +786,6 @@ class PlaylistLinkExtractor:
                self.driver = webdriver.Safari()
                
            self.cookies_removed = False
-    
-    def convert_to_alphanumeric(self, input_string):
-        """Convert an arbitrary string to its closest alphanumeric 
-        representation  in standard ascii characters (remove non ascii 
-        characters and convert diacritics to standard characters)
-        
-        Parameters:
-            input_string (str): 
-                the string to be converted
-        
-        Returns:
-            alphanumeric_string (str): 
-                the alphanumeric ascii representation of the string
-        """
-        
-        # Normalize the string to ensure compatibility with ASCII characters
-        normalized_string = unicodedata.normalize(
-            'NFKD', input_string).encode('ascii', 'ignore').decode('ascii')
-        
-        # Remove non-alphanumeric characters
-        alphanumeric_string = ''.join(char for char in normalized_string 
-                                      if char.isalnum() or char.isspace() 
-                                      or char =='-' or char =='.')
-        
-        return alphanumeric_string
     
     def extr_all(self):
         """Extract all playlists from the soundcloud profile

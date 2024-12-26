@@ -107,8 +107,6 @@ class LibManager:
         else:
             excluded_folders = self.excl_lib_folders
         
-        files_array = np.array(["folder","filename","ext"])[np.newaxis,:]
-        
         n_folders = 0
         for root, _, files in os.walk(directory):
             if not any(excluded in root for excluded in excluded_folders 
@@ -211,40 +209,6 @@ class LibManager:
             return self.file_df
         elif mode=="independent":
             return file_df
-    
-    # def prepare_new_files(self, update_progress_callback=False):
-    #     """Runs the prepare files function for the new files dataframe
-        
-    #     Parameters:
-    #         update_progress_callback (function handle - optional):
-    #             Function handle to return the progress (Intended for usage in 
-    #             conjunction with PyQt6 signals). 
-                
-    #     Returns:
-    #         self.file_df (pandas DataFrame): 
-    #             Pandas Dataframe with the updated files
-    #     """
-        
-    #     self.file_df = self.prepare_files(self.file_df.copy(deep=True), 
-    #                                       update_progress_callback)
-    #     return self.file_df
-    
-    # def prepare_lib_files (self, update_progress_callback=False):
-    #     """Runs the prepare files function for the library files dataframe
-        
-    #     Parameters:
-    #         update_progress_callback (function handle - optional):
-    #             Function handle to return the progress (Intended for usage in 
-    #             conjunction with PyQt6 signals). 
-                
-    #     Returns:
-    #         self.lib_df (pandas DataFrame): 
-    #             Pandas Dataframe with the updated files
-    #     """
-        
-    #     self.lib_df = self.prepare_files(self.lib_df.copy(deep=True), 
-    #                                      update_progress_callback)
-    #     return self.lib_df
     
     def prepare_files (self, df_sel=None,
                        adj_fnames = True,
@@ -624,11 +588,10 @@ class LibManager:
         else: return tracks
             
     def adjust_sr(self, filepath, max_sr=48000,  std_sr=44100):
-        """Checks if their sample_rate of the file specified by the filepath
-        is below max_sr. 
+        """Checks if the sample_rate of the file specified by the filepath
+        is below max_sr and if the bit depth is below 16-bit. 
         If not so, the respective files are converted to the user specified
-        sample rate std_sr
-        Note: standard resolution is 16 bit
+        sample rate std_sr and a 16-bit resolution.
         
         Parameters:
             filepath (str or type(Path())): 
@@ -650,8 +613,8 @@ class LibManager:
             sr = sf.samplerate
             metadata = sf.copy_metadata()
             data= sf.read()
-            #Note: The bid depth of 32 bit files cant be read correctly 
-            # (always returns "FLOAT"). Hence this workaround
+            #Note: The bid depth of 32 bit files is read as "FLOAT". Hence this 
+            # workaround
 
         if sr>max_sr:
             # Resample the data
@@ -663,8 +626,7 @@ class LibManager:
             self.set_metadata(filepath, **metadata)
             
     def set_metadata_auto (self, filepath, directory = "", genre = "", 
-                           adj_genre=False, adj_art_tit=True,
-                           exp_wav=False):
+                           adj_genre=False, adj_art_tit=True):
         """Automatically sets the artist, title and genre metadata of the file
         provided via the filepath to the values provided via the filename and 
         folderpath
@@ -684,15 +646,6 @@ class LibManager:
                 parameter, then the genre is updated according to its value
             adj_art_tit (bool): 
                 Whether The Artist and Title should be updated
-            exp_wav (bool):
-                Whether the track should be imported and exported in Audacity.
-                This option is only relevant for .wav files as their metadata
-                is not correctly displayed in the Windows Explorer and Recordbox
-                after the adjustment via the music_tag package.
-                
-                Note: For this feature, Audacity must be opened and the 
-                "mod-script-pipe" option in the Edit->Preferences->Modules must 
-                be enabled
         
         Return:
             None
@@ -927,7 +880,8 @@ class LibManager:
                 - "lib": Delete duplicate files from library
                 - "ask": Ask individually for each file 
             exec_msg (PyQt Signal):
-                PyQt6 signal to launch a message window
+                Function handle to launch a message window (Intended for usage 
+                in conjunction with PyQt6 signals).
             msg_signals (PyQt Signal):
                 Message signals class for further customization of the message 
                 window
@@ -1024,11 +978,18 @@ class LibManager:
             replace_doubles (bool):
                 Whether new files which already exist in the library should be 
                 replaced
-            exec_msg (PyQt Signal - optional):
-                PyQt6 signal to launch a message window
+            exec_msg (PyQt Signal):
+                Function handle to launch a message window (Intended for usage 
+                in conjunction with PyQt6 signals).
             msg_signals (PyQt Signal - optional):
                 Message signals class for further customization of the message 
                 window
+            exec_note (PyQt Signal):
+                Function handle to launch a notification window (Intended for 
+                usage in conjunction with PyQt6 signals).
+            note_signals (PyQt Signal - optional):
+                Notification signals class for further customization of the 
+                notifications window
             
         Returns:
             file_df (pandas DataFrame):  
@@ -1281,33 +1242,4 @@ if __name__ == '__main__':
     # nf_dir = r"C:\Users\davis\Downloads\SCDL test\00_General\new files"
     # lib_dir = r"C:\Users\davis\Downloads\SCDL test"
     # LibMan = LibManager(lib_dir, nf_dir)
-    
-    fnames = ["Latex Dreams @Syndiakt Sessions Skate Park Outdoor  3.9.22",
-              "ACOUPHÈNES - Alerte Rouge",
-              "æsmå - ode à l'anarchie",
-              "GØWTHER - Tears Of The Crow",
-              "A2XBY - Scorpio (B̶L̸E̶K̸J̵A̶C̸K̴ Remix)",
-              "Karl Schwarz - Spasmodic Craving (Køzløv Remix)",
-              "YÅ - Step Back In Time",
-              "Brutalismus 3000 - Diskotéka",
-              "Melissa D'Lima - Paralysed By My Own Emotion",
-              "Bnzo - Nächte Im Park (Tiktok Hypertechno Remix)",
-              "Impuls - Отменяй (Hardtechno Remix)",
-              "Paulindaclub - Je sais ce que je fais (AD†AM Remix)",
-              "WILLOW - Wait A Minute!(ANØMALY Edit)",
-              "B.unq! - Got that booty (Original Mix)",
-              "$uicideboy$ - Carrollton (Jawis Fallon Edit)",
-              "Marsi - Нас Не Догонят",
-              "IC3PEAK - Плак Плак (R Dude & TwoTypeZ Hard Remix)",
-              "Toxic Machinery x ÆRES x MOROS - Funeral",
-              "Brutalismus3000 - Atmosféra",
-              "Je$$e - Barbie (Hardtechno Edit)",
-              "molchat doma  - cудно (pete posteuropa edit)",
-              "Глеб Крижановский - Гуляю, Рассветы Встречаю",
-              "Wilderích X Idcs - Sloppy G-Day",
-              "Elley Duhé - Money",
-              "Céleste - The Shot",
-              "brvder jakob & YËDM - Girl Boss [FREE DL]",
-              ]
-    
     pass
