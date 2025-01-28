@@ -12,6 +12,7 @@ import pandas as pd
 import numpy as np
 import pathlib
 import os
+import sys
 
 class SoundcloudMP3Downloader:
     def __init__(self, driver = "Firefox", dl_folder = None):
@@ -20,9 +21,17 @@ class SoundcloudMP3Downloader:
         self.timeout = 15 # seconds
         
         if type(dl_folder)==type(None):
-            self.dl_folder = Path("C:/Users", 
-                                         os.environ.get("USERNAME"), 
-                                         "Downloads/Souncloud Download")
+            op_sys = sys.platform
+            match op_sys:
+                case "win32":
+                    user_path = os.environ["USERPROFILE"]
+                case "Darwin": #MacOS
+                    user_path = os.path.expanduser("~")
+                case _:
+                    raise OSError(f"Unsupported operating system: {op_sys}")
+                
+            self.dl_folder = os.path.join(user_path, 
+                                       "Downloads","Souncloud Download")
             if not self.dl_folder.exists():
                 os.mkdir(self.dl_folder)
         elif type(dl_folder)==str:
@@ -43,7 +52,7 @@ class SoundcloudMP3Downloader:
             profile.set_preference('browser.download.folderList', 2)  # Use custom download path
             profile.set_preference('browser.download.manager.showWhenStarting', False)
             profile.set_preference('browser.download.dir', 
-                                   str(self.dl_folder)+"\\tmp")
+                                   str(Path(self.dl_folder, "tmp")))
             profile.set_preference('browser.helperApps.neverAsk.saveToDisk', 
                                    'application/pdf')
             options.profile = profile
@@ -53,8 +62,7 @@ class SoundcloudMP3Downloader:
             self.driver = webdriver.Edge()
         elif driver == "Chrome":
             options = webdriver.ChromeOptions()  
-            prefs = {"download.default_directory" : 
-                     str(self.dl_folder).replace("\\", "/")}
+            prefs = {"download.default_directory" : str(self.dl_folder)}
             options.add_experimental_option("prefs", prefs)
             self.driver = webdriver.Chrome(executable_path='./chromedriver', 
                                            chrome_options=options)

@@ -32,30 +32,23 @@ class PlaylistLinkExtractor:
     timeout = 10
     
     def __init__(self, 
-                 hist_file = "./_01_rsc/Download_history.txt",
+                 hist_file = "",
                  driver_choice = "Firefox",
                  sc_account = "user-727245698-705348285",
-                 playlists=pd.DataFrame(),
-                 pl_dir=None):
+                 playlists=pd.DataFrame()):
         self.track_df = pd.DataFrame(columns = ["playlist", "title", "link", 
                                                 "uploader", 
                                                 "exceptions", "downloaded"])
         
         #Determine playlist save directory
-        if type(pl_dir)==type(None):
-            self.pl_dir = Path(os.getcwd(),"_01_rsc")
-        elif type(pl_dir)==str:
-            self.nf_dir = Path(pl_dir)
-        elif type(pl_dir)==type(Path()):
-            self.pl_dir = pl_dir
-        else:
-            raise ValueError("Filepath for playlists save folder must be of "
-                             + "type str or type(Path()), not "
-                             + f"{type(pl_dir)}")
-        if not self.pl_dir.exists():
-            os.mkdir(self.pl_dir)
+        self.rsc_dir = Path(Path(__file__).parent.parent,"_01_rsc")
+        if not self.rsc_dir.exists():
+            os.mkdir(self.rsc_dir)
         
-        #Check history file and create it, if it doesn't exist
+        #Check history file path
+        if not hist_file:
+            hist_file = Path(self.rsc_dir, "Download_history.txt")
+        #If history file doesn't exist, create it
         if not os.path.exists(hist_file):
             with open(hist_file, 'w') as f:
                 f.write("{}")
@@ -63,7 +56,7 @@ class PlaylistLinkExtractor:
         
         #Retrieve saved playlist data
         self.sc_account = sc_account
-        pl_path = Path(self.pl_dir,  f"playlists_{self.sc_account}.feather")
+        pl_path = Path(self.rsc_dir,  f"playlists_{self.sc_account}.feather")
         if pl_path.exists():
             self.playlists_cache = pd.read_feather(pl_path)
         else:
@@ -721,8 +714,7 @@ class PlaylistLinkExtractor:
         return history
         
     def reject_cookies(self):
-        """Rejects all Cookies of the https://www.forhub.io/soundcloud/en/ 
-        website
+        """Rejects all Cookies of the https://soundcloudtomp3.biz/ website
         
         Parameters: 
             None
@@ -863,7 +855,7 @@ class PlaylistLinkExtractor:
         # that it is empty)
         self.playlists_cache["last_track"] = ""    
                
-        pl_path = Path(self.pl_dir,  f"playlists_{self.sc_account}.feather")
+        pl_path = Path(self.rsc_dir,  f"playlists_{self.sc_account}.feather")
         self.playlists_cache.to_feather(pl_path)
         
         

@@ -24,8 +24,6 @@ import PyQt6.QtCore as QTC
 import qdarktheme
 import darkdetect
 import sys
-import win32con    # part of the pywin32 package
-import win32gui    # part of the pywin32 package 
 
 if __name__ == "__main__": 
     from _00_scripts.UI_Msg_Dialog import Ui_MsgDialog
@@ -41,8 +39,15 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         super(MainWindow, self).__init__()
         self.setupUi(self)
         
+        self.op_sys = sys.platform
+        if self.op_sys not in ["win32", "darwin"]:
+            raise OSError(f"Unsupported operating system: {self.op_sys}")
+        
+        #Get directory path of rsc
+        rsc_dir = Path(Path(__file__).parent,"_01_rsc")
+        
         #Retrieve and check settings from settings file
-        self.settings_path = Path(os.getcwd(),"_01_rsc","Settings.txt")
+        self.settings_path = Path(rsc_dir,"Settings.txt")
         if not self.settings_path.exists():
             with open(self.settings_path, 'w') as f:
                 f.write(json.dumps(dict()))
@@ -74,7 +79,7 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         self.tbl_view_right.setSortingEnabled(True)
         
         #Create instance of Soundcloud Downloader
-        self.SCDL = Soundclouddownloader(pl_dir = Path(os.getcwd(),"_01_rsc"),
+        self.SCDL = Soundclouddownloader(pl_dir = rsc_dir,
                                          **self.settings)
         
         self.lineEdit_nf_dir_1.placeholderText = self.settings.get("nf_dir")
@@ -266,22 +271,25 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         Returns:
             None
         """
-        
-        std_settings = dict(sc_account="user-727245698-705348285",
+
+        match self.op_sys:
+            case "win32":
+                user_path = os.environ["USERPROFILE"]
+            case "darwin": #MacOS
+                user_path = os.path.expanduser("~")
+            case _:
+                raise OSError(f"Unsupported operating system: {self.op_sys}")
+                
+        std_settings = dict(sc_account="sillyphus",
                             driver_choice = "Firefox",
-                            lib_dir = Path("C:/Users",
-                                          os.environ.get("USERNAME"), 
-                                          "00_data/04_Track_Library"),
-                            nf_dir = Path("C:/Users",
-                                          os.environ.get("USERNAME"), 
-                                          "00_data/04_Track_Library", 
-                                          "00_Organization/00_New_files"),
-                            music_dir = Path("C:/Users",
-                                          os.environ.get("USERNAME"), 
-                                          "00_data/03_Music"),
-                            dl_dir = Path("C:/Users",
-                                          os.environ.get("USERNAME"), 
-                                          "Downloads/Souncloud Download"),
+                            lib_dir = Path(user_path, "00_data", 
+                                           "04_Track_Library"),
+                            nf_dir = Path(user_path, "00_data", 
+                                          "04_Track_Library", 
+                                          "00_Organization","00_New_files"),
+                            music_dir = Path(user_path, "00_data","03_Music"),
+                            dl_dir = Path(user_path, "Downloads",
+                                          "Souncloud Download"),
                             excl_lib_folders = ["00_Organization"],
                             dark_mode = darkdetect.isDark())
         
@@ -1979,11 +1987,9 @@ class Worker(QTC.QRunnable):
 #%% Main
 
 if __name__ == "__main__":
-    if sys.platform == 'win32':
+    if sys.platform == 'win32': # Set the app-id for Windows
         import ctypes
-        app_id = 'SC DL'  # Replace with a unique identifier for your app
-
-        # Set the taskbar icon for Windows
+        app_id = 'SC DL'
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(app_id)
     
     qdarktheme.enable_hi_dpi()
@@ -1993,12 +1999,22 @@ if __name__ == "__main__":
     window.show()
     
     # Bring the window to the front
-    hwnd = window.winId()
-    win32gui.ShowWindow(hwnd, win32con.SW_SHOWNORMAL)
-    win32gui.SetWindowPos(hwnd, win32con.HWND_TOPMOST, 0, 0, 0, 0, 
-                          win32con.SWP_NOSIZE | win32con.SWP_NOMOVE)
-    win32gui.SetWindowPos(hwnd, win32con.HWND_NOTOPMOST, 0, 0, 0, 0, 
-                          win32con.SWP_NOSIZE | win32con.SWP_NOMOVE)
+    if sys.platform == 'win32':  # Windows
+        import win32gui
+        import win32con
+        hwnd = window.winId()
+        win32gui.ShowWindow(hwnd, win32con.SW_SHOWNORMAL)
+        win32gui.SetWindowPos(hwnd, win32con.HWND_TOPMOST, 0, 0, 0, 0, 
+                              win32con.SWP_NOSIZE | win32con.SWP_NOMOVE)
+        win32gui.SetWindowPos(hwnd, win32con.HWND_NOTOPMOST, 0, 0, 0, 0, 
+                              win32con.SWP_NOSIZE | win32con.SWP_NOMOVE)
+        
+    elif sys.platform == 'darwin':  # macOS
+        from AppKit import NSApp
+        NSApp.activateIgnoringOtherApps_(True)
+    else:
+        raise OSError(f"Unsupported operating system: {sys.platform}")
+
 
     
     sys.exit(app.exec())

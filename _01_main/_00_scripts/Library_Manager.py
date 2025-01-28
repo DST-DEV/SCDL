@@ -1,6 +1,7 @@
 #%% Imports
 #General imports
 import re
+import sys
 import time
 import numpy as np
 import pandas as pd
@@ -18,6 +19,7 @@ import os
 import shutil
 import difflib
 import pathlib
+import platform
 from pathlib import Path
 from pathlib import PurePath
 
@@ -34,7 +36,17 @@ class LibManager:
         if type(lib_dir)==str:
             self.lib_dir = Path(lib_dir) 
         elif type(lib_dir)==type(None) or type(lib_dir)==type(Path()):
-            self.lib_dir = lib_dir or Path("C:/Users/davis/00_data/04_Track_Library")
+            op_sys = sys.platform            
+            match op_sys:
+                case "win32":
+                    user_path = os.environ["USERPROFILE"]
+                case "darwin": #MacOS
+                    user_path = os.path.expanduser("~")
+                case _:
+                    raise OSError(f"Unsupported operating system: {op_sys}")
+                
+            self.lib_dir = lib_dir or os.path.join(user_path, "00_data", 
+                                                   "04_Track_Library")
         
         if (type(music_dir)==str or type(music_dir)==type(Path())) \
             and os.path.exists(Path(music_dir)):
@@ -45,8 +57,8 @@ class LibManager:
         if type(nf_dir)==str:
             self.nf_dir = Path(nf_dir) 
         elif type(nf_dir)==type(None) or type(nf_dir)==type(Path()):
-            self.nf_dir = nf_dir or Path(self.lib_dir, 
-                                           "00_Organization/00_New_files")
+            self.nf_dir = nf_dir or os.path.join(self.lib_dir, 
+                                           "00_Organization", "00_New_files")
         
         self.excl_lib_folders = excl_lib_folders
         
@@ -663,8 +675,18 @@ class LibManager:
         if genre or adj_genre:
             if not genre:
                 directory = directory if directory else self.lib_dir
-                genre = str(filepath.parents[0]).replace(str(directory),"")
-                genre = re.sub(r"^\\", "", genre).replace ("\\"," - ")
+                
+                #Resolve paths to get absolute paths
+                directory = Path(directory).resolve()
+                filepath = Path(filepath).resolve().parents[0]
+                
+                # Ensure the base directory is a parent of the folder path
+                if not filepath.is_relative_to(directory):
+                    raise ValueError(f"The file path '{filepath}' is not within the base directory '{directory}'.")
+                
+                #Get list of folders from path relative to base directory
+                genre = list(filepath.parents[0].relative_to(directory).parts)
+                genre = " - ".join(genre)
             
             if not adj_art_tit:
                 self.set_metadata(filepath, genre=genre)
@@ -812,14 +834,14 @@ class LibManager:
                 try:
                     if row["extension"]==".mp3":
                         file = music_tag.load_file(filepath)
-                        library_fld = file["genre"].first.replace(" - ", "/")
+                        library_fld = os.path.join(*(file["genre"].split(" - ")))
                     elif row["extension"]==".wav":
                         with soundfile.SoundFile(str(filepath), 'r') as sf:
                             meta = sf.copy_metadata()
                         
                         library_fld = meta.get("genre") 
                         #Note: returns None if no genre data is present
-                        library_fld = library_fld.replace(" - ", "/") \
+                        library_fld = os.path.join(*(library_fld.split(" - "))) \
                             if library_fld else ""
                         
                     if library_fld:

@@ -1,6 +1,7 @@
 #%% Imports
 #General imports
 import re
+import sys
 import pandas as pd
 from tqdm import tqdm
 
@@ -61,10 +62,18 @@ class Soundclouddownloader:
         
         
         #Determine new file directory
+        op_sys = sys.platform
         if type(dl_dir)==type(None):
-            self.dl_dir = Path("C:/Users", 
-                                         os.environ.get("USERNAME"), 
-                                         "Downloads/Souncloud Download")
+            match op_sys:
+                case "win32":
+                    user_path = os.environ["USERPROFILE"]
+                case "darwin": #MacOS
+                    user_path = os.path.expanduser("~")
+                case _:
+                    raise OSError(f"Unsupported operating system: {op_sys}")
+            
+            self.dl_dir = os.path.join(user_path, 
+                                       "Downloads","Souncloud Download")
             if not self.dl_dir.exists():
                 os.mkdir(self.dl_dir)
         elif type(dl_dir)==str:
@@ -81,8 +90,8 @@ class Soundclouddownloader:
             and Path(hist_file).suffix == ".txt":
             self.history_file = Path(hist_file)
         else:
-            self.history_file = os.path.join(os.getcwd(), 
-                                  '_01_rsc\\Download_history.txt')
+            self.history_file = os.path.join(Path(__file__).parent.parent, 
+                                  '_01_rsc', 'Download_history.txt')
             if not os.path.isfile(self.history_file): 
                 with open(self.history_file, 'w') as f:
                     f.write("{}")
