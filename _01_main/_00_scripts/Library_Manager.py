@@ -119,27 +119,19 @@ class LibManager:
         else:
             excluded_folders = self.excl_lib_folders
         
-        n_folders = 0
-        for root, _, files in os.walk(directory):
-            if not any(excluded in root for excluded in excluded_folders 
-                   if excluded!=""):
-                n_folders+=1
-        
-        #Search for all mp3 & wav files in the directory, including subdirectories
-        i = 0
-        prog = 0
-        
-        results = []
+        all_dirs = [root for root, _, _ in os.walk(directory) 
+                    if not any(excluded in root for excluded in excluded_folders 
+                           if excluded!="")]
+        n_dirs = len(all_dirs)
 
-        # Use os.walk with early exclusion of unwanted folders
-        for root, _, files in os.walk(directory):
-            #Skip the excluded folders:
-            if any(excluded in root for excluded in excluded_folders 
-                   if excluded!=""):
-                continue
-
+        if n_dirs == 0:
+            return pd.DataFrame(columns=["directory", "folder", 
+                                         "filename", "extension"])
+        
+        results=[]
+        for i,root in enumerate(all_dirs):
             # Filter relevant files and collect their attributes
-            for file in files:
+            for file in os.listdir(root):
                 if file.endswith((".mp3", ".wav")):
                     relative_folder = str(Path(root).relative_to(directory))
                     file_stem = Path(file).stem
@@ -148,11 +140,7 @@ class LibManager:
             
             #Update progress bar
             if callable(update_progress_callback):
-                i +=1
-                if i>=.0499*n_folders:
-                    prog +=round(i/n_folders*100,3)
-                    i=0
-                    update_progress_callback(int(np.ceil(prog)))
+                update_progress_callback(int(np.ceil(i/n_dirs*100)))
                     
         # Create a DataFrame directly from the results list
         doc = pd.DataFrame(results, columns=["folder", "filename", "extension"])
