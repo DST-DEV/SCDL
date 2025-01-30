@@ -148,8 +148,9 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         #SCDL buttons
         self.btn_pl_search.clicked.connect(
             lambda: self.run_fcn_thread(self.GUI_extr_playlists))
-        self.btn_track_ext.clicked.connect(
-            lambda: self.run_fcn_thread(self.GUI_extr_tracks))
+        self.btn_track_ext.clicked.connect(self.GUI_extr_tracks)
+        # self.btn_track_ext.clicked.connect(
+        #     lambda: self.run_fcn_thread(self.GUI_extr_tracks))
         self.btn_track_dl.clicked.connect(lambda: self.run_fcn_w_dialog(
                                                     self.GUI_download_tracks))
         self.btn_dl_hist_up.clicked.connect(
@@ -671,15 +672,15 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         """
 
         if len(selected.indexes())>0:
-            row = selected.indexes()[0].row()
+            row = [i.row() for i in selected.indexes()]
         else: 
-            return
+            row = list(self.tbl_left._data.index)
         
         if self.tbl_left_variable == "playlists" \
             and self.tbl_right_variable == "track_links":
-            pl = self.tbl_left._data.iloc[row]["name"]
+            pl = list(self.tbl_left._data.iloc[row]["name"])
             
-            tracks = self.SCDL.track_df.loc[self.SCDL.track_df.playlist==pl]
+            tracks = self.SCDL.track_df.loc[self.SCDL.track_df.playlist.isin(pl)]
             self.GUI_change_tbl_data (data = tracks, 
                                       lr="right",
                                       variable = "track_links")
