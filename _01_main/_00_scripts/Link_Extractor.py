@@ -303,7 +303,7 @@ class PlaylistLinkExtractor:
             base_path
             +"/a[@class='trackItem__trackTitle sc-link-dark "
             + "sc-link-primary sc-font-light']").get_attribute(
-                "href").split("in=user")[0]
+                "href").split("?in=", maxsplit=1)[0]
         
         #Get the title of the track
         title = self.driver.find_element(By.XPATH,
@@ -564,7 +564,7 @@ class PlaylistLinkExtractor:
             #Wait for track container to load
             WebDriverWait(self.driver, self.timeout).until(
                 EC.presence_of_element_located((
-                    By.XPATH,"(//div[@class='listenDetails__partialInfo'])")))
+                    By.XPATH,"(//div[@class='listenDetails__trackList'])")))
         except TimeoutException:
             # print (f"Playlist {pl_name}: Track container loading timeout")
             self.playlists = self.add_exception(self.playlists, 
