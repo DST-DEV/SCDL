@@ -34,7 +34,7 @@ else:
 class Soundclouddownloader:
     def __init__(self, 
                  driver_choice = "Firefox",
-                 sc_account = "user-727245698-705348285",
+                 sc_account = "sillyphus",
                  dl_dir = None,track_df = None,
                  hist_file="",
                  playlists = None,
@@ -183,7 +183,7 @@ class Soundclouddownloader:
             if reextract: #Reset track_df
                 self.LinkExt.track_df = self.LinkExt.track_df.iloc[0:0]
             
-            self.track_df, self.playlists = self.LinkExt.extr_links(
+            self.track_df, self.playlists = self.LinkExt.extr_links_pl(
                                                 playlists = playlists, 
                                                 mode=mode, 
                                                 autosave=autosave,
