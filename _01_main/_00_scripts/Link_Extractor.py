@@ -13,6 +13,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.firefox.options import Options
 
 #File Handling imports
@@ -34,7 +35,7 @@ class PlaylistLinkExtractor:
     def __init__(self, 
                  hist_file = "",
                  driver_choice = "Firefox",
-                 sc_account = "user-727245698-705348285",
+                 sc_account = "sillyphus",
                  playlists=pd.DataFrame()):
         self.track_df = pd.DataFrame(columns = ["playlist", "title", "link", 
                                                 "uploader", 
@@ -261,7 +262,7 @@ class PlaylistLinkExtractor:
         
         return self.playlists
     
-    def extr_track(self, index):
+    def extr_track_pl(self, index):
         """Extract the track link and account which uploaded the track 
         from the currently open soundcloud playlist using the selenium
         webdriver
@@ -330,12 +331,130 @@ class PlaylistLinkExtractor:
                        title).strip()      #Title of the track (= filename)
         
         
-        return link, title, uploader   
+        return title, link, uploader  
+    
+    def extr_track_likes(self, last_track):
+        """Extract the track link and account which uploaded the track 
+        from the currently open likes page using the selenium
+        webdriver
+        
+        Parameters: 
+            last_track (str): 
+                Link to the track 
+        
+        Returns:
+            link (str): 
+                Link to the track 
+            title (str):
+                Title of the track
+            uploader (str): 
+                Name of the uploader of the track
+        """
+        
+        #Check the driver
+        self.check_driver()
+        
+        #Base path to the track element
+        base_path = "//div[@class='soundList lazyLoadingList']" \
+                    + "/ul[@class='lazyLoadingList__list sc-list-nostyle "\
+                    + "sc-clearfix']"
+  
+        #Wait for track container to load
+        try:
+            WebDriverWait(self.driver, self.timeout).until(
+                EC.presence_of_element_located((By.XPATH, base_path)))
+        except TimeoutException:
+            raise TimeoutException("Track container loading timeout")
+        except Exception as e:
+            raise e
+        
+        #Get current length of track container list
+        curr_len = len(self.driver.find_elements(
+                        By.XPATH, 
+                        base_path+"/li[@class='soundList__item']"))
+        index=0
+    
+        while True:
+            pass
+            #find track content element (including Wait to prevent 
+            # StaleElementReferenceException)
+            try:
+                WebDriverWait(self.driver, self.timeout).until(
+                    EC.presence_of_element_located((
+                        By.XPATH,
+                        "(" + base_path 
+                        + f"/li[@class='soundList__item'])[{index+1}]"))
+                    )
+            except NoSuchElementException:
+                raise NoSuchElementException(f"Track at index {index} not found")
+            except Exception as e:
+                raise e
+            
+            #find element which contains the track link
+            link = self.driver.find_element(By.XPATH,
+                "(" + base_path + f"/li[@class='soundList__item'])[{index+1}]"
+                + "/div/div[@class='sound streamContext']/div"
+                + "/div[@class='sound__artwork sc-mr-1x']"
+                + "/a[@class='sound__coverArt']").get_attribute(
+                    "href")
+            
+            #Get the title of the track
+            title = self.driver.find_element(By.XPATH,
+                "(" + base_path + f"/li[@class='soundList__item'])[{index+1}]"
+                + "/div/div[@class='sound streamContext']").get_attribute(
+                    "aria-label").split("Track: ", maxsplit=1)[-1]
+                    
+            #find element which contaions the uploader name
+            uploader = self.convert_to_alphanumeric(
+                self.driver.find_element(By.XPATH,
+                    "(" + base_path + f"/li[@class='soundList__item'])[{index+1}]"
+                    + "/div/div[@class='sound streamContext']/div"
+                    + "/div[@class='sound__content']"
+                    + "/div[@class='sound__header sc-mb-1.5x sc-px-2x']"
+                    + "/div/div/div[@class='soundTitle__usernameTitleContainer "
+                    + "sc-mb-0.5x']"
+                    + "/div[@class='sc-type-light sc-text-secondary sc-text-h4 "
+                    + "soundTitle__secondary']"
+                    + "/a/span[@class='soundTitle__usernameText']").text
+                )
+            
+            #Replace reserved characters
+            repl_dict = {" : ": " _ ", " :": " :", ": ": "_ ", ":": "_", 
+                         "/":"", "*":" ", 
+                         " | ":" ", "|":""}
+            title = reduce(lambda x, y: x.replace(y, repl_dict[y]), 
+                           repl_dict, 
+                           title).strip()      #Title of the track (= filename)
+            
+            #Increase index
+            index+=1
+            
+            #Check if end of current list is reached and if so try to load more
+            if index >= curr_len:
+                #Scroll down and wait shorty for new tracks to load
+                self.driver.execute_script(
+                    "window.scrollTo(0, document.body.scrollHeight)")
+                time.sleep(.3)
+                
+                #Update length of current list
+                curr_len = len(self.driver.find_elements(
+                                By.XPATH, 
+                                base_path+"/li[@class='soundList__item']"))
+                
+                #Check if length changed and if not break the while loop
+                if index >= curr_len: #I.e. end of likes list is reached
+                    return title, link, uploader
+            
+            if link == last_track:
+                return title, link, uploader
+            
+            yield title, link, uploader
 
-    def extr_links(self, playlists = pd.DataFrame(), mode="new", autosave=True,
-                   update_progress_callback=False, 
-                   exec_msg=False, msg_signals=None, 
-                   **kwargs):
+        
+    def extr_links_pl(self, playlists = pd.DataFrame(), mode="new", 
+                      autosave=True, update_progress_callback=False, 
+                      exec_msg=False, msg_signals=None, 
+                      **kwargs):
         """Extract the links to the tracks within the specified playlists. 
         
         Parameters: 
@@ -416,21 +535,26 @@ class PlaylistLinkExtractor:
             iteration = 0
             while iteration<2: 
                 try:
-                    self.open_pl (pl, index)
+                    pl_empty = self.open_pl (pl, index)
                 except Exception as e:
                     iteration+=1
-                    print("Soundcloud not loading again")
+                    if iteration==0:
+                        print("Soundcloud page not loaded properly. Trying again")
+                    else:
+                        print("Soundcloud page of playlist "
+                              + "\"{}\" could not be loaded".format(pl["name"]))
                 else:
                     break
 
-            # #Skip the playlist if its empty
-            # if self.playlists.loc[index, "status"] == "Empty": continue
-            
             #Test if the Playlist is empty and if so, skip it
-            if self.check_existence(search_str="//div[@class='listenDetails']"
-                                    + "/div[@class='emptyNetworkPage']"):
-                self.playlists.loc[index, "status"] = "Empty"
+            if pl_empty:
                 continue
+# =============================================================================
+#             if self.check_existence(search_str="//div[@class='listenDetails']"
+#                                     + "/div[@class='emptyNetworkPage']"):
+#                 self.playlists.loc[index, "status"] = "Empty"
+#                 continue
+# =============================================================================
 
             #Extract the tracks based on the selected mode
             curr_tracks = pd.DataFrame(columns=["playlist", "title", "link",
@@ -441,7 +565,7 @@ class PlaylistLinkExtractor:
                         By.CLASS_NAME, 
                         "trackList__item.sc-border-light-bottom.sc-px-2x"))-1
                 
-                track_link, title, uploader = self.extr_track(index)
+                title, track_link, uploader = self.extr_track_pl(index)
                 tracks.loc[len(tracks)] = [pl["name"], title, track_link, 
                                            uploader, "", False]
                 if autosave: self.track_df = pd.concat ([self.track_df, tracks])
@@ -470,7 +594,7 @@ class PlaylistLinkExtractor:
                         By.CLASS_NAME, 
                         "trackList__item.sc-border-light-bottom.sc-px-2x"))
                     for i in range(n_tracks-1,-1,-1):
-                        track_link, title, uploader = self.extr_track(i)
+                        title, track_link, uploader = self.extr_track_pl(i)
                         
                         #If track is last downloaded track, exit loop
                         if mode=="new" and track_link == last_track_hist:
@@ -528,6 +652,79 @@ class PlaylistLinkExtractor:
         
         return tracks, self.playlists
     
+    def extr_links_likes(self, mode="new", last_track="", autosave=True, 
+                         update_progress_callback=False, 
+                         exec_msg=False, msg_signals=None, 
+                         **kwargs):
+        """Extract the links to the tracks from the likes page. 
+        
+        Parameters: 
+            mode (str - optional): 
+                Select the Extraction mode
+                - "new": Extracts all new songs (compared to dl history)
+                - "last": Extracts only the last song
+                - "all": Extracts all songs
+            last_track (str - optional):
+                Link of the last downloaded track. If none is specified, then
+                the data from the dl history is used
+            autosave (bool - optional): 
+                whether the results should automatically be saved to the 
+                self.track_df (default: yes)
+            update_progress_callback (function handle - optional):
+                Function handle to return the progress (Intended for usage in 
+                conjunction with PyQt6 signals). 
+            exec_msg (PyQt Signal):
+                Function handle to launch a message window (Intended for usage 
+                in conjunction with PyQt6 signals).
+            msg_signals (PyQt Signal - optional):
+                Message signals class for further customization of the message 
+                window
+        
+        Returns:
+            self.track_df (pandas DataFrame): 
+                Dataframe with information on the tracks found in each playlist        
+        """
+        #Check the driver
+        self.check_driver()
+        self.driver.set_page_load_timeout(10)
+        
+        #Determine last track
+        if not last_track or not type(last_track)==str:
+            with open(self.history_file, "r") as f:
+                history = json.loads(f.read())
+            last_track = history.get("likes")
+            
+        #Open playlist (iteratively - sometimes the browser doesn't load properly at first)
+        iteration = 0
+        while iteration<2: 
+            try:
+                likes_non_empty = self.open_likes()
+            except Exception as e:
+                iteration+=1
+                print("Soundcloud not loading again")
+                if iteration==1:
+                    raise TimeoutException("Soundcloud page could not be loaded")
+            else:
+                break
+        
+        #Check if Likes page is empty
+        if not likes_non_empty:
+            print("No liked tracks on Soundcloud profile found")
+            return pd.DataFrame(columns=["playlist", "title", "link", 
+                                         "uploader", "exceptions", 
+                                         "downloaded"])
+        
+        tracks_list = [t for t in self.extr_track_likes(last_track)]    
+        
+        #Prepare Track Dataframe
+        tracks = pd.DataFrame(columns=["title", "link", "uploader"],
+                              data=tracks_list)
+        tracks["exceptions"]=""
+        tracks["downloaded"]=""
+        tracks.insert(0,"playlist","Likes")
+        
+        return tracks
+    
     def open_pl (self, pl, index):
         """Opens the website of a soundcloud playlist and checks if the whole 
         page was loaded. If the playlist is not yet in the self.playlists 
@@ -548,6 +745,7 @@ class PlaylistLinkExtractor:
         url = pl.link
         
         #Open playlist
+        self.check_driver()
         self.driver.get(url=url)
         
         #If this is the first playlist of the session, then reject cookies
@@ -560,8 +758,8 @@ class PlaylistLinkExtractor:
             self.playlists.loc[-1] = pl.values[0]
             self.playlists.reset_index(inplace=True)
         
+        #Wait for track container to load
         try:
-            #Wait for track container to load
             WebDriverWait(self.driver, self.timeout).until(
                 EC.presence_of_element_located((
                     By.XPATH,"(//div[@class='listenDetails__trackList'])")))
@@ -582,12 +780,8 @@ class PlaylistLinkExtractor:
             raise e
         
         #Check if playlist is empty and if so, skip it
-        try:
-            #Try to find a tracklist element
-            self.driver.find_element(By.XPATH, 
-                                     "//li[@class='trackList__item "
-                                     + "sc-border-light-bottom sc-px-2x']")
-        except:
+        if self.check_existence(search_str="//div[@class='listenDetails']"
+                                + "/div[@class='emptyNetworkPage']"):
             self.playlists.loc[index, "status"] = "Empty"
             return False
             
@@ -601,8 +795,8 @@ class PlaylistLinkExtractor:
             time.sleep(.2)
         self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight)")
         
+        #Wait for last track to load
         try:
-            #Wait for last track to load
             WebDriverWait(self.driver, self.timeout).until(
                 EC.presence_of_element_located((
                     By.XPATH,
@@ -629,6 +823,47 @@ class PlaylistLinkExtractor:
                                                 search_col="link")
             raise e
         return True
+    
+    def open_likes(self):
+        """Opens the website of the likes page of the soundcloud profile
+        
+        Parameters:
+            None
+        
+        Returns:
+            bool:
+                Response whether the playlist was opened successfully
+        """
+        
+        #Open Likes page
+        self.check_driver()
+        self.driver.get(url=f"https://soundcloud.com/{self.sc_account}/likes")
+        
+        #If this is the first playlist of the session, then reject cookies
+        if not self.cookies_removed:
+            self.reject_cookies()
+            self.cookies_removed = True
+        
+        #Wait for track container to load
+        try:
+            WebDriverWait(self.driver, self.timeout).until(
+                EC.presence_of_element_located((
+                    By.XPATH,"(//div[@class='soundList lazyLoadingList'])")))
+        except TimeoutException:
+            raise TimeoutException("Track container loading timeout")
+        except Exception as e:
+            raise e
+        
+        #Check if Likes page is empty
+        try:
+            #Try to find a tracklist element
+            self.driver.find_element(By.XPATH, 
+                                     "//div[@class='emptyNetworkPage "
+                                     + "sc-pt-8x emptyLikes']")
+        except:
+            return True
+        else:
+            return False
     
     def update_dl_history(self, mode="set_finished"):
         """Updates the last tracks in the download history and the 
@@ -680,7 +915,7 @@ class PlaylistLinkExtractor:
             pl = pl.loc[~pl["name"].isin(history.keys())]
             
         if not pl.empty:
-            tracks, _ = self.extr_links(playlists = pl, 
+            tracks, _ = self.extr_links_pl(playlists = pl, 
                                         mode="last")
         else:
             #Check if webdriver is still open and if so, close it
@@ -824,7 +1059,7 @@ class PlaylistLinkExtractor:
             None
         """
         _ = self.extr_playlists()
-        _, _ = self.extr_links()
+        _, _ = self.extr_links_pl()
         return self.track_df, self.playlists
     
     def save_playlists (self, playlists):
@@ -904,7 +1139,9 @@ class PlaylistLinkExtractor:
 
 #%% Main
 if __name__ == '__main__':
-    ple = PlaylistLinkExtractor(hist_file = r"C:\Users\davis\00_data\01_Projects\Personal\SCDL\_01_main\_01_rsc\Download_history.txt")
+    ple = PlaylistLinkExtractor(hist_file = r"C:\Users\davis\00_data\01_Projects\Personal\SCDL\_01_main\_01_rsc\Download_history.txt",
+                                sc_account="sillyphus")
+    likes = ple.extr_links_likes(last_track="https://soundcloud.com/peak34records/sinergy-wake-the-fxck-up-peak-34")
     
     # pl_list = ple.extr_playlists(search_key=['Trance'], search_type="key")
     # # pl_list = ple.extr_playlists()
