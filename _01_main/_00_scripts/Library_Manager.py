@@ -25,7 +25,7 @@ from pathlib import PurePath
 #%% LibManager Class
 class LibManager:
     ob_strs = ["premiere", "P R E M I E R E", "free download", "free dl",
-               "Free DL", "FreeDL", "𝐅𝐑𝐄𝐄 𝐃𝐋", "exclusive", "\|", "preview",
+               "Free DL", "FreeDL", "𝐅𝐑𝐄𝐄 𝐃𝐋", "exclusive", r"\|", "preview",
                "sindex", "motz", "OUTNOW"]        #common obsolete strings
 
     def __init__(self, lib_dir = None, nf_dir = None, music_dir = None,
@@ -344,7 +344,7 @@ class LibManager:
         # removed in this step since all square brackets are removed anyways
         # later
         ob_strs_pattern = "(" +  "|".join(self.ob_strs) + ")"
-        new_filename = re.sub(r"\([^)]*" + ob_strs_pattern + "[^)]*\)", "",
+        new_filename = re.sub(r"\([^)]*" + ob_strs_pattern + r"[^)]*\)", "",
                              new_filename,
                              flags=re.IGNORECASE)
         new_filename = re.sub(ob_strs_pattern + r"[:_]*", "",

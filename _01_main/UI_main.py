@@ -21,7 +21,6 @@ from PyQt6.QtCore import pyqtSlot
 import PyQt6.QtWidgets as QTW
 import PyQt6.QtGui as QTG
 import PyQt6.QtCore as QTC
-import qdarktheme
 import darkdetect
 import sys
 
@@ -123,6 +122,14 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         self.setup_connections()
 
         #Set light or dark mode
+        with open('_01_rsc/darkstyle.qss', 'r') as f:
+            self.dark_style = f.read()
+        with open('_01_rsc/lightstyle.qss', 'r') as f:
+            self.light_style = f.read()
+        with open('_01_rsc/darktablestyle.qss', 'r') as f:
+            self.darktablestyle = f.read()
+        with open('_01_rsc/lighttablestyle.qss', 'r') as f:
+            self.lighttablestyle = f.read()
         self.change_lightmode()
 
         # Set the title
@@ -1294,31 +1301,31 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
             None
         """
         if self.SettingsDialog.cb_darkmode.isChecked():
-            qdarktheme.setup_theme("dark",
-                                    custom_colors={"[dark]":
-                                                   {"primary": "#75A4FF"}},
-                                    additional_qss="""QToolTip{color: black;
-                                                        color: white;
-                                                        border: 0px}
-                                                      QPushButton {
-                                                          color: #FFFFFF}""")
+            dark_palette = QTG.QPalette()
+            dark_palette.setColor(QTG.QPalette.ColorRole.Window,
+                             QTG.QColor(53, 53, 53))
+            app.setPalette(dark_palette)
+            self.setStyleSheet(self.dark_style)
+            self.tbl_view_left.setStyleSheet(self.darktablestyle)
+            self.tbl_view_right.setStyleSheet(self.darktablestyle)
 
-            # # Set the custom icon for the application
-            # icon = QTG.QIcon(r"./_01_rsc/SCDLO_V1_icon_white.ico")
-            # self.setWindowIcon(icon)
+
             # Set the custom icon for the application
             icon = QTG.QIcon(r"./_01_rsc/SCDLO_V1_icon_white.ico")
             self.setWindowIcon(icon)
 
         else:
-            qdarktheme.setup_theme("light",
-                                    custom_colors={"[light]":
-                                                   {"primary": "#2469B2"}},
-                                    additional_qss="""QToolTip{color: white;
-                                                        color: black;
-                                                        border: 0px;}
-                                                      QPushButton {
-                                                          color: #000000}""")
+            light_palette = QTG.QPalette()
+            light_palette.setColor(QTG.QPalette.ColorRole.Window,
+                             QTG.QColor(235, 235, 235))
+            light_palette.setColor(QTG.QPalette.ColorRole.Base,
+                             QTG.QColor(235, 235, 235))
+            light_palette.setColor(QTG.QPalette.ColorRole.WindowText,
+                             QTG.QColor(17, 24, 39))
+            app.setPalette(light_palette)
+            self.setStyleSheet(self.light_style)
+            self.tbl_view_left.setStyleSheet(self.lighttablestyle)
+            self.tbl_view_right.setStyleSheet(self.lighttablestyle)
 
             # Set the custom icon for the application
             icon = QTG.QIcon(r"./_01_rsc/SCDLO_V1_icon_black.ico")
@@ -1992,7 +1999,6 @@ if __name__ == "__main__":
         app_id = 'SC DL'
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(app_id)
 
-    qdarktheme.enable_hi_dpi()
     app = QApplication(sys.argv)
 
     window = MainWindow()
