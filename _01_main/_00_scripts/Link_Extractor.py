@@ -456,6 +456,7 @@ class PlaylistLinkExtractor:
     def extr_links_pl(self, playlists = pd.DataFrame(), mode="new",
                       autosave=True, update_progress_callback=False,
                       exec_msg=False, msg_signals=None,
+                      exec_note=False, note_signals=None,
                       **kwargs):
         """Extract the links to the tracks within the specified playlists.
 
@@ -480,6 +481,12 @@ class PlaylistLinkExtractor:
             msg_signals (PyQt Signal - optional):
                 Message signals class for further customization of the message
                 window
+            exec_note (PyQt Signal):
+                Function handle to launch a notification window (Intended for
+                usage in conjunction with PyQt6 signals).
+            note_signals (PyQt Signal - optional):
+                Notification signals class for further customization of the
+                notifications window
 
         Returns:
             self.track_df (pandas DataFrame):
@@ -538,13 +545,26 @@ class PlaylistLinkExtractor:
             while iteration<2:
                 try:
                     pl_non_empty = self.open_pl (pl, index)
+                except PlaylistNotFoundError as e:
+                    pl_non_empty = False
+                    if note_signals is not None and exec_note:
+                        note_signals.edit_label_txt.emit(str(e))
+                        exec_note("Playlist Not Found Error")
+                    break
                 except Exception as e:
                     iteration+=1
                     if iteration==0:
                         print("Soundcloud page not loaded properly. Trying again")
                     else:
-                        print("Soundcloud page of playlist "
-                              + "\"{}\" could not be loaded".format(pl["name"]))
+                        pl_non_empty = False
+                        msg = "Soundcloud page of playlist " \
+                              + "\"{}\" ".format(pl["name"]) \
+                              + " could not be loaded"
+                        if note_signals is not None and exec_note:
+                            note_signals.edit_label_txt.emit(msg)
+                            exec_note("Playlist Loading Error")
+                        else:
+                            print(msg)
                 else:
                     break
 
@@ -603,7 +623,7 @@ class PlaylistLinkExtractor:
                         #If last track is not an empty string and if it wasn't
                         # found in the playlist, ask the user whether the found
                         # tracks should be kept or discarded
-                        if not type(msg_signals)==type(None) and exec_msg:
+                        if msg_signals is not None and exec_msg:
                             pl_name = pl["name"]
                             msg = f"The last saved track \"{last_track_hist}\""\
                                   + " wasnot found in the playlist \""\
@@ -748,6 +768,15 @@ class PlaylistLinkExtractor:
         if not self.cookies_removed:
             self.reject_cookies()
             self.cookies_removed = True
+
+        if self.check_existence(
+                locator_type=By.XPATH,
+                search_str="//div[@class='errorPage sc-mt-3x']"):
+            self.playlists = self.add_exception(self.playlists,
+                                                col="status",
+                                                msg="Playlist opening error",
+                                                index = index)
+            raise PlaylistNotFoundError(pl["name"])
 
         #if the current playlist is not yet in self.playlists, then add it
         if url not in self.playlists.link.values:
@@ -1132,6 +1161,18 @@ class PlaylistLinkExtractor:
             raise ValueError("no valid index or search key and search column provided")
 
         return df
+
+#%% Custom Exceptions
+class PlaylistNotFoundError(Exception):
+    """Exception raised for custom error in the application."""
+
+    def __init__(self, playlist):
+        super().__init__("")
+        self.pl = playlist
+
+    def __str__(self):
+        return f"Playlist {self.pl} could not be opened. Check if playlist "\
+            + "link is correct"
 
 #%% Main
 if __name__ == '__main__':
