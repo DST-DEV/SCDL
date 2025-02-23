@@ -1354,6 +1354,11 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         """
         worker = Worker(fcn, *args, **kwargs)
         worker.worker_signals.progress_updated.connect(self.update_progress)
+
+        worker.note_signals.edit_label_txt.connect(self.change_note_label)
+        worker.note_signals.show_message.connect(self.show_notification)
+        worker.note_signals.msg_set_min_width.connect(self.change_note_min_width)
+
         worker.msg_signals.edit_label_txt.connect(self.change_msg_label)
         worker.msg_signals.show_message.connect(self.show_msg_dialog)
         worker.msg_signals.msg_accept_txt.connect(self.change_msg_accept_txt)
@@ -1946,7 +1951,7 @@ class Worker(QTC.QRunnable):
         self.fn(update_progress_callback = self.worker_signals.progress_updated.emit,
                 exec_msg = self.emit_show_message,
                 msg_signals = self.msg_signals,
-                exec_mote = self.emit_show_notification,
+                exec_note = self.emit_show_notification,
                 note_signals = self.note_signals,
                 *self.args, **self.kwargs)
 
