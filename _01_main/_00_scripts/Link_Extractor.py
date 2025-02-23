@@ -15,6 +15,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 from selenium.common.exceptions import NoSuchElementException
 from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.firefox.options import Options
 
 #File Handling imports
@@ -36,6 +37,7 @@ class PlaylistLinkExtractor:
     def __init__(self,
                  hist_file = "",
                  driver_choice = "Firefox",
+                 sc_account = "sillyphus",
                  sc_account = "sillyphus",
                  playlists=pd.DataFrame()):
         self.track_df = pd.DataFrame(columns = ["playlist", "title", "link",
