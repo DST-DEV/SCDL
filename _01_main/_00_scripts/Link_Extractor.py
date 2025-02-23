@@ -38,7 +38,6 @@ class PlaylistLinkExtractor:
                  hist_file = "",
                  driver_choice = "Firefox",
                  sc_account = "sillyphus",
-                 sc_account = "sillyphus",
                  playlists=pd.DataFrame()):
         self.track_df = pd.DataFrame(columns = ["playlist", "title", "link",
                                                 "uploader",
@@ -552,12 +551,6 @@ class PlaylistLinkExtractor:
             #Test if the Playlist is empty and if so, skip it
             if not pl_non_empty:
                 continue
-# =============================================================================
-#             if self.check_existence(search_str="//div[@class='listenDetails']"
-#                                     + "/div[@class='emptyNetworkPage']"):
-#                 self.playlists.loc[index, "status"] = "Empty"
-#                 continue
-# =============================================================================
 
             #Extract the tracks based on the selected mode
             curr_tracks = pd.DataFrame(columns=["playlist", "title", "link",

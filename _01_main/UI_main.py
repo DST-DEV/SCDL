@@ -82,7 +82,6 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
                                          **self.settings)
 
         self.lineEdit_nf_dir_1.placeholderText = self.settings.get("nf_dir")
-        # self.btn_pl_search.clicked.connect(self.GUI_extr_playlists)
         #Setup GUI connections
 
         #Settings Window
@@ -135,12 +134,6 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         # Set the title
         self.setWindowTitle("Soundcloud Downloader")
 
-# =============================================================================
-#         # Set the custom icon for the application
-#         icon = QTG.QIcon(r"./_01_rsc/SCDLO_V1_icon.ico")
-#         self.setWindowIcon(icon)
-# =============================================================================
-
     def setup_connections(self):
         """Setup of the connections of the Buttons in the GUI to the respective
         functions
@@ -155,9 +148,8 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
         #SCDL buttons
         self.btn_pl_search.clicked.connect(
             lambda: self.run_fcn_thread(self.GUI_extr_playlists))
-        self.btn_track_ext.clicked.connect(self.GUI_extr_tracks)
-        # self.btn_track_ext.clicked.connect(
-        #     lambda: self.run_fcn_thread(self.GUI_extr_tracks))
+        self.btn_track_ext.clicked.connect(
+            lambda: self.run_fcn_thread(self.GUI_extr_tracks))
         self.btn_track_dl.clicked.connect(lambda: self.run_fcn_w_dialog(
                                                     self.GUI_download_tracks))
         self.btn_dl_hist_up.clicked.connect(
@@ -196,9 +188,9 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
                                                         self.GUI_read_dir))
         self.btn_read_nf_1.clicked.connect(lambda: self.run_fcn_thread(
             lambda **kwargs: self.GUI_read_nf(page=1,**kwargs)))
-        # self.btn_file_uni.clicked.connect(lambda: self.run_fcn_thread(
-        #                                                 self.GUI_prep_files))
-        self.btn_file_uni.clicked.connect(self.GUI_prep_files)
+        self.btn_file_uni.clicked.connect(lambda: self.run_fcn_thread(
+                                                        self.GUI_prep_files))
+        # self.btn_file_uni.clicked.connect(self.GUI_prep_files)
         self.btn_sync_music.clicked.connect(self.SCDL.LibMan.sync_music_lib)
 
         #LibUpdater Buttons
