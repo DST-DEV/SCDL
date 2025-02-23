@@ -1,0 +1,18 @@
+QTableView {
+    background-color: #f8f9f9;
+    color: #3d4249;
+    border: 1px solid #6F7885;
+    border-radius: 4px;
+}
+
+QTableView::item {
+    background-color: #f8f9f9;
+    color: #3d4249;
+    border: 1px solid #BBCAE0;
+    padding: 5px;
+}
+
+QTableView::item:selected {
+	border: 1px solid #A2AEFA;
+    color: #3d4249;
+}

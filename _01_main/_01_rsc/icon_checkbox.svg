@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="20mm"
+   height="20mm"
+   viewBox="0 0 20 20"
+   version="1.1"
+   id="svg1"
+   inkscape:export-filename="icon_checkbox.png"
+   inkscape:export-xdpi="20.32"
+   inkscape:export-ydpi="20.32"
+   sodipodi:docname="icon_checkbox.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#999999"
+     borderopacity="1"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm">
+    <inkscape:page
+       x="0"
+       y="0"
+       width="20"
+       height="20"
+       id="page2"
+       margin="0"
+       bleed="0" />
+  </sodipodi:namedview>
+  <defs
+     id="defs1" />
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <rect
+       style="fill:#ffffff;fill-opacity:0;stroke-width:0.749035;stroke-opacity:0.65098"
+       id="rect1"
+       width="20"
+       height="20"
+       x="-1.4210855e-14"
+       y="0"
+       inkscape:label="Background" />
+    <rect
+       style="fill:#3a5acf;fill-opacity:1;stroke-width:0.649164;stroke-opacity:0.65098"
+       id="rect1-8"
+       width="13"
+       height="13"
+       x="3.5"
+       y="3.5"
+       inkscape:label="Foreground"
+       inkscape:export-filename="icon_checkbox.png"
+       inkscape:export-xdpi="96"
+       inkscape:export-ydpi="96" />
+  </g>
+</svg>
