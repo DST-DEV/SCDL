@@ -176,6 +176,8 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
 
         self.btn_save_left.clicked.connect(self.save_tbl_left)
         self.btn_save_right.clicked.connect(self.save_tbl_right)
+        self.btn_cancel_left.clicked.connect(self.cancel_tbl_left)
+        self.btn_cancel_right.clicked.connect(self.cancel_tbl_right)
 
         self.cb_red_view_tbl_left.stateChanged.connect(
             lambda: self.red_tbl_view (lr="left"))
