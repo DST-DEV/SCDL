@@ -24,9 +24,11 @@ from pathlib import PurePath
 
 #%% LibManager Class
 class LibManager:
-    ob_strs = ["premiere", "P R E M I E R E", "free download", "free dl",
-               "Free DL", "FreeDL", "𝐅𝐑𝐄𝐄 𝐃𝐋", "exclusive", r"\|", "preview",
-               "sindex", "motz", "OUTNOW"]        #common obsolete strings
+    ob_strs = ["premiere", "P R E M I E R E", "𝐏𝐑𝐄𝐌𝐈𝐄𝐑𝐄",
+               "free download", "free dl", "Free DL", "FreeDL", "𝐅𝐑𝐄𝐄 𝐃𝐋",
+               "𝙁𝙍𝙀𝙀 𝘿𝙇",
+               "exclusive", r"\|", "preview", "sindex", "motz", "OUTNOW",
+               "OUT NOW"]        #common obsolete strings
 
     def __init__(self, lib_dir = None, nf_dir = None, music_dir = None,
                  excl_lib_folders=["00_Organization", "Sets"], **kwargs):
@@ -279,10 +281,10 @@ class LibManager:
         for index, row in df_incl.iterrows():
             if adj_fnames:
                 #standarize filename
-                filename, ext = self.adjust_fname (row["filename"]
-                                                   + row["extension"],
-                                                   Path(row["directory"],
-                                                        row["folder"]))
+                filename, ext = self.auto_rename (row["filename"]
+                                                  + row["extension"],
+                                                  Path(row["directory"],
+                                                       row["folder"]))
                 df.loc[index, "old_filename"] = row["filename"]
                 df.loc[index, "filename"] = filename
             else:
@@ -323,58 +325,63 @@ class LibManager:
 
         return df
 
-    def adjust_fname (self, filename, folder_path):
-        """Removes obsolete strings from a filename and renames the file to the
-        new filename
+    def adjust_fname (self, filename):
+        """Removes obsolete strings from a filename and converts it to a
+            uniform format
 
         Parameters:
             filename (str):
                 Name of the file to be processed
-            folder_path (folderpath as str or path-like object):
-                path of the folder in which the file is saved
 
         Returns:
             new_filename (str):
                 Adjusted filename
+            extension (str):
+                File extenstion of the input file
         """
         new_filename, extension = os.path.splitext(filename)
 
-        #Step 1: Remove obsolete strings (both standalone and in round brackets)
-        #Note: Obsolete strings within square brackets do not need to be
+        # Step 1: Remove obsolete strings (both standalone and in round brackets)
+        # Note: If a bracket contains both an obsolete string and either one
+        # of the words 'Remix', 'Edit', 'Mashup' or 'Bootleg', then only the
+        # obs_str is removed in the second step
+        # Note: Obsolete strings within square brackets do not need to be
         # removed in this step since all square brackets are removed anyways
         # later
         ob_strs_pattern = "(" +  "|".join(self.ob_strs) + ")"
-        new_filename = re.sub(r"\([^)]*" + ob_strs_pattern + r"[^)]*\)", "",
+        edits_pattern = r"(Mashup|Edit|Remix|Bootleg)"
+        new_filename = re.sub(r"\((" + r"(?!.*" + edits_pattern + ")" \
+                              + r"[^)]*" + ob_strs_pattern + r"[^)]*)\)", "",
                              new_filename,
                              flags=re.IGNORECASE)
-        new_filename = re.sub(ob_strs_pattern + r"[:_]*", "",
+        new_filename = re.sub(ob_strs_pattern + r"[:_]*\s*", "",
                              new_filename,
                              flags=re.IGNORECASE)
 
-        #Step 2: Replace lowercase and uppercase variants of "Remix", "Edit",
-        #and "Mashup" by the title form
-        new_filename = re.sub(r"(remix|edit|mashup|bootleg)",
+        # Step 2: Replace lowercase and uppercase variants of "Remix", "Edit",
+        # 'Mashup' and 'Bootleg' by the title form
+        new_filename = re.sub(edits_pattern,
                               lambda match: match.group(1).title(),
                               new_filename,
                               flags=re.IGNORECASE)
 
         #Step 3: Remove all content within square brackets (except for the
-        # ones which include the words 'Remix', 'Edit' or 'Mashup')
-        new_filename = re.sub(r'\[(?![^\]]*(Mashup|Edit|Remix|Bootleg)).*?\]',
-                              '',
+        # ones which include the words 'Remix', 'Edit', 'Mashup' or 'Bootleg')
+        new_filename = re.sub(r"\[(?![^\]]*" + edits_pattern + r").*?\]",
+                              "",
                               new_filename,
                               flags=re.IGNORECASE)
 
-        #Step 4: Replace square  brackets around "Remix", "Edit", or "Mashup"
+        # Step 4: Replace square  brackets around "Remix", "Edit", or "Mashup"
         # by round brackets
         # Note: searching for lowercase and uppercase versions of the string is
         # not necessary, since they were replaced by the title version in a
         # previous step
-        new_filename = re.sub(r"\[(.*?(?:Remix|Edit|Mashup|Bootleg).*?)\]",
-                              lambda match: ' (' + match.group(1) + ')',
+        new_filename = re.sub(r"\[(.*?(?:" + edits_pattern + r").*?)\]",
+                              lambda match: " (" + match.group(1) + ")",
                               new_filename)
 
-        #Step 5: Remove all round brackets which contain the words 'ft',
+        # Step 5: Remove all round brackets which contain the words 'ft',
         # 'feat', 'prod',  or 'records'
         # Note: the matching is case-insensitive
         # Note: the brackets are only removed if the words are either:
@@ -389,28 +396,29 @@ class LibManager:
         pattern = "(" + ")|(".join([pattern1, pattern2, pattern3]) + ")"
         new_filename = re.sub(pattern, '', new_filename, flags=re.IGNORECASE)
 
-        #Step 6: Replace the weird long hyphen that is sometimes used in the
+        # Step 6: Replace the weird long hyphen that is sometimes used in the
         # track title
         new_filename = new_filename.replace(chr(8211), "-")
 
-        #Step 7: Replace double hypens
+        # Step 7: Replace double hypens
         new_filename = re.sub(r"-{2}", " - ", new_filename)
 
 
-        #Step 8: Change capitalization
-        #Artist:
+        # Step 8: Change capitalization
+        # Artist:
         # - Single letters are converted to lowercase (e.g. "Artist x Artist")
         # - Words with 3-4 characters are not changed (E.g. "DJ ...", "MC ...")
         # - Words with more than 4 characters are capitalized.
-        #Track title:
-        # - Title is Capitalized
-        # - Content in round brackets is converted to title form (all words
-        #   capizalized)
-        new_filename = re.sub(r"\s+", " ", new_filename)
+        # Track title:
+        # - Title is written in Title style
+        # - Content in round brackets is converted to title style (first letter
+        #    of every words capizalized)
+        new_filename = re.sub(r"\s+", " ", new_filename)  # Remove multi spaces
         if " - " in new_filename:
             artist, *title = new_filename.split(" - ")
             title = " ".join(title).strip()
 
+            #Adjust artist
             artist = list(artist.strip().split(" "))
             for i, artist_i in enumerate(artist):
                 if len(artist_i)==1:
@@ -418,21 +426,59 @@ class LibManager:
                 elif len(artist_i)>=4:
                     artist[i] = artist_i.capitalize()
             artist = " ".join(artist)
+            artist = re.sub(r"\b\.[A-Za-z]+",
+                           lambda match: match.group().title(),
+                           artist)
+        else:
+            title = new_filename.strip()
+            artist = None
 
-            title_bracket = re.findall(r"(\([^)]*\))", title)
-            if title_bracket:
-                for i, title_bracket_i in enumerate(title_bracket):
-                    title = title.replace(title_bracket_i, "")
+        #Adjust track title
+        title_bracket = re.findall(r"(\([^)]*\))", title)
+        if title_bracket:
+            for i, title_bracket_i in enumerate(title_bracket):
+                title = title.replace(title_bracket_i, "")
 
-                    title_bracket[i] = title_bracket_i.title()
-                title = title.strip().capitalize()
-                title += " " + " ".join(title_bracket)
-            else:
-                title = title.strip().capitalize()
+                title_bracket[i] = title_bracket_i.title()
+            title = title.strip().title()
+            title += " " + " ".join(title_bracket)
+        else:
+            title = title.strip().title()
+        title = re.sub(r"\b'([T|S|N])",
+                       lambda match: "'" + match.group(1).lower(),
+                       title)
+        title = re.sub(r"\b\.[A-Za-z]+",
+                       lambda match: match.group().title(),
+                       title)
 
+        # Join artist and title back together
+        if artist:
             new_filename = artist + " - " + title
+        else:
+            new_filename = title
 
-        #Step 9: rename the file
+
+        return new_filename, extension
+
+    def auto_rename (self, filename, folder_path):
+        """Removes obsolete strings from a filename and renames the file to the
+        new filename
+
+        Parameters:
+            filename (str):
+                Name of the file to be processed
+            folder_path (folderpath as str or path-like object):
+                path of the folder in which the file is saved
+
+        Returns:
+            new_filename (str):
+                Adjusted filename
+            extension (str):
+                File extenstion of the input file
+        """
+
+        new_filename, extension = self.adjust_fname (filename)
+
         #Note: os.replace is used instead of os.rename since os.replace
         #automatically overwrites if a file with the new filename already exists
         os.replace(os.path.join(folder_path, filename),
