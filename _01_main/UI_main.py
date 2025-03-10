@@ -1472,11 +1472,18 @@ class SettingsWindow (QTW.QDialog, Ui_SettingsDialog):
             None
         """
 
-        #Connect buttons
+        # Connect buttons
         self.buttonBox.accepted.connect(self.save_settings)
         self.buttonBox.rejected.connect(self.cancel_settings)
 
-        #Connect entry fields
+        # Connect file dialog buttons
+        self.btn_track_lib.clicked.connect(self.select_track_lib)
+        self.btn_dl_fld.clicked.connect(self.select_dl_fld)
+        self.btn_music_fld.clicked.connect(self.select_music_fld)
+        self.btn_nf_fld.clicked.connect(self.select_nf_fld)
+        self.btn_excl_fld.clicked.connect(self.select_excl_fld)
+
+        # Connect signals for changes to entry fields
         self.lineEdit_scuser.textChanged.connect(self.sc_account_changed)
         self.comboBox_webdriver.currentTextChanged.connect(self.driver_changed)
         self.lineEdit_track_lib.textChanged.connect(self.track_lib_changed)
@@ -1485,6 +1492,16 @@ class SettingsWindow (QTW.QDialog, Ui_SettingsDialog):
         self.lineEdit_nf_fld.textChanged.connect(self.nff_changed)
         self.textEdit_excl_fld.textChanged.connect(self.excl_fld_changed)
         self.cb_darkmode.stateChanged.connect(self.dark_mode_changed)
+
+        # Set Icons
+        explorer_icon = QTG.QIcon(str(Path(Path(__file__).parent.resolve(),
+                                           "_01_rsc",
+                                           "explorer_icon.svg")))
+        self.btn_track_lib.setIcon(explorer_icon)
+        self.btn_dl_fld.setIcon(explorer_icon)
+        self.btn_music_fld.setIcon(explorer_icon)
+        self.btn_nf_fld.setIcon(explorer_icon)
+        self.btn_excl_fld.setIcon(explorer_icon)
 
     def change_entries(self, settings):
         """Changes the entries in the setting dialog entry fields.
@@ -1621,6 +1638,96 @@ class SettingsWindow (QTW.QDialog, Ui_SettingsDialog):
         """
         self.cancel_settings()
         super(SettingsWindow, self).closeEvent(evnt)
+
+    def open_explorer(self, init_dir=None):
+        """Opens a File Dialog and lets the user select a folder
+
+        Parameters:
+            init_dir (Union [str | Path]): Directory to show when launching
+                the File Dialog
+
+        Returns:
+            folder (str): Path to the folder or an empty string, if the
+                selection was canceled.
+        """
+        if init_dir is None or not Path(init_dir).is_dir():
+            init_dir = pathlib.Path.home()
+
+        folder = QTW.QFileDialog.getExistingDirectory(self, "Select folder",
+                                                      init_dir)
+        if folder:
+            return folder
+        else:
+            return ""
+
+    def select_track_lib(self):
+        """Opens a File Dialog to select the library directory
+
+        Parameters:
+            None
+
+        Returns:
+            None
+        """
+        lib_path = self.open_explorer(self.lineEdit_track_lib.text())
+        if lib_path:
+            self.lineEdit_track_lib.setText(lib_path)
+
+    def select_dl_fld(self):
+        """Opens a File Dialog to select the library directory
+
+        Parameters:
+            None
+
+        Returns:
+            None
+        """
+        dl_path = self.open_explorer(self.lineEdit_dl_folder.text())
+        if dl_path:
+            self.lineEdit_dl_folder.setText(dl_path)
+
+    def select_music_fld(self):
+        """Opens a File Dialog to select the library directory
+
+        Parameters:
+            None
+
+        Returns:
+            None
+        """
+        music_path = self.open_explorer(self.lineEdit_music_lib.text())
+        if music_path:
+            self.lineEdit_music_lib.setText(music_path)
+
+    def select_nf_fld(self):
+        """Opens a File Dialog to select the library directory
+
+        Parameters:
+            None
+
+        Returns:
+            None
+        """
+        lib_path = self.open_explorer(self.lineEdit_nf_fld.text())
+        if lib_path:
+            self.lineEdit_nf_fld.setText(lib_path)
+
+    def select_excl_fld(self):
+        """Opens a File Dialog to select the library directory
+
+        Parameters:
+            None
+
+        Returns:
+            None
+        """
+        lib_dir = self.lineEdit_track_lib.text()
+        excl_path = self.open_explorer(lib_dir)
+        if excl_path:
+            excl_fld = str(Path(excl_path).relative_to(lib_dir))
+            self.textEdit_excl_fld.setPlainText(
+                self.textEdit_excl_fld.toPlainText().strip("\n")
+                + ", " + excl_fld)
 
     def sc_account_changed(self, new_value=""):
         """Adds the changed value of the Soundcloud account entry field to
