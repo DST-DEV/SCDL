@@ -38,7 +38,7 @@ class Ui_MainWindow(object):
         self.grid_left.setObjectName("grid_left")
         #######################################################################
         # Custom Table left
-        
+
         #Insert left table
         self.tbl_view_left = QTW.QTableView()
         self.tbl_left = CustomTableModel(pd.DataFrame())
@@ -46,13 +46,15 @@ class Ui_MainWindow(object):
         self.delegate_left = CheckBoxDelegate(self.tbl_view_left)
         self.tbl_view_left.setItemDelegate(self.delegate_left)
         self.grid_left.addWidget(self.tbl_view_left, 0, 0, 1, 2)
-        
+
+        self.tbl_view_left.verticalHeader().setDefaultSectionSize(31)
+
         # self.tbl_left = QtWidgets.QTableWidget(parent=self.centralwidget)
         # self.tbl_left.setObjectName("tbl_left")
         # self.tbl_left.setColumnCount(0)
         # self.tbl_left.setRowCount(0)
         # self.grid_left.addWidget(self.tbl_left, 0, 0, 1, 2)
-        
+
         #######################################################################
         self.btn_addrow_left = QtWidgets.QPushButton(parent=self.centralwidget)
         self.btn_addrow_left.setObjectName("btn_addrow_left")
@@ -134,7 +136,7 @@ class Ui_MainWindow(object):
         self.grid_right.addLayout(self.hLayout_tbl_sel_right, 3, 0, 1, 2)
         #######################################################################
         # Custom Table right
-        
+
         #Insert table right
         self.tbl_view_right = QTW.QTableView()
         self.tbl_right = CustomTableModel(pd.DataFrame())
@@ -142,13 +144,15 @@ class Ui_MainWindow(object):
         self.delegate_right = CheckBoxDelegate(self.tbl_view_right)
         self.tbl_view_right.setItemDelegate(self.delegate_right)
         self.grid_right.addWidget(self.tbl_view_right, 0, 0, 1, 2)
-        
+
+        self.tbl_view_right.verticalHeader().setDefaultSectionSize(31)
+
         # self.tbl_right = QtWidgets.QTableWidget(parent=self.centralwidget)
         # self.tbl_right.setObjectName("tbl_right")
         # self.tbl_right.setColumnCount(0)
         # self.tbl_right.setRowCount(0)
         # self.grid_right.addWidget(self.tbl_right, 0, 0, 1, 2)
-        
+
         #######################################################################
         self.btn_save_right = QtWidgets.QPushButton(parent=self.centralwidget)
         self.btn_save_right.setObjectName("btn_save_right")

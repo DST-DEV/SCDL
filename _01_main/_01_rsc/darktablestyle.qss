@@ -4,16 +4,18 @@ QTableView {
     color: #ffffff;
     border: 1px solid #3f4042;
     border-radius: 4px;
+	font: 11px "Segoe UI";
 }
 
 QTableView::item {
     background-color: #2d2d2d;
     color: #ffffff;
     border: 1px solid #3f4042;
-    padding: 5px;
+    padding: 0px;
 }
 
 QTableView::item:selected {
 	border: 1px solid #4c6afb;
     color: #ffffff;
+	padding: 0px;
 }

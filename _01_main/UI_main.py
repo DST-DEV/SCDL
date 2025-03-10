@@ -1300,6 +1300,12 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
                              QTG.QColor(53, 53, 53))
             app.setPalette(dark_palette)
             self.setStyleSheet(self.dark_style)
+            self.SettingsDialog.setStyleSheet(self.dark_style)
+            self.DLHistoryEditor.setStyleSheet(self.dark_style)
+            self.msg_window.setStyleSheet(self.dark_style)
+            self.note_window.setStyleSheet(self.dark_style)
+
+
             self.tbl_view_left.setStyleSheet(self.darktablestyle)
             self.tbl_view_right.setStyleSheet(self.darktablestyle)
 
@@ -1318,6 +1324,11 @@ class MainWindow(QTW.QMainWindow, Ui_MainWindow):
                              QTG.QColor(17, 24, 39))
             app.setPalette(light_palette)
             self.setStyleSheet(self.light_style)
+            self.SettingsDialog.setStyleSheet(self.light_style)
+            self.DLHistoryEditor.setStyleSheet(self.light_style)
+            self.msg_window.setStyleSheet(self.light_style)
+            self.note_window.setStyleSheet(self.light_style)
+
             self.tbl_view_left.setStyleSheet(self.lighttablestyle)
             self.tbl_view_right.setStyleSheet(self.lighttablestyle)
 
