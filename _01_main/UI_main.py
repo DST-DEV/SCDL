@@ -4,7 +4,6 @@ from pathlib import Path
 import warnings
 import pandas as pd
 import pathlib
-import time
 import json
 import os
 
@@ -15,8 +14,7 @@ from _00_scripts.SCDL_Master import Soundclouddownloader
 from _00_scripts.UI_Main_window import Ui_MainWindow
 from _00_scripts.UI_Settings_window import Ui_SettingsDialog
 from _00_scripts.UI_DL_History_Editor import Ui_DL_History_Editor
-from PyQt6.QtWidgets import QApplication, QMainWindow
-from PyQt6.QtCore import QFile
+from PyQt6.QtWidgets import QApplication
 from PyQt6.QtCore import pyqtSlot
 import PyQt6.QtWidgets as QTW
 import PyQt6.QtGui as QTG

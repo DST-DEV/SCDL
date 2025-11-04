@@ -1,10 +1,14 @@
 #%% Imports
-#General imports
 import re
 import time
+from functools import reduce
+
 import numpy as np
 import pandas as pd
-from functools import reduce
+import os
+import json
+from pathlib import Path
+import unicodedata
 # import threading
 
 #Webdriver imports
@@ -14,21 +18,8 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 from selenium.common.exceptions import NoSuchElementException
-from selenium.common.exceptions import NoSuchElementException
-from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.firefox.options import Options
 
-#File Handling imports
-import os
-import json
-import pathlib
-from pathlib import Path
-import unicodedata
-
-#GUI Imports
-import PyQt6.QtWidgets as QTW
-import PyQt6.QtCore as QTC
-from PyQt6.QtCore import Qt
 
 #%% Extractor Class
 class PlaylistLinkExtractor:

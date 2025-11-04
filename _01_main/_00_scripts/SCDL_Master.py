@@ -1,16 +1,14 @@
 #%% Imports
 #General imports
 import re
-import sys
-import pandas as pd
-from tqdm import tqdm
-
-#File Handling imports
 import os
-import pathlib
 from pathlib import Path
+import sys
 import time
 import json
+
+import pandas as pd
+from tqdm import tqdm
 
 #Webdriver imports
 from selenium.webdriver.support.ui import WebDriverWait
@@ -18,7 +16,6 @@ from selenium.webdriver.support.ui import WebDriverWait
 #GUI Imports
 import PyQt6.QtWidgets as QTW
 import PyQt6.QtCore as QTC
-from PyQt6.QtCore import Qt
 
 #Custom imports
 from _00_scripts.Link_Extractor import PlaylistLinkExtractor
@@ -589,7 +586,3 @@ if __name__ == '__main__':
 
     # scd_test = Soundclouddownloader(pll=pll.copy(deep=True))
     # doc = scd_test.download_tracks()
-
-
-
-
