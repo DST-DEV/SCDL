@@ -7,7 +7,6 @@ __pycache__/
 .cpython-311.pyc
 
 # Images
-*.svg
 *.png
 *.pdf
 *.jpg
@@ -44,3 +43,6 @@ ipython_config.py
 # Spyder project settings
 .spyderproject
 .spyproject
+
+# Organizational stuff
+_00_Organizational/
