@@ -296,23 +296,20 @@ class PlaylistLinkExtractor:
                 EC.presence_of_element_located((
                     By.XPATH,
                     base_path
-                    +"/a[@class='trackItem__trackTitle sc-link-dark "
-                    + "sc-link-primary sc-font-light']")))
+                    +"/a[@class='trackItem__trackTitle sc-link-primary']")))
         except:
             pass
 
         #find element which contains the track link
         link = self.driver.find_element(By.XPATH,
             base_path
-            +"/a[@class='trackItem__trackTitle sc-link-dark "
-            + "sc-link-primary sc-font-light']").get_attribute(
-                "href").split("?in=", maxsplit=1)[0]
+            +"/a[@class='trackItem__trackTitle sc-link-primary']"
+            ).get_attribute("href").split("?in=", maxsplit=1)[0]
 
         #Get the title of the track
         title = self.driver.find_element(By.XPATH,
             base_path
-            +"/a[@class='trackItem__trackTitle sc-link-dark "
-            + "sc-link-primary sc-font-light']").text
+            +"/a[@class='trackItem__trackTitle sc-link-primary']").text
 
         #find element which contaions the uploader name
         uploader = self.convert_to_alphanumeric(
@@ -592,9 +589,9 @@ class PlaylistLinkExtractor:
                 last_track_hist = pl.last_track or history.get(pl["name"])
                 last_track = self.driver.find_element(
                     By.XPATH,
-                    "(//a[@class='trackItem__trackTitle sc-link-dark "
-                    + "sc-link-primary sc-font-light'])[last()]").get_attribute(
-                        "href").split("in=user")[0]
+                    "(//a[@class='trackItem__trackTitle sc-link-primary'])"
+                    + "[last()]").get_attribute(
+                        "href").split("in=")[0]
 
                 if (mode == "new" and last_track == last_track_hist):
 
@@ -626,7 +623,7 @@ class PlaylistLinkExtractor:
                         if msg_signals is not None and exec_msg:
                             pl_name = pl["name"]
                             msg = f"The last saved track \"{last_track_hist}\""\
-                                  + " wasnot found in the playlist \""\
+                                  + " was not found in the playlist \""\
                                   + pl["name"]+"\".\nDiscard the found files?"
 
                             msg_signals.edit_label_txt.emit(msg)
@@ -787,7 +784,7 @@ class PlaylistLinkExtractor:
         try:
             WebDriverWait(self.driver, self.timeout).until(
                 EC.presence_of_element_located((
-                    By.XPATH,"(//div[@class='listenDetails__trackList'])")))
+                    By.XPATH,"(//div[@class='listenDetails'])")))
         except TimeoutException:
             # print (f"Playlist {pl_name}: Track container loading timeout")
             self.playlists = self.add_exception(self.playlists,
@@ -829,8 +826,7 @@ class PlaylistLinkExtractor:
                     + "sc-px-2x'])"
                     + "[last()]/div"
                     + "/div[@class='trackItem__content sc-truncate']"
-                    + "/a[@class='trackItem__trackTitle sc-link-dark "
-                    + "sc-link-primary sc-font-light']")))
+                    + "/a[@class='trackItem__trackTitle sc-link-primary']")))
         except TimeoutException:
             # print (f"Playlist {pl_name}: Track loading timeout")
             self.playlists = self.add_exception(self.playlists,
